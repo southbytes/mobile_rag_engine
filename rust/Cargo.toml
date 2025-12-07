@@ -15,7 +15,8 @@ log = "0.4.29"
 once_cell = "1.21"
 
 # Tokenizer for text preprocessing
-tokenizers = { version = "0.22.2", default-features = false, features = ["onig"] }
+# Using fancy-regex instead of onig for iOS cross-compilation compatibility
+tokenizers = { version = "0.22.2", default-features = false, features = ["fancy-regex", "http"] }
 
 # HNSW vector indexing for O(log n) search
 instant-distance = "0.6"

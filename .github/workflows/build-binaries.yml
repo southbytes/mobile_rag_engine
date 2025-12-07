@@ -1,0 +1,81 @@
+name: Build and Release Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          targets: aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim
+      
+      - name: Build iOS XCFramework
+        run: |
+          chmod +x scripts/build_ios.sh
+          ./scripts/build_ios.sh
+      
+      - name: Upload iOS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-xcframework
+          path: platform-build/ios/rust_lib_mobile_rag_engine.xcframework.zip
+
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,i686-linux-android
+      
+      - name: Setup Android NDK
+        uses: android-actions/setup-android@v3
+        with:
+          ndk-version: '27.0.12077973'
+      
+      - name: Build Android Libraries
+        run: |
+          chmod +x scripts/build_android.sh
+          ./scripts/build_android.sh
+      
+      - name: Upload Android Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-jnilibs
+          path: platform-build/android/jniLibs.tar.gz
+
+  release:
+    needs: [build-ios, build-android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download iOS Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-xcframework
+          path: ./release
+      
+      - name: Download Android Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-jnilibs
+          path: ./release
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/rust_lib_mobile_rag_engine.xcframework.zip
+            release/jniLibs.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
