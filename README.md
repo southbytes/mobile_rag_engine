@@ -1,100 +1,140 @@
 # Mobile RAG Engine
 
-[![pub package](https://img.shields.io/pub/v/mobile_rag_engine.svg)](https://pub.dev/packages/mobile_rag_engine)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+A Flutter package for fully local RAG (Retrieval-Augmented Generation) on mobile devices.
 
-A high-performance, on-device Retrieval-Augmented Generation (RAG) engine for Flutter. Run semantic search completely offline on iOS and Android.
+## Why I Built This
 
-## Features
+Implementing AI-powered search on mobile typically requires a server. Embedding generation, vector storage, similarity search—all handled server-side, with the app just making API calls.
 
-- 🚀 **High Performance** - HNSW vector indexing for O(log n) search
-- 📱 **Fully Offline** - No internet required after initial setup
-- 🔒 **Privacy First** - All data stays on device
-- 🌍 **Cross-Platform** - iOS and Android support
-- ⚡ **Rust-Powered** - Native performance via Flutter Rust Bridge
-- 🔍 **Semantic Search** - Find documents by meaning, not just keywords
-- 📊 **Deduplication** - SHA256 content hashing prevents duplicates
+But this approach has problems:
+- No internet, no functionality
+- User data gets sent to servers
+- Ongoing server costs
 
-## Architecture
+So I found a way to do **everything on-device**.
+
+## Technical Challenges
+
+I first tried pure Dart. Loading ONNX models, tokenizing, generating embeddings—it was too slow. Vector search became noticeably laggy with just 1,000 documents.
+
+So I brought in Rust.
+
+### Rust + Flutter Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Flutter (Dart)                       │
-│  ┌─────────────────┐  ┌─────────────────────────────┐  │
-│  │ EmbeddingService│  │   Your Application          │  │
-│  │ (ONNX Runtime)  │  │   - addDocument()           │  │
-│  └────────┬────────┘  │   - searchSimilar()         │  │
-│           │           └─────────────────────────────┘  │
-├───────────┼─────────────────────────────────────────────┤
-│           │           Rust (via FFI)                    │
-│  ┌────────▼────────┐  ┌─────────────────────────────┐  │
-│  │   Tokenizer     │  │   SQLite + HNSW Index       │  │
-│  │  (HuggingFace)  │  │   - Vector Storage          │  │
-│  └─────────────────┘  │   - Fast ANN Search         │  │
-│                       └─────────────────────────────┘  │
-└─────────────────────────────────────────────────────────┘
+Flutter (Dart)
+    │
+    ├── EmbeddingService (ONNX Runtime)
+    │       └── text → 384-dim vector
+    │
+    └── flutter_rust_bridge (FFI)
+            │
+            ▼
+        Rust
+            ├── Tokenizer (HuggingFace tokenizers)
+            ├── SQLite (vector storage)
+            └── HNSW Index (O(log n) search)
 ```
 
-## Installation
+Rust's `tokenizers` crate is 10x+ faster than Dart for tokenization. Vector search improved from O(n) to O(log n) using the `instant-distance` HNSW implementation.
 
-Add to your `pubspec.yaml`:
+## How It Differs
+
+### vs. Server-based RAG
+- Works completely offline
+- Data never leaves the device
+- Zero network latency
+
+### vs. Pure Dart Implementation
+- Native Rust performance
+- HNSW enables fast search even with large document sets
+- Memory-efficient vector storage
+
+### vs. Existing Flutter Vector DBs
+- Direct ONNX model loading (no external APIs needed)
+- Swappable models for Korean/multilingual support
+- Integrated pipeline from embedding to search
+
+## Performance
+
+Tested on iOS Simulator (Apple Silicon Mac):
+
+| Operation | Time |
+|-----------|------|
+| Tokenization (short text) | 0.8ms |
+| Embedding generation (short text) | 4ms |
+| Embedding generation (long text) | 36ms |
+| HNSW search (100 docs) | 1ms |
+
+With 1ms search on 100 documents, real-time search is feasible up to 10,000+ documents.
+
+## Problems Solved During Development
+
+### 1. iOS Cross-Compilation
+Initially, the `onig` regex library blocked iOS builds. `___chkstk_darwin` symbol missing error. Switched to pure Rust `fancy-regex` to fix it.
+
+### 2. HNSW Index Timing
+Rebuilding HNSW on every document insert results in O(n²) complexity. Changed to rebuild once after bulk inserts.
+
+### 3. Duplicate Document Handling
+Identical documents caused duplicates in search results. Added SHA256 content hashing to skip already-stored documents.
+
+### 4. ONNX Runtime Thread Safety
+Tried parallel batch embedding, but `onnxruntime`'s `OrtSession` isn't thread-safe. Switched to sequential processing—still fast enough for real-world use since individual embeddings are quick.
+
+## Usage
+
+### Installation
 
 ```yaml
 dependencies:
-  mobile_rag_engine: ^1.0.0
+  mobile_rag_engine:
+    git:
+      url: https://github.com/dev07060/mobile_rag_engine.git
 ```
 
-### Requirements
-
-- Flutter 3.9+
-- iOS 13.0+ / Android API 21+
-- ONNX embedding model (e.g., all-MiniLM-L6-v2)
-- Tokenizer JSON file
-
-## Quick Start
-
-### 1. Initialize
+### Initialization
 
 ```dart
-import 'package:mobile_rag_engine/mobile_rag_engine.dart';
+// Initialize Rust library
+await RustLib.init();
 
-// Initialize tokenizer
+// Load tokenizer
 await initTokenizer(tokenizerPath: 'path/to/tokenizer.json');
 
-// Initialize ONNX model
+// Load ONNX model
 final modelBytes = await rootBundle.load('assets/model.onnx');
 await EmbeddingService.init(modelBytes.buffer.asUint8List());
 
-// Initialize database
+// Initialize DB
 await initDb(dbPath: 'path/to/rag.db');
 ```
 
-### 2. Add Documents
+### Adding Documents
 
 ```dart
-// Single document
-final embedding = await EmbeddingService.embed("Your document text");
+final text = "Flutter is a cross-platform UI framework.";
+final embedding = await EmbeddingService.embed(text);
+
 final result = await addDocument(
   dbPath: dbPath,
-  content: "Your document text",
+  content: text,
   embedding: embedding,
 );
 
 if (result.isDuplicate) {
-  print("Document already exists!");
+  print("Document already exists");
 }
 
-// Batch documents
-final embeddings = await EmbeddingService.embedBatch(
-  ["Doc 1", "Doc 2", "Doc 3"],
-  onProgress: (done, total) => print("$done / $total"),
-);
+// Rebuild index after bulk inserts
+await rebuildHnswIndex(dbPath: dbPath);
 ```
 
-### 3. Search
+### Searching
 
 ```dart
-final queryEmbedding = await EmbeddingService.embed("search query");
+final query = "cross-platform development";
+final queryEmbedding = await EmbeddingService.embed(query);
 
 final results = await searchSimilar(
   dbPath: dbPath,
@@ -107,88 +147,30 @@ for (final doc in results) {
 }
 ```
 
-### 4. Rebuild Index (after bulk inserts)
+## Required Models
 
-```dart
-// Call after adding multiple documents
-await rebuildHnswIndex(dbPath: dbPath);
-```
-
-## API Reference
-
-### Core Functions
-
-| Function | Description |
-|----------|-------------|
-| `initDb(dbPath)` | Initialize SQLite database |
-| `addDocument(dbPath, content, embedding)` | Add document with deduplication |
-| `searchSimilar(dbPath, queryEmbedding, topK)` | Semantic search |
-| `rebuildHnswIndex(dbPath)` | Rebuild HNSW index |
-| `getDocumentCount(dbPath)` | Get total document count |
-| `clearAllDocuments(dbPath)` | Delete all documents |
-
-### EmbeddingService
-
-| Method | Description |
-|--------|-------------|
-| `init(modelBytes)` | Load ONNX model |
-| `embed(text)` | Generate 384-dim embedding |
-| `embedBatch(texts, onProgress)` | Batch embedding |
-| `dispose()` | Release resources |
-
-### Tokenizer (Rust)
-
-| Function | Description |
-|----------|-------------|
-| `initTokenizer(path)` | Load tokenizer.json |
-| `tokenize(text)` | Get token IDs |
-| `decodeTokens(ids)` | Decode to text |
-| `getVocabSize()` | Get vocabulary size |
-
-## Performance
-
-Tested on iPhone 15 Pro Max (Simulator):
-
-| Operation | Time |
-|-----------|------|
-| Tokenization (7 chars) | 0.8ms |
-| Embedding (7 chars) | 4.1ms |
-| Embedding (120 chars) | 36ms |
-| HNSW Search (100 docs) | 1.0ms |
-
-## Model Requirements
-
-This package requires:
-
-1. **ONNX Model** - Sentence transformer model exported to ONNX format
-   - Recommended: `sentence-transformers/all-MiniLM-L6-v2`
-   - Output: 384-dimensional embeddings
-
-2. **Tokenizer** - HuggingFace tokenizer.json file
-
-### Getting the Model
+You need a Sentence Transformer model in ONNX format.
 
 ```bash
-# Install optimum
 pip install optimum[exporters]
-
-# Export to ONNX
 optimum-cli export onnx \
   --model sentence-transformers/all-MiniLM-L6-v2 \
   ./model_output
 ```
 
+Add `model_output/model.onnx` and `tokenizer.json` to your app's assets.
+
+## Future Plans
+
+- INT8 quantization to reduce model size
+- Korean-specific models (KoSimCSE, KR-SBERT)
+- Chunking strategies for long documents
+- Hybrid search (keyword + semantic)
+
 ## License
 
-MIT License - see [LICENSE](LICENSE) file.
+MIT
 
 ## Contributing
 
-Contributions welcome! Please read the contributing guidelines first.
-
-## Acknowledgments
-
-- [flutter_rust_bridge](https://pub.dev/packages/flutter_rust_bridge) - Rust/Dart FFI
-- [instant-distance](https://crates.io/crates/instant-distance) - HNSW implementation
-- [onnxruntime](https://pub.dev/packages/onnxruntime) - ONNX inference
-- [sentence-transformers](https://www.sbert.net/) - Embedding models
+Bug reports, feature requests, and PRs are all welcome.
