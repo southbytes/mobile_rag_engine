@@ -52,3 +52,6 @@ macos/
 
 # docs
 docs/
+
+test_app/
+platform-build/

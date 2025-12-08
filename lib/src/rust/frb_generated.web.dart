@@ -9,6 +9,7 @@
 import 'api/hnsw_index.dart';
 import 'api/simple.dart';
 import 'api/simple_rag.dart';
+import 'api/source_rag.dart';
 import 'api/tokenizer.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -33,7 +34,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   AddDocumentResult dco_decode_add_document_result(dynamic raw);
 
   @protected
+  AddSourceResult dco_decode_add_source_result(dynamic raw);
+
+  @protected
   bool dco_decode_bool(dynamic raw);
+
+  @protected
+  ChunkData dco_decode_chunk_data(dynamic raw);
+
+  @protected
+  ChunkSearchResult dco_decode_chunk_search_result(dynamic raw);
 
   @protected
   double dco_decode_f_32(dynamic raw);
@@ -45,10 +55,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   HnswSearchResult dco_decode_hnsw_search_result(dynamic raw);
 
   @protected
+  int dco_decode_i_32(dynamic raw);
+
+  @protected
   PlatformInt64 dco_decode_i_64(dynamic raw);
 
   @protected
   List<String> dco_decode_list_String(dynamic raw);
+
+  @protected
+  List<ChunkData> dco_decode_list_chunk_data(dynamic raw);
+
+  @protected
+  List<ChunkSearchResult> dco_decode_list_chunk_search_result(dynamic raw);
 
   @protected
   List<HnswSearchResult> dco_decode_list_hnsw_search_result(dynamic raw);
@@ -73,9 +92,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   dco_decode_list_record_i_64_list_prim_f_32_strict(dynamic raw);
 
   @protected
+  String? dco_decode_opt_String(dynamic raw);
+
+  @protected
   (PlatformInt64, Float32List) dco_decode_record_i_64_list_prim_f_32_strict(
     dynamic raw,
   );
+
+  @protected
+  SourceStats dco_decode_source_stats(dynamic raw);
 
   @protected
   int dco_decode_u_32(dynamic raw);
@@ -101,7 +126,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  AddSourceResult sse_decode_add_source_result(SseDeserializer deserializer);
+
+  @protected
   bool sse_decode_bool(SseDeserializer deserializer);
+
+  @protected
+  ChunkData sse_decode_chunk_data(SseDeserializer deserializer);
+
+  @protected
+  ChunkSearchResult sse_decode_chunk_search_result(
+    SseDeserializer deserializer,
+  );
 
   @protected
   double sse_decode_f_32(SseDeserializer deserializer);
@@ -113,10 +149,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   HnswSearchResult sse_decode_hnsw_search_result(SseDeserializer deserializer);
 
   @protected
+  int sse_decode_i_32(SseDeserializer deserializer);
+
+  @protected
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
 
   @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer);
+
+  @protected
+  List<ChunkData> sse_decode_list_chunk_data(SseDeserializer deserializer);
+
+  @protected
+  List<ChunkSearchResult> sse_decode_list_chunk_search_result(
+    SseDeserializer deserializer,
+  );
 
   @protected
   List<HnswSearchResult> sse_decode_list_hnsw_search_result(
@@ -145,9 +192,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  String? sse_decode_opt_String(SseDeserializer deserializer);
+
+  @protected
   (PlatformInt64, Float32List) sse_decode_record_i_64_list_prim_f_32_strict(
     SseDeserializer deserializer,
   );
+
+  @protected
+  SourceStats sse_decode_source_stats(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_32(SseDeserializer deserializer);
@@ -160,9 +213,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   BigInt sse_decode_usize(SseDeserializer deserializer);
-
-  @protected
-  int sse_decode_i_32(SseDeserializer deserializer);
 
   @protected
   void sse_encode_AnyhowException(
@@ -180,7 +230,22 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_add_source_result(
+    AddSourceResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_bool(bool self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_chunk_data(ChunkData self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_chunk_search_result(
+    ChunkSearchResult self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_f_32(double self, SseSerializer serializer);
@@ -195,10 +260,25 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_i_32(int self, SseSerializer serializer);
+
+  @protected
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_chunk_data(
+    List<ChunkData> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_chunk_search_result(
+    List<ChunkSearchResult> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_hnsw_search_result(
@@ -243,10 +323,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_opt_String(String? self, SseSerializer serializer);
+
+  @protected
   void sse_encode_record_i_64_list_prim_f_32_strict(
     (PlatformInt64, Float32List) self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_source_stats(SourceStats self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_32(int self, SseSerializer serializer);
@@ -259,9 +345,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_usize(BigInt self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_i_32(int self, SseSerializer serializer);
 }
 
 // Section: wire_class
