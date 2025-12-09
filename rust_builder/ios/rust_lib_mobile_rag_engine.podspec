@@ -21,9 +21,6 @@ A new Flutter FFI plugin project.
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
   s.platform = :ios, '11.0'
-
-  # Flutter.framework does not contain a i386 slice.
-  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
   s.swift_version = '5.0'
 
   s.script_phase = {
@@ -34,12 +31,18 @@ A new Flutter FFI plugin project.
     :input_files => ['${BUILT_PRODUCTS_DIR}/cargokit_phony'],
     # Let XCode know that the static library referenced in -force_load below is
     # created by this build step.
-    :output_files => ["${BUILT_PRODUCTS_DIR}/librust_lib_mobile_rag_engine.a"],
+    :output_files => ["${BUILT_PRODUCTS_DIR}/rust_lib_mobile_rag_engine/librust_lib_mobile_rag_engine.a"],
   }
+
+  # Pod target build settings (merged, no duplicates)
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
-    # Flutter.framework does not contain a i386 slice.
     'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386',
-    'OTHER_LDFLAGS' => '-force_load ${BUILT_PRODUCTS_DIR}/librust_lib_mobile_rag_engine.a',
+    'OTHER_LDFLAGS' => '-force_load ${BUILT_PRODUCTS_DIR}/rust_lib_mobile_rag_engine/librust_lib_mobile_rag_engine.a',
+  }
+
+  # App target (Runner) build settings - propagates -force_load to the main executable
+  s.user_target_xcconfig = {
+    'OTHER_LDFLAGS' => '$(inherited) -force_load ${BUILT_PRODUCTS_DIR}/rust_lib_mobile_rag_engine/librust_lib_mobile_rag_engine.a',
   }
 end

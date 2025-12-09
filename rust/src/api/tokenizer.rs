@@ -3,11 +3,12 @@
 use flutter_rust_bridge::frb;
 use tokenizers::Tokenizer;
 use anyhow::Result;
-use std::sync::Mutex;
+use std::sync::RwLock;
 use once_cell::sync::Lazy;
 
 // Global tokenizer instance (loaded once)
-static TOKENIZER: Lazy<Mutex<Option<Tokenizer>>> = Lazy::new(|| Mutex::new(None));
+// Using RwLock for concurrent read access (tokenize/decode can run in parallel)
+static TOKENIZER: Lazy<RwLock<Option<Tokenizer>>> = Lazy::new(|| RwLock::new(None));
 
 /// Initialize tokenizer with tokenizer.json file path
 pub fn init_tokenizer(tokenizer_path: String) -> Result<()> {
@@ -23,7 +24,8 @@ pub fn init_tokenizer(tokenizer_path: String) -> Result<()> {
         ..Default::default()
     })).ok();
     
-    let mut global_tokenizer = TOKENIZER.lock().unwrap();
+    // Write lock for initialization
+    let mut global_tokenizer = TOKENIZER.write().unwrap();
     *global_tokenizer = Some(tokenizer);
     
     Ok(())
@@ -33,7 +35,8 @@ pub fn init_tokenizer(tokenizer_path: String) -> Result<()> {
 /// add_special_tokens=true to include CLS/SEP tokens
 #[frb(sync)]
 pub fn tokenize(text: String) -> Result<Vec<u32>> {
-    let tokenizer_guard = TOKENIZER.lock().unwrap();
+    // Read lock for concurrent tokenization
+    let tokenizer_guard = TOKENIZER.read().unwrap();
     let tokenizer = tokenizer_guard
         .as_ref()
         .ok_or_else(|| anyhow::anyhow!("Tokenizer not initialized. Call init_tokenizer first."))?;
@@ -49,7 +52,8 @@ pub fn tokenize(text: String) -> Result<Vec<u32>> {
 /// Decode token IDs to text
 #[frb(sync)]
 pub fn decode_tokens(token_ids: Vec<u32>) -> Result<String> {
-    let tokenizer_guard = TOKENIZER.lock().unwrap();
+    // Read lock for concurrent decoding
+    let tokenizer_guard = TOKENIZER.read().unwrap();
     let tokenizer = tokenizer_guard
         .as_ref()
         .ok_or_else(|| anyhow::anyhow!("Tokenizer not initialized."))?;
@@ -64,7 +68,8 @@ pub fn decode_tokens(token_ids: Vec<u32>) -> Result<String> {
 /// Get tokenizer info (vocab size, etc.)
 #[frb(sync)]
 pub fn get_vocab_size() -> Result<u32> {
-    let tokenizer_guard = TOKENIZER.lock().unwrap();
+    // Read lock for concurrent access
+    let tokenizer_guard = TOKENIZER.read().unwrap();
     let tokenizer = tokenizer_guard
         .as_ref()
         .ok_or_else(|| anyhow::anyhow!("Tokenizer not initialized."))?;

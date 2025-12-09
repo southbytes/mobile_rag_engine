@@ -3,10 +3,9 @@
 // Extended RAG API with sources and chunks for LLM-optimized context.
 // Builds on simple_rag.rs but adds hierarchical document structure.
 
-use flutter_rust_bridge::frb;
 use rusqlite::{params, Connection};
 use ndarray::Array1;
-use log::{info, debug, error};
+use log::info;
 use sha2::{Sha256, Digest};
 use crate::api::hnsw_index::{build_hnsw_index, search_hnsw, is_hnsw_index_loaded};
 
@@ -126,6 +125,7 @@ pub struct ChunkData {
 }
 
 /// Add chunks for a source document.
+/// Uses transaction for atomicity - all chunks are saved or none.
 pub fn add_chunks(
     db_path: String,
     source_id: i64,
@@ -133,15 +133,19 @@ pub fn add_chunks(
 ) -> anyhow::Result<i32> {
     info!("[add_chunks] Adding {} chunks for source {}", chunks.len(), source_id);
     
-    let conn = Connection::open(&db_path)?;
+    let mut conn = Connection::open(&db_path)?;
+    
+    // Use transaction for atomicity
+    let tx = conn.transaction()?;
     
     for chunk in &chunks {
-        let embedding_bytes: Vec<u8> = chunk.embedding
-            .iter()
-            .flat_map(|f| f.to_ne_bytes().to_vec())
-            .collect();
+        // Pre-allocate exact capacity for embedding bytes
+        let mut embedding_bytes: Vec<u8> = Vec::with_capacity(chunk.embedding.len() * 4);
+        for f in &chunk.embedding {
+            embedding_bytes.extend_from_slice(&f.to_ne_bytes());
+        }
         
-        conn.execute(
+        tx.execute(
             "INSERT INTO chunks (source_id, chunk_index, content, start_pos, end_pos, embedding)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
@@ -154,6 +158,8 @@ pub fn add_chunks(
             ],
         )?;
     }
+    
+    tx.commit()?;
     
     info!("[add_chunks] Added {} chunks", chunks.len());
     Ok(chunks.len() as i32)
