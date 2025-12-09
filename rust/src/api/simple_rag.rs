@@ -183,11 +183,11 @@ pub fn add_document(db_path: String, content: String, embedding: Vec<f32>) -> an
         });
     }
 
-    // Vec<f32> -> BLOB (byte array)
-    let embedding_bytes: Vec<u8> = embedding
-        .iter()
-        .flat_map(|f| f.to_ne_bytes().to_vec())
-        .collect();
+    // Vec<f32> -> BLOB (byte array) with pre-allocated capacity
+    let mut embedding_bytes: Vec<u8> = Vec::with_capacity(embedding.len() * 4);
+    for f in &embedding {
+        embedding_bytes.extend_from_slice(&f.to_ne_bytes());
+    }
 
     debug!("[add_document] embedding_bytes size: {} bytes", embedding_bytes.len());
 
