@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:mobile_rag_engine/src/rust/api/simple_rag.dart';
 import 'package:mobile_rag_engine/src/rust/api/tokenizer.dart';
 import 'package:mobile_rag_engine/src/rust/frb_generated.dart';
 import 'package:mobile_rag_engine/services/embedding_service.dart';
+import 'package:mobile_rag_engine/services/source_rag_service.dart';
 import 'package:mobile_rag_engine/screens/benchmark_screen.dart';
 import 'package:mobile_rag_engine/screens/quality_test_screen.dart';
 import 'package:mobile_rag_engine/screens/chunking_test_screen.dart';
@@ -28,6 +28,7 @@ class _MyAppState extends State<MyApp> {
   String _dbPath = "";
   bool _isReady = false;
   bool _isLoading = false;
+  SourceRagService? _ragService;
   
   final TextEditingController _docController = TextEditingController();
   final TextEditingController _queryController = TextEditingController();
@@ -62,9 +63,10 @@ class _MyAppState extends State<MyApp> {
       await EmbeddingService.init(modelBytes.buffer.asUint8List());
       setState(() => _status = "ONNX model loaded!");
       
-      // 3. Initialize DB
-      await initDb(dbPath: _dbPath);
-      setState(() => _status = "SQLite DB initialized");
+      // 3. Initialize Source RAG Service (with chunking support)
+      _ragService = SourceRagService(dbPath: _dbPath);
+      await _ragService!.init();
+      setState(() => _status = "Source RAG DB initialized");
       
       _isReady = true;
       setState(() {
@@ -87,28 +89,23 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  /// Save document: text -> embedding -> DB storage
+  /// Save document: text -> chunking -> embedding -> DB storage
   Future<void> _saveDocument() async {
     final text = _docController.text.trim();
     if (text.isEmpty) return;
     
     setState(() {
       _isLoading = true;
-      _status = "Processing document...";
+      _status = "Processing document (chunking + embedding)...";
     });
     
     try {
-      // Generate embedding in Dart (Rust tokenizer + Flutter ONNX)
-      final embedding = await EmbeddingService.embed(text);
-      
-      // Convert to f32 list
-      final embeddingF32 = embedding.map((e) => e.toDouble()).toList();
-      
-      // Save to DB (with deduplication)
-      final result = await addDocument(
-        dbPath: _dbPath, 
-        content: text, 
-        embedding: embeddingF32,
+      // Add source with automatic chunking and embedding
+      final result = await _ragService!.addSourceWithChunking(
+        text,
+        onProgress: (done, total) {
+          setState(() => _status = "Embedding chunks: $done/$total");
+        },
       );
       
       if (result.isDuplicate) {
@@ -117,9 +114,14 @@ class _MyAppState extends State<MyApp> {
           _isLoading = false;
         });
       } else {
+        // Rebuild HNSW index after adding
+        await _ragService!.rebuildIndex();
+        
         setState(() {
-          _status = "✅ Saved!\nEmbedding: ${embedding.length} dims\n"
-              "First 3 values: ${embedding.take(3).map((e) => e.toStringAsFixed(4)).toList()}";
+          _status = "✅ Saved!\n"
+              "📄 Source ID: ${result.sourceId}\n"
+              "📦 Chunks created: ${result.chunkCount}\n"
+              "(Each chunk ~500 chars with 50 char overlap)";
           _isLoading = false;
         });
         _docController.clear();
@@ -132,30 +134,32 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  /// Search: query -> embedding -> similarity search
+  /// Search: query -> embedding -> chunk similarity search
   Future<void> _searchDocuments() async {
     final query = _queryController.text.trim();
     if (query.isEmpty) return;
     
     setState(() {
       _isLoading = true;
-      _status = "Searching...";
+      _status = "Searching chunks...";
     });
     
     try {
-      // Generate query embedding
-      final queryEmbedding = await EmbeddingService.embed(query);
-      
-      // Search similar documents
-      final results = await searchSimilar(
-        dbPath: _dbPath,
-        queryEmbedding: queryEmbedding,
-        topK: 3,
+      // Search using SourceRagService (searches chunks, not full documents)
+      final ragResult = await _ragService!.search(
+        query,
+        topK: 5,
+        tokenBudget: 2000,
       );
+      
+      // Extract chunk contents for display
+      final results = ragResult.chunks.map((c) => c.content).toList();
       
       setState(() {
         _searchResults = results;
-        _status = "✅ Search complete! Found ${results.length} results";
+        _status = "✅ Search complete!\n"
+            "Found ${ragResult.chunks.length} relevant chunks\n"
+            "Context: ${ragResult.context.estimatedTokens} tokens used";
         _isLoading = false;
       });
     } catch (e) {
@@ -307,12 +311,18 @@ class _MyAppState extends State<MyApp> {
                       "Apple is a company that makes iPhones.",
                       "Orange is a fruit rich in vitamin C.",
                     ];
-                    for (final sample in samples) {
-                      final emb = await EmbeddingService.embed(sample);
-                      await addDocument(dbPath: _dbPath, content: sample, embedding: emb);
+                    int totalChunks = 0;
+                    for (var i = 0; i < samples.length; i++) {
+                      setState(() => _status = "Adding sample ${i + 1}/${samples.length}...");
+                      final result = await _ragService!.addSourceWithChunking(samples[i]);
+                      totalChunks += result.chunkCount;
                     }
+                    // Rebuild index after all samples added
+                    await _ragService!.rebuildIndex();
+                    
                     setState(() {
-                      _status = "✅ Saved ${samples.length} sample documents!";
+                      _status = "✅ Saved ${samples.length} sample documents!\n"
+                          "📦 Total chunks: $totalChunks";
                       _isLoading = false;
                     });
                   } catch (e) {

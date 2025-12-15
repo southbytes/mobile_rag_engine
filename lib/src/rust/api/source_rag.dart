@@ -25,6 +25,7 @@ Future<AddSourceResult> addSource({
 );
 
 /// Add chunks for a source document.
+/// Uses transaction for atomicity - all chunks are saved or none.
 Future<int> addChunks({
   required String dbPath,
   required PlatformInt64 sourceId,

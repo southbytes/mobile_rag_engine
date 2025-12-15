@@ -3,7 +3,6 @@
 /// ContextBuilder takes search results and assembles them into
 /// an optimized context string within a token budget.
 
-import 'chunking_service.dart';
 import '../src/rust/api/source_rag.dart';
 
 /// Assembled context ready for LLM consumption.

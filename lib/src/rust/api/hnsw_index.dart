@@ -6,7 +6,6 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `EmbeddingPoint`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `distance`, `fmt`, `fmt`
 
 /// Build HNSW index
@@ -30,6 +29,43 @@ Future<bool> isHnswIndexLoaded() =>
 /// Clear HNSW index
 Future<void> clearHnswIndex() =>
     RustLib.instance.api.crateApiHnswIndexClearHnswIndex();
+
+/// Custom point type: 384-dimensional embedding with cached norm
+class EmbeddingPoint {
+  final PlatformInt64 id;
+  final Float32List embedding;
+
+  /// Pre-computed L2 norm for efficient distance calculation
+  final double norm;
+
+  const EmbeddingPoint({
+    required this.id,
+    required this.embedding,
+    required this.norm,
+  });
+
+  // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
+  /// Create a new EmbeddingPoint with pre-computed norm
+  static Future<EmbeddingPoint> newInstance({
+    required PlatformInt64 id,
+    required List<double> embedding,
+  }) => RustLib.instance.api.crateApiHnswIndexEmbeddingPointNew(
+    id: id,
+    embedding: embedding,
+  );
+
+  @override
+  int get hashCode => id.hashCode ^ embedding.hashCode ^ norm.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EmbeddingPoint &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          embedding == other.embedding &&
+          norm == other.norm;
+}
 
 /// HNSW search result
 class HnswSearchResult {

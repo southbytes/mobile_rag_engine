@@ -4,6 +4,7 @@
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api/hnsw_index.dart';
+import 'api/semantic_chunker.dart';
 import 'api/simple.dart';
 import 'api/simple_rag.dart';
 import 'api/source_rag.dart';
@@ -42,6 +43,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ChunkSearchResult dco_decode_chunk_search_result(dynamic raw);
+
+  @protected
+  EmbeddingPoint dco_decode_embedding_point(dynamic raw);
 
   @protected
   double dco_decode_f_32(dynamic raw);
@@ -90,12 +94,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   dco_decode_list_record_i_64_list_prim_f_32_strict(dynamic raw);
 
   @protected
+  List<SemanticChunk> dco_decode_list_semantic_chunk(dynamic raw);
+
+  @protected
   String? dco_decode_opt_String(dynamic raw);
 
   @protected
   (PlatformInt64, Float32List) dco_decode_record_i_64_list_prim_f_32_strict(
     dynamic raw,
   );
+
+  @protected
+  SemanticChunk dco_decode_semantic_chunk(dynamic raw);
 
   @protected
   SourceStats dco_decode_source_stats(dynamic raw);
@@ -136,6 +146,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ChunkSearchResult sse_decode_chunk_search_result(
     SseDeserializer deserializer,
   );
+
+  @protected
+  EmbeddingPoint sse_decode_embedding_point(SseDeserializer deserializer);
 
   @protected
   double sse_decode_f_32(SseDeserializer deserializer);
@@ -190,12 +203,20 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  List<SemanticChunk> sse_decode_list_semantic_chunk(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
 
   @protected
   (PlatformInt64, Float32List) sse_decode_record_i_64_list_prim_f_32_strict(
     SseDeserializer deserializer,
   );
+
+  @protected
+  SemanticChunk sse_decode_semantic_chunk(SseDeserializer deserializer);
 
   @protected
   SourceStats sse_decode_source_stats(SseDeserializer deserializer);
@@ -242,6 +263,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_chunk_search_result(
     ChunkSearchResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_embedding_point(
+    EmbeddingPoint self,
     SseSerializer serializer,
   );
 
@@ -321,6 +348,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_semantic_chunk(
+    List<SemanticChunk> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
 
   @protected
@@ -328,6 +361,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     (PlatformInt64, Float32List) self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_semantic_chunk(SemanticChunk self, SseSerializer serializer);
 
   @protected
   void sse_encode_source_stats(SourceStats self, SseSerializer serializer);

@@ -2,6 +2,7 @@
 //
 // Screen for downloading and installing flutter_gemma models
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 
@@ -20,13 +21,41 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
   String? _error;
 
   // Model options
-  final List<_ModelOption> _models = [
+  final List<_ModelOption> _allModels = [
+    // 4B Models - Web Only (Coming Soon for Mobile)
     _ModelOption(
-      name: 'Gemma3 1B IT Q4 (Recommended)',
-      description: 'Lightest Gemma3 model (~555MB, Q4 quantized)',
+      name: 'Gemma3 4B IT INT4 ⭐ (Best for RAG)',
+      description: 'Better context understanding for RAG (~2.6GB)',
+      url: 'https://huggingface.co/litert-community/Gemma3-4B-IT/resolve/main/gemma3-4b-it-int4-web.task',
+      modelType: ModelType.gemmaIt,
+      requiresToken: true,
+      webOnly: true,
+    ),
+    _ModelOption(
+      name: 'Gemma3 4B IT INT8',
+      description: 'Higher quality 4B (~3.9GB)',
+      url: 'https://huggingface.co/litert-community/Gemma3-4B-IT/resolve/main/gemma3-4b-it-int8-web.task',
+      modelType: ModelType.gemmaIt,
+      requiresToken: true,
+      webOnly: true,
+    ),
+    // E2B Model - Mobile & Web (Better RAG than 1B)
+    _ModelOption(
+      name: 'Gemma 3n E2B IT INT4 ⭐ (Recommended)',
+      description: 'Effective 2B params, better RAG performance (~3.1GB)',
+      url: 'https://huggingface.co/google/gemma-3n-E2B-it-litert-preview/resolve/main/gemma-3n-E2B-it-int4.task',
+      modelType: ModelType.gemmaIt,
+      requiresToken: true,
+      webOnly: false,
+    ),
+    // 1B Models - Mobile & Web (Lightweight)
+    _ModelOption(
+      name: 'Gemma3 1B IT Q4',
+      description: 'Lightest model (~555MB, limited RAG performance)',
       url: 'https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048.task',
       modelType: ModelType.gemmaIt,
       requiresToken: true,
+      webOnly: false,
     ),
     _ModelOption(
       name: 'Gemma3 1B IT Q4 (Block32)',
@@ -34,15 +63,21 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
       url: 'https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q4_block32_ekv4096.task',
       modelType: ModelType.gemmaIt,
       requiresToken: true,
+      webOnly: false,
     ),
     _ModelOption(
       name: 'Gemma3 1B IT Q4 (Block128)',
-      description: 'Best quality quantized (~689MB)',
+      description: 'Best quality 1B quantized (~689MB)',
       url: 'https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q4_block128_ekv4096.task',
       modelType: ModelType.gemmaIt,
       requiresToken: true,
+      webOnly: false,
     ),
   ];
+  
+  /// Filtered models based on platform
+  List<_ModelOption> get _models =>
+      _allModels.where((m) => kIsWeb || !m.webOnly).toList();
 
 
   int _selectedModelIndex = 0;
@@ -238,6 +273,7 @@ class _ModelOption {
   final String url;
   final ModelType modelType;
   final bool requiresToken;
+  final bool webOnly;
 
   const _ModelOption({
     required this.name,
@@ -245,5 +281,6 @@ class _ModelOption {
     required this.url,
     required this.modelType,
     required this.requiresToken,
+    this.webOnly = false,
   });
 }

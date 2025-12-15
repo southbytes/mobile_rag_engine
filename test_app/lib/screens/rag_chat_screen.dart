@@ -18,8 +18,6 @@ class ChatMessage {
   final DateTime timestamp;
   final List<ChunkSearchResult>? retrievedChunks;
   final int? tokensUsed;
-  final bool isError;
-  final String? originalQuery;
 
   ChatMessage({
     required this.content,
@@ -27,8 +25,6 @@ class ChatMessage {
     DateTime? timestamp,
     this.retrievedChunks,
     this.tokensUsed,
-    this.isError = false,
-    this.originalQuery,
   }) : timestamp = timestamp ?? DateTime.now();
 }
 
@@ -80,6 +76,8 @@ class _RagChatScreenState extends State<RagChatScreen> {
     });
 
     try {
+      // Reset any existing LLM session to prevent context overflow on app restart
+      await _resetChatSession();
       final dir = await getApplicationDocumentsDirectory();
       final dbPath = '${dir.path}/test_rag_chat.db';
       final tokenizerPath = '${dir.path}/tokenizer.json';
@@ -96,7 +94,8 @@ class _RagChatScreenState extends State<RagChatScreen> {
       // 3. Initialize RAG service
       _ragService = SourceRagService(
         dbPath: dbPath,
-        chunkConfig: ChunkConfig.medium,
+        maxChunkChars: 500,
+        overlapChars: 50,
       );
       await _ragService!.init();
 
@@ -160,12 +159,11 @@ class _RagChatScreenState extends State<RagChatScreen> {
     });
 
     try {
-      // 1. RAG Search - use smaller token budget to leave room for response
-      // Model has 2048 max tokens: ~1000 context + ~200 prompt overhead + ~800 for response
+      // 1. RAG Search
       final ragResult = await _ragService!.search(
         text,
         topK: 5,
-        tokenBudget: 1000,
+        tokenBudget: 1500,
         strategy: ContextStrategy.relevanceFirst,
       );
 
@@ -192,8 +190,6 @@ class _RagChatScreenState extends State<RagChatScreen> {
         _messages.insert(0, ChatMessage(
           content: '❌ Error: $e',
           isUser: false,
-          isError: true,
-          originalQuery: text,
         ));
       });
     } finally {
@@ -228,7 +224,7 @@ class _RagChatScreenState extends State<RagChatScreen> {
 
   Future<String> _generateLlmResponse(String query, RagSearchResult ragResult) async {
     try {
-      // Initialize model if needed
+      // Initialize model and chat session if needed
       if (_llmModel == null) {
         // Get LLM model - use maxTokens matching model's ekv capacity
         // Model: Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048 supports 2048 tokens
@@ -236,31 +232,20 @@ class _RagChatScreenState extends State<RagChatScreen> {
           maxTokens: 2048,
           preferredBackend: PreferredBackend.gpu,
         );
+        _chatSession = await _llmModel!.createChat();
       }
 
-      // For RAG queries: always create a fresh session to avoid context accumulation
-      // Each RAG context is ~1000 tokens, so we can't keep history across questions
-      // For follow-up questions (no RAG context): could reuse session, but simpler to always reset
-      if (_chatSession != null) {
-        await _chatSession!.close();
-      }
-      _chatSession = await _llmModel!.createChat(
-        temperature: 0.9,
-        topK: 40,
-        topP: 0.95,
-      );
-
-      // Format the prompt
+      // Check if this is a follow-up question (no RAG context needed)
       String prompt;
       if (ragResult.chunks.isEmpty) {
         // Simple follow-up without RAG context
         prompt = query;
       } else {
-        // Include RAG context
+        // First question or new topic - include RAG context
         prompt = _ragService!.formatPrompt(query, ragResult);
       }
 
-      // Add user message (fresh session, no history accumulation)
+      // Add user message to chat history
       await _chatSession!.addQueryChunk(Message.text(
         text: prompt,
         isUser: true,
@@ -288,12 +273,13 @@ class _RagChatScreenState extends State<RagChatScreen> {
         }
       }
 
-      // Clean up response: remove HTML tags and garbage characters
-      responseText = _cleanResponse(responseText);
 
-      // Detect garbage response (mostly HTML tags or empty after cleanup)
-      if (_isGarbageResponse(responseText)) {
-        debugPrint('🟡 Garbage response detected, resetting session and retrying...');
+      // Disabled: _cleanRepetition was truncating valid content
+      // responseText = _cleanRepetition(responseText);
+
+      // Handle empty response - likely context overflow, reset and retry
+      if (responseText.trim().isEmpty) {
+        debugPrint('🟡 Empty response detected, resetting session and retrying...');
         await _resetChatSession();
         
         // Retry with fresh session
@@ -301,11 +287,7 @@ class _RagChatScreenState extends State<RagChatScreen> {
           maxTokens: 2048,
           preferredBackend: PreferredBackend.gpu,
         );
-        _chatSession = await _llmModel!.createChat(
-          temperature: 0.9,
-          topK: 40,
-          topP: 0.95,
-        );
+        _chatSession = await _llmModel!.createChat();
         
         // Use full RAG prompt for fresh session
         final freshPrompt = _ragService!.formatPrompt(query, ragResult);
@@ -316,11 +298,11 @@ class _RagChatScreenState extends State<RagChatScreen> {
         
         final retryResponse = await _chatSession!.generateChatResponse();
         if (retryResponse != null && retryResponse is TextResponse) {
-          responseText = _cleanResponse(retryResponse.token);
+          responseText = retryResponse.token; // Disabled: _cleanRepetition
         }
         
-        if (_isGarbageResponse(responseText)) {
-          return '⚠️ The model could not generate a proper response.\n\n'
+        if (responseText.trim().isEmpty) {
+          return '⚠️ The model could not generate a response.\n\n'
                  'This may happen when the context is too long.\n'
                  'Try asking a simpler question.';
         }
@@ -361,35 +343,26 @@ class _RagChatScreenState extends State<RagChatScreen> {
     _chatSession = null;
   }
 
-  /// Clean up LLM response: remove HTML tags, garbage characters, etc.
-  String _cleanResponse(String text) {
-    // Remove HTML tags (like <br>, <p>, etc.)
-    text = text.replaceAll(RegExp(r'<[^>]+>'), '\n');
-    
-    // Remove non-breaking space and other garbage characters
-    text = text.replaceAll('\u00A0', ' '); // NBSP
-    text = text.replaceAll(RegExp(r'<0x[A-Fa-f0-9]+>'), ''); // Hex byte sequences
-    
-    // Normalize multiple newlines to max 2
-    text = text.replaceAll(RegExp(r'\n{3,}'), '\n\n');
-    
-    // Remove leading/trailing whitespace
-    text = text.trim();
-    
-    return text;
-  }
+  /// Start a new chat session - clears messages and resets LLM context
+  Future<void> _startNewChat() async {
+    setState(() {
+      _isLoading = true;
+      _status = 'Starting new chat...';
+    });
 
-  /// Check if response is garbage (empty, mostly whitespace, or just HTML remnants)
-  bool _isGarbageResponse(String text) {
-    // Empty or very short
-    if (text.trim().isEmpty) return true;
-    if (text.trim().length < 10) return true;
-    
-    // Mostly non-printable or repetitive characters
-    final alphanumericCount = RegExp(r'[a-zA-Z가-힣0-9]').allMatches(text).length;
-    if (alphanumericCount < text.length * 0.3) return true;
-    
-    return false;
+    await _resetChatSession();
+
+    setState(() {
+      _messages.clear();
+      _isLoading = false;
+      _status = 'Ready! Sources: $_totalSources, Chunks: $_totalChunks';
+    });
+
+    _addSystemMessage(
+      '🔄 New chat started! LLM session has been reset.\n\n'
+      '• Previous conversation context cleared\n'
+      '• Ask me questions about your documents',
+    );
   }
 
   /// Clean up repetition loops in LLM output
@@ -424,9 +397,6 @@ class _RagChatScreenState extends State<RagChatScreen> {
 
   /// Parse simple markdown (bold **text**) into TextSpan
   TextSpan _parseMarkdown(String text) {
-    // First, convert literal \n strings to actual newlines
-    text = text.replaceAll(r'\n', '\n');
-    
     final spans = <TextSpan>[];
     final regex = RegExp(r'\*\*(.+?)\*\*');
     int lastEnd = 0;
@@ -455,51 +425,6 @@ class _RagChatScreenState extends State<RagChatScreen> {
     }
     
     return TextSpan(children: spans);
-  }
-
-  /// Retry a failed message
-  Future<void> _retryMessage(String query) async {
-    // Remove the error message (first AI message)
-    setState(() {
-      if (_messages.isNotEmpty && _messages[0].isError) {
-        _messages.removeAt(0);
-      }
-      // Also remove the original user message to avoid duplicates
-      if (_messages.isNotEmpty && _messages[0].isUser && _messages[0].content == query) {
-        _messages.removeAt(0);
-      }
-    });
-    
-    // Re-send with original query
-    _messageController.text = query;
-    await _sendMessage();
-  }
-
-  /// Show copy menu on long press
-  void _showCopyMenu(BuildContext context, String content) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.copy),
-              title: const Text('Copy message'),
-              onTap: () {
-                Clipboard.setData(ClipboardData(text: content));
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Copied to clipboard'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   void _scrollToBottom() {
@@ -588,6 +513,9 @@ AI capabilities without requiring cloud connectivity.''',
                 case 'add_samples':
                   _addSampleDocuments();
                   break;
+                case 'new_chat':
+                  _startNewChat();
+                  break;
                 case 'clear_chat':
                   setState(() => _messages.clear());
                   break;
@@ -599,6 +527,15 @@ AI capabilities without requiring cloud connectivity.''',
                 child: ListTile(
                   leading: Icon(Icons.dataset),
                   title: Text('Add Sample Docs'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'new_chat',
+                child: ListTile(
+                  leading: Icon(Icons.refresh),
+                  title: Text('New Chat'),
+                  subtitle: Text('Reset LLM session'),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
@@ -723,54 +660,30 @@ AI capabilities without requiring cloud connectivity.''',
             child: Column(
               crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
-                GestureDetector(
-                  onLongPress: () => _showCopyMenu(context, message.content),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      // User: pink bubble, AI: white bubble (matching existing style)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    // User: pink bubble, AI: white bubble (matching existing style)
+                    color: isUser 
+                        ? const Color(0xFFFFE6E6)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
                       color: isUser 
-                          ? const Color(0xFFFFE6E6)
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isUser 
-                            ? const Color(0xFFFFDADA)
-                            : const Color(0xFFE5E5E5),
+                          ? const Color(0xFFFFDADA)
+                          : const Color(0xFFE5E5E5),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SelectableText.rich(
-                          _parseMarkdown(message.content),
-                          style: const TextStyle(fontSize: 14, color: Colors.black87),
-                        ),
-                        // Retry button for error messages
-                        if (message.isError && message.originalQuery != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: TextButton.icon(
-                              onPressed: _isGenerating ? null : () => _retryMessage(message.originalQuery!),
-                              icon: const Icon(Icons.refresh, size: 16),
-                              label: const Text('Retry'),
-                              style: TextButton.styleFrom(
-                                foregroundColor: Theme.of(context).colorScheme.primary,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
+                    ],
+                  ),
+                  child: SelectableText.rich(
+                    _parseMarkdown(message.content),
+                    style: const TextStyle(fontSize: 14, color: Colors.black87),
                   ),
                 ),
                 // Debug info for AI messages

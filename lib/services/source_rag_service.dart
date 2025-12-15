@@ -1,14 +1,14 @@
 /// High-level RAG service for managing sources and chunks.
 ///
 /// This service provides a convenient API that combines:
-/// - ChunkingService for document splitting
+/// - Rust semantic chunking for document splitting (Unicode sentence/word boundaries)
 /// - EmbeddingService for vector generation
 /// - Rust source_rag APIs for storage and search
 /// - ContextBuilder for LLM context assembly
 
 import 'dart:typed_data';
 import '../src/rust/api/source_rag.dart';
-import 'chunking_service.dart';
+import '../src/rust/api/semantic_chunker.dart';
 import 'context_builder.dart';
 import 'embedding_service.dart';
 
@@ -44,11 +44,17 @@ class RagSearchResult {
 /// High-level service for source-based RAG operations.
 class SourceRagService {
   final String dbPath;
-  final ChunkConfig chunkConfig;
+  
+  /// Maximum characters per chunk (default: 500)
+  final int maxChunkChars;
+  
+  /// Overlap characters between chunks for context continuity
+  final int overlapChars;
 
   SourceRagService({
     required this.dbPath,
-    this.chunkConfig = ChunkConfig.medium,
+    this.maxChunkChars = 500,
+    this.overlapChars = 50,
   });
 
   /// Initialize the source database.
@@ -83,8 +89,12 @@ class SourceRagService {
       );
     }
 
-    // 2. Split into chunks
-    final chunks = ChunkingService.chunk(content, config: chunkConfig);
+    // 2. Split into semantic chunks using Rust (Unicode sentence/word boundaries)
+    final chunks = semanticChunkWithOverlap(
+      text: content,
+      maxChars: maxChunkChars,
+      overlapChars: overlapChars,
+    );
     
     if (chunks.isEmpty) {
       return SourceAddResult(
@@ -107,8 +117,8 @@ class SourceRagService {
       chunkDataList.add(ChunkData(
         content: chunk.content,
         chunkIndex: chunk.index,
-        startPos: chunk.startPosition,
-        endPos: chunk.endPosition,
+        startPos: chunk.startPos,
+        endPos: chunk.endPos,
         embedding: Float32List.fromList(embedding),
       ));
     }

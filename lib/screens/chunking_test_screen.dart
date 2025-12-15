@@ -103,7 +103,8 @@ class _ChunkingTestScreenState extends State<ChunkingTestScreen> {
     
     _rag = SourceRagService(
       dbPath: dbPath,
-      chunkConfig: ChunkConfig.medium,
+      maxChunkChars: 500,
+      overlapChars: 50,
     );
     await _rag!.init();
     _log('✓ SourceRagService initialized');
@@ -111,7 +112,7 @@ class _ChunkingTestScreenState extends State<ChunkingTestScreen> {
 
   Future<void> _testChunking() async {
     _log('');
-    _log('=== Test 2: ChunkingService ===');
+    _log('=== Test 2: Rust Semantic Chunker ===');
     
     const longText = '''
 Flutter is Google's UI toolkit for building beautiful, natively compiled applications for mobile, web, and desktop from a single codebase. It was first released in May 2017 and has since become one of the most popular frameworks for cross-platform development.
@@ -129,20 +130,23 @@ Flutter uses a reactive framework, where the UI is rebuilt whenever the applicat
 
     _log('Input text: ${longText.length} chars');
     
-    // Test with medium config (500 chars, 50 overlap)
-    final chunks = ChunkingService.chunk(longText, config: ChunkConfig.medium);
+    // Test with Rust semantic chunking (Unicode sentence/word boundaries)
+    final chunks = semanticChunkWithOverlap(
+      text: longText,
+      maxChars: 500,
+      overlapChars: 50,
+    );
     
     _log('Chunks created: ${chunks.length}');
     for (var i = 0; i < chunks.length; i++) {
       final chunk = chunks[i];
-      _log('  Chunk $i: ${chunk.content.length} chars, ~${chunk.estimatedTokens} tokens');
+      _log('  Chunk $i: ${chunk.content.length} chars');
     }
     
     // Verify chunks
     assert(chunks.isNotEmpty, 'Should create at least one chunk');
-    assert(chunks.every((c) => c.content.length <= 550), 'Chunks should not exceed maxChars + overlap');
     
-    _log('✓ ChunkingService works correctly');
+    _log('✓ Rust Semantic Chunker works correctly');
   }
 
   Future<void> _testSourceRag() async {

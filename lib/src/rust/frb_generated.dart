@@ -4,6 +4,7 @@
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api/hnsw_index.dart';
+import 'api/semantic_chunker.dart';
 import 'api/simple.dart';
 import 'api/simple_rag.dart';
 import 'api/source_rag.dart';
@@ -70,7 +71,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => -644344327;
+  int get rustContentHash => 923808550;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -125,6 +126,11 @@ abstract class RustLibApi extends BaseApi {
     required PlatformInt64 sourceId,
   });
 
+  Future<EmbeddingPoint> crateApiHnswIndexEmbeddingPointNew({
+    required PlatformInt64 id,
+    required List<double> embedding,
+  });
+
   Future<PlatformInt64> crateApiSimpleRagGetDocumentCount({
     required String dbPath,
   });
@@ -174,6 +180,17 @@ abstract class RustLibApi extends BaseApi {
     required String dbPath,
     required List<double> queryEmbedding,
     required int topK,
+  });
+
+  List<SemanticChunk> crateApiSemanticChunkerSemanticChunk({
+    required String text,
+    required int maxChars,
+  });
+
+  List<SemanticChunk> crateApiSemanticChunkerSemanticChunkWithOverlap({
+    required String text,
+    required int maxChars,
+    required int overlapChars,
   });
 
   Uint32List crateApiTokenizerTokenize({required String text});
@@ -510,6 +527,41 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<EmbeddingPoint> crateApiHnswIndexEmbeddingPointNew({
+    required PlatformInt64 id,
+    required List<double> embedding,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_i_64(id, serializer);
+          sse_encode_list_prim_f_32_loose(embedding, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 11,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_embedding_point,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiHnswIndexEmbeddingPointNewConstMeta,
+        argValues: [id, embedding],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiHnswIndexEmbeddingPointNewConstMeta =>
+      const TaskConstMeta(
+        debugName: "embedding_point_new",
+        argNames: ["id", "embedding"],
+      );
+
+  @override
   Future<PlatformInt64> crateApiSimpleRagGetDocumentCount({
     required String dbPath,
   }) {
@@ -521,7 +573,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 11,
+            funcId: 12,
             port: port_,
           );
         },
@@ -556,7 +608,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 12,
+            funcId: 13,
             port: port_,
           );
         },
@@ -590,7 +642,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 13,
+            funcId: 14,
             port: port_,
           );
         },
@@ -623,7 +675,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 14,
+            funcId: 15,
             port: port_,
           );
         },
@@ -647,7 +699,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 15)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 16)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_u_32,
@@ -670,7 +722,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 16)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 17)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -695,7 +747,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 17,
+            funcId: 18,
             port: port_,
           );
         },
@@ -723,7 +775,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 18,
+            funcId: 19,
             port: port_,
           );
         },
@@ -751,7 +803,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 19,
+            funcId: 20,
             port: port_,
           );
         },
@@ -779,7 +831,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 20,
+            funcId: 21,
             port: port_,
           );
         },
@@ -809,7 +861,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 21,
+            funcId: 22,
             port: port_,
           );
         },
@@ -839,7 +891,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 22,
+            funcId: 23,
             port: port_,
           );
         },
@@ -870,7 +922,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 23,
+            funcId: 24,
             port: port_,
           );
         },
@@ -907,7 +959,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 24,
+            funcId: 25,
             port: port_,
           );
         },
@@ -942,7 +994,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 25,
+            funcId: 26,
             port: port_,
           );
         },
@@ -979,7 +1031,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 26,
+            funcId: 27,
             port: port_,
           );
         },
@@ -1001,13 +1053,75 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  List<SemanticChunk> crateApiSemanticChunkerSemanticChunk({
+    required String text,
+    required int maxChars,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(text, serializer);
+          sse_encode_i_32(maxChars, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 28)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_semantic_chunk,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSemanticChunkerSemanticChunkConstMeta,
+        argValues: [text, maxChars],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSemanticChunkerSemanticChunkConstMeta =>
+      const TaskConstMeta(
+        debugName: "semantic_chunk",
+        argNames: ["text", "maxChars"],
+      );
+
+  @override
+  List<SemanticChunk> crateApiSemanticChunkerSemanticChunkWithOverlap({
+    required String text,
+    required int maxChars,
+    required int overlapChars,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(text, serializer);
+          sse_encode_i_32(maxChars, serializer);
+          sse_encode_i_32(overlapChars, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 29)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_semantic_chunk,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSemanticChunkerSemanticChunkWithOverlapConstMeta,
+        argValues: [text, maxChars, overlapChars],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSemanticChunkerSemanticChunkWithOverlapConstMeta =>
+      const TaskConstMeta(
+        debugName: "semantic_chunk_with_overlap",
+        argNames: ["text", "maxChars", "overlapChars"],
+      );
+
+  @override
   Uint32List crateApiTokenizerTokenize({required String text}) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(text, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 27)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 30)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_prim_u_32_strict,
@@ -1095,6 +1209,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       chunkIndex: dco_decode_i_32(arr[2]),
       content: dco_decode_String(arr[3]),
       similarity: dco_decode_f_64(arr[4]),
+    );
+  }
+
+  @protected
+  EmbeddingPoint dco_decode_embedding_point(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return EmbeddingPoint(
+      id: dco_decode_i_64(arr[0]),
+      embedding: dco_decode_list_prim_f_32_strict(arr[1]),
+      norm: dco_decode_f_32(arr[2]),
     );
   }
 
@@ -1198,6 +1325,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<SemanticChunk> dco_decode_list_semantic_chunk(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_semantic_chunk).toList();
+  }
+
+  @protected
   String? dco_decode_opt_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_String(raw);
@@ -1213,6 +1346,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       throw Exception('Expected 2 elements, got ${arr.length}');
     }
     return (dco_decode_i_64(arr[0]), dco_decode_list_prim_f_32_strict(arr[1]));
+  }
+
+  @protected
+  SemanticChunk dco_decode_semantic_chunk(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return SemanticChunk(
+      index: dco_decode_i_32(arr[0]),
+      content: dco_decode_String(arr[1]),
+      startPos: dco_decode_i_32(arr[2]),
+      endPos: dco_decode_i_32(arr[3]),
+    );
   }
 
   @protected
@@ -1335,6 +1482,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       content: var_content,
       similarity: var_similarity,
     );
+  }
+
+  @protected
+  EmbeddingPoint sse_decode_embedding_point(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_i_64(deserializer);
+    var var_embedding = sse_decode_list_prim_f_32_strict(deserializer);
+    var var_norm = sse_decode_f_32(deserializer);
+    return EmbeddingPoint(id: var_id, embedding: var_embedding, norm: var_norm);
   }
 
   @protected
@@ -1472,6 +1628,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<SemanticChunk> sse_decode_list_semantic_chunk(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <SemanticChunk>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_semantic_chunk(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   String? sse_decode_opt_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -1490,6 +1660,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_field0 = sse_decode_i_64(deserializer);
     var var_field1 = sse_decode_list_prim_f_32_strict(deserializer);
     return (var_field0, var_field1);
+  }
+
+  @protected
+  SemanticChunk sse_decode_semantic_chunk(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_index = sse_decode_i_32(deserializer);
+    var var_content = sse_decode_String(deserializer);
+    var var_startPos = sse_decode_i_32(deserializer);
+    var var_endPos = sse_decode_i_32(deserializer);
+    return SemanticChunk(
+      index: var_index,
+      content: var_content,
+      startPos: var_startPos,
+      endPos: var_endPos,
+    );
   }
 
   @protected
@@ -1591,6 +1776,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.chunkIndex, serializer);
     sse_encode_String(self.content, serializer);
     sse_encode_f_64(self.similarity, serializer);
+  }
+
+  @protected
+  void sse_encode_embedding_point(
+    EmbeddingPoint self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self.id, serializer);
+    sse_encode_list_prim_f_32_strict(self.embedding, serializer);
+    sse_encode_f_32(self.norm, serializer);
   }
 
   @protected
@@ -1739,6 +1935,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_semantic_chunk(
+    List<SemanticChunk> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_semantic_chunk(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -1756,6 +1964,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_64(self.$1, serializer);
     sse_encode_list_prim_f_32_strict(self.$2, serializer);
+  }
+
+  @protected
+  void sse_encode_semantic_chunk(SemanticChunk self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+    sse_encode_String(self.content, serializer);
+    sse_encode_i_32(self.startPos, serializer);
+    sse_encode_i_32(self.endPos, serializer);
   }
 
   @protected

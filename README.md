@@ -91,24 +91,52 @@ dependencies:
   mobile_rag_engine:
     git:
       url: https://github.com/dev07060/mobile_rag_engine.git
+  
+  # Required for iOS static library loading
+  flutter_rust_bridge: ^2.0.0
+```
+
+### iOS Setup
+
+For iOS, the Rust library is statically linked. Add this import and use `ExternalLibrary.process()`:
+
+```dart
+import 'dart:io' show Platform;
+import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 ```
 
 ### Initialization
 
 ```dart
-// Initialize Rust library
-await RustLib.init();
+import 'package:mobile_rag_engine/mobile_rag_engine.dart';
+import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// Load tokenizer
-await initTokenizer(tokenizerPath: 'path/to/tokenizer.json');
+Future<void> initializeRag() async {
+  // Initialize Rust library (platform-specific)
+  if (Platform.isIOS || Platform.isMacOS) {
+    // iOS/macOS: static library loaded via DynamicLibrary.process()
+    await RustLib.init(
+      externalLibrary: ExternalLibrary.process(iKnowHowToUseIt: true),
+    );
+  } else {
+    // Android/Linux/Windows: dynamic library
+    await RustLib.init();
+  }
 
-// Load ONNX model
-final modelBytes = await rootBundle.load('assets/model.onnx');
-await EmbeddingService.init(modelBytes.buffer.asUint8List());
+  // Load tokenizer
+  await initTokenizer(tokenizerPath: 'path/to/tokenizer.json');
 
-// Initialize DB
-await initDb(dbPath: 'path/to/rag.db');
+  // Load ONNX model
+  final modelBytes = await rootBundle.load('assets/model.onnx');
+  await EmbeddingService.init(modelBytes.buffer.asUint8List());
+
+  // Initialize DB
+  await initDb(dbPath: 'path/to/rag.db');
+}
 ```
+
+> **Note**: On iOS, if you encounter `symbol not found` errors, ensure your Podfile has been updated with `pod install` after adding the dependency.
+
 
 ### Adding Documents
 
