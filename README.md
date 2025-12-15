@@ -21,6 +21,8 @@ So I brought in Rust.
 
 ### Rust + Flutter Architecture
 
+> 📖 **[Architecture Guide](docs/guides/architecture_guide.md)** - Detailed system architecture documentation
+
 ```
 Flutter (Dart)
     │
@@ -188,11 +190,16 @@ optimum-cli export onnx \
 
 Add `model_output/model.onnx` and `tokenizer.json` to your app's assets.
 
+## Releases
+
+- **[v0.3.0 - Rust Semantic Chunking](docs/guides/v0.3.0_semantic_chunking_update.md)** - Migrated to Unicode-based semantic chunking
+- **[v0.2.0 - LLM-Optimized Chunking](docs/guides/v0.2.0_chunking_update.md)** - Added chunking and context assembly
+
 ## Future Plans
 
 - INT8 quantization to reduce model size
 - Korean-specific models (KoSimCSE, KR-SBERT)
-- Chunking strategies for long documents
+- ~~Chunking strategies for long documents~~ ✅ (v0.2.0, v0.3.0)
 - Hybrid search (keyword + semantic)
 
 ## License
