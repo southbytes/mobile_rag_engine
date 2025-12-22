@@ -52,11 +52,13 @@ class ContextBuilder {
   /// [tokenBudget] - Maximum tokens to use.
   /// [strategy] - How to select and order chunks.
   /// [separator] - Text between chunks.
+  /// [singleSourceMode] - If true, only include chunks from the most relevant source.
   static AssembledContext build({
     required List<ChunkSearchResult> searchResults,
     int tokenBudget = 2000,
     ContextStrategy strategy = ContextStrategy.relevanceFirst,
     String separator = '\n\n---\n\n',
+    bool singleSourceMode = false,
   }) {
     if (searchResults.isEmpty) {
       return const AssembledContext(
@@ -67,11 +69,17 @@ class ContextBuilder {
       );
     }
 
+    // Filter to single source if requested
+    var filteredResults = searchResults;
+    if (singleSourceMode) {
+      filteredResults = _filterToMostRelevantSource(searchResults);
+    }
+
     // Apply strategy
     final orderedResults = switch (strategy) {
-      ContextStrategy.relevanceFirst => searchResults,
-      ContextStrategy.diverseSources => _diversifySources(searchResults),
-      ContextStrategy.chronological => _orderChronologically(searchResults),
+      ContextStrategy.relevanceFirst => filteredResults,
+      ContextStrategy.diverseSources => _diversifySources(filteredResults),
+      ContextStrategy.chronological => _orderChronologically(filteredResults),
     };
 
     // Select chunks within budget
@@ -91,8 +99,8 @@ class ContextBuilder {
       }
     }
 
-    // Build final text
-    final text = selected.map((c) => c.content).join(separator);
+    // Build final text - group by source with clear headers (skip headers in singleSourceMode)
+    final text = _buildGroupedText(selected, separator, skipHeaders: singleSourceMode);
 
     return AssembledContext(
       text: text,
@@ -100,6 +108,75 @@ class ContextBuilder {
       estimatedTokens: usedTokens,
       remainingBudget: tokenBudget - usedTokens,
     );
+  }
+
+  /// Filter to only chunks from the most relevant source.
+  /// Most relevant = source with highest total similarity score from top chunks.
+  static List<ChunkSearchResult> _filterToMostRelevantSource(List<ChunkSearchResult> results) {
+    if (results.isEmpty) return results;
+
+    // Count chunks and sum scores by source
+    final sourceScores = <int, double>{};
+    final sourceChunkCounts = <int, int>{};
+    
+    for (final chunk in results) {
+      final sourceId = chunk.sourceId.toInt();
+      sourceScores[sourceId] = (sourceScores[sourceId] ?? 0) + chunk.similarity;
+      sourceChunkCounts[sourceId] = (sourceChunkCounts[sourceId] ?? 0) + 1;
+    }
+
+    // Find source with highest total score
+    int? bestSourceId;
+    double bestScore = -1;
+    for (final entry in sourceScores.entries) {
+      if (entry.value > bestScore) {
+        bestScore = entry.value;
+        bestSourceId = entry.key;
+      }
+    }
+
+    if (bestSourceId == null) return results;
+
+    // Filter to only that source
+    return results.where((c) => c.sourceId.toInt() == bestSourceId).toList();
+  }
+
+  /// Build text grouped by source with clear document headers.
+  static String _buildGroupedText(
+    List<ChunkSearchResult> chunks, 
+    String separator, {
+    bool skipHeaders = false,
+  }) {
+    if (chunks.isEmpty) return '';
+
+    // Group chunks by source
+    final bySource = <int, List<ChunkSearchResult>>{};
+    for (final chunk in chunks) {
+      final sourceId = chunk.sourceId.toInt();
+      bySource.putIfAbsent(sourceId, () => []).add(chunk);
+    }
+
+    // Sort chunks within each source by chunk index
+    for (final list in bySource.values) {
+      list.sort((a, b) => a.chunkIndex.compareTo(b.chunkIndex));
+    }
+
+    // Build text with document headers (or without if skipHeaders)
+    final buffer = StringBuffer();
+    var isFirst = true;
+    
+    for (final entry in bySource.entries) {
+      if (!isFirst) {
+        buffer.write('\n\n========== DIFFERENT DOCUMENT ==========\n\n');
+      }
+      if (!skipHeaders) {
+        buffer.write('=== Document ${entry.key} ===\n\n');
+      }
+      buffer.write(entry.value.map((c) => c.content).join('\n\n'));
+      isFirst = false;
+    }
+
+    return buffer.toString();
   }
 
   /// Diversify by avoiding consecutive chunks from same source.

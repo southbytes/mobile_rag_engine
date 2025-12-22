@@ -345,6 +345,40 @@ pub fn get_source_chunks(db_path: String, source_id: i64) -> anyhow::Result<Vec<
     Ok(chunks)
 }
 
+/// Get adjacent chunks by source_id and chunk_index range.
+/// Returns chunks where chunk_index is between min_index and max_index (inclusive).
+pub fn get_adjacent_chunks(
+    db_path: String,
+    source_id: i64,
+    min_index: i32,
+    max_index: i32,
+) -> anyhow::Result<Vec<ChunkSearchResult>> {
+    info!("[get_adjacent_chunks] source={}, range={}..{}", source_id, min_index, max_index);
+    let conn = Connection::open(&db_path)?;
+    
+    let mut stmt = conn.prepare(
+        "SELECT id, source_id, chunk_index, content FROM chunks 
+         WHERE source_id = ?1 AND chunk_index >= ?2 AND chunk_index <= ?3 
+         ORDER BY chunk_index"
+    )?;
+    
+    let chunks: Vec<ChunkSearchResult> = stmt
+        .query_map(params![source_id, min_index, max_index], |row| {
+            Ok(ChunkSearchResult {
+                chunk_id: row.get(0)?,
+                source_id: row.get(1)?,
+                chunk_index: row.get(2)?,
+                content: row.get(3)?,
+                similarity: 0.0, // Adjacent chunks don't have similarity score
+            })
+        })?
+        .filter_map(|r| r.ok())
+        .collect();
+    
+    info!("[get_adjacent_chunks] Found {} chunks", chunks.len());
+    Ok(chunks)
+}
+
 /// Delete a source and all its chunks.
 pub fn delete_source(db_path: String, source_id: i64) -> anyhow::Result<()> {
     let conn = Connection::open(&db_path)?;

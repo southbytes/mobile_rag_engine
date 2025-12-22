@@ -171,11 +171,14 @@ class _RagChatScreenState extends State<RagChatScreen> {
       
       // 1. RAG Search with timing
       final ragStopwatch = Stopwatch()..start();
+      // 벡터 검색 + 인접 청크 포함 + 단일 소스 모드
       final ragResult = await _ragService!.search(
         text,
-        topK: 5,
-        tokenBudget: 1500,
+        topK: 10,
+        tokenBudget: 3000,  // 인접 청크 포함으로 토큰 버짓 증가
         strategy: ContextStrategy.relevanceFirst,
+        adjacentChunks: 2,  // 앞뒤 2개 청크 포함
+        singleSourceMode: true,  // 가장 관련 높은 소스만 사용
       );
       ragStopwatch.stop();
       final ragSearchTime = ragStopwatch.elapsed;
@@ -253,9 +256,16 @@ class _RagChatScreenState extends State<RagChatScreen> {
       if (ragResult.chunks.isNotEmpty) {
         messages.add(Message(
           role: MessageRole.system,
-          content: 'You are a helpful assistant. Answer questions based on the provided context. '
-                   'If the context doesn\'t contain relevant information, say so.\n\n'
-                   'Context:\n${ragResult.context.text}',
+          content: '''당신은 주어진 문맥을 기반으로 질문에 답변하는 도우미입니다.
+
+규칙:
+1. 아래 문맥의 정보만을 기반으로 답변하세요.
+2. 문맥에 관련 정보가 없으면 명확히 말씀해주세요.
+3. 질문과 동일한 언어로 답변하세요.
+4. 조항 번호(제X조)는 문맥에 있는 그대로 인용하세요.
+
+문맥:
+${ragResult.context.text}''',
         ));
       } else {
         messages.add(const Message(

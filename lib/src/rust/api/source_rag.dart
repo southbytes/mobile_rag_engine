@@ -69,6 +69,20 @@ Future<List<String>> getSourceChunks({
   sourceId: sourceId,
 );
 
+/// Get adjacent chunks by source_id and chunk_index range.
+/// Returns chunks where chunk_index is between min_index and max_index (inclusive).
+Future<List<ChunkSearchResult>> getAdjacentChunks({
+  required String dbPath,
+  required PlatformInt64 sourceId,
+  required int minIndex,
+  required int maxIndex,
+}) => RustLib.instance.api.crateApiSourceRagGetAdjacentChunks(
+  dbPath: dbPath,
+  sourceId: sourceId,
+  minIndex: minIndex,
+  maxIndex: maxIndex,
+);
+
 /// Delete a source and all its chunks.
 Future<void> deleteSource({
   required String dbPath,
