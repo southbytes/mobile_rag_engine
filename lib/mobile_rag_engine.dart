@@ -57,6 +57,8 @@ export 'src/rust/api/hybrid_search.dart'; // Hybrid search (Vector + BM25)
 export 'src/rust/api/bm25_search.dart'; // BM25 keyword search
 export 'services/context_builder.dart';
 export 'services/source_rag_service.dart';
+export 'services/prompt_compressor.dart'; // REFRAG-style prompt compression
+export 'src/rust/api/compression_utils.dart'; // Low-level compression utilities
 
 // Rust library initialization
 export 'src/rust/frb_generated.dart' show RustLib;

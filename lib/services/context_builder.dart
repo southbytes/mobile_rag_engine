@@ -4,6 +4,7 @@
 /// an optimized context string within a token budget.
 
 import '../src/rust/api/source_rag.dart';
+import '../src/rust/api/compression_utils.dart' as compression;
 
 /// Assembled context ready for LLM consumption.
 class AssembledContext {
@@ -214,19 +215,120 @@ class ContextBuilder {
   }
 
   /// Format context for LLM prompt.
+  /// 
+  /// Creates a prompt that instructs the LLM to answer based ONLY on
+  /// the provided documents. Uses bilingual instructions for better
+  /// compliance with smaller models.
   static String formatForPrompt({
     required String query,
     required AssembledContext context,
-    String systemInstruction = 'Answer based on the following documents:',
+    String? systemInstruction,
+    bool useStrictMode = true,  // Strict mode instructs LLM to ONLY use documents
   }) {
     if (context.text.isEmpty) {
       return query;
     }
 
-    return '''$systemInstruction
+    // Default instruction: bilingual for better model understanding
+    final instruction = systemInstruction ?? 
+      (useStrictMode 
+        ? '아래 문서 내용만을 참고하여 질문에 답변하세요. 문서에 없는 내용은 "문서에서 해당 정보를 찾을 수 없습니다"라고 답변하세요.\n'
+          'Answer the question based ONLY on the documents below. If the information is not in the documents, say so.'
+        : '아래 문서를 참고하여 답변하세요.\nAnswer based on the following documents:');
 
+    return '''$instruction
+
+--- 참고 문서 (Reference Documents) ---
 ${context.text}
+--- 문서 끝 (End of Documents) ---
 
-Question: $query''';
+질문 (Question): $query
+
+답변:''';
+  }
+
+  /// Build context with REFRAG-style compression.
+  ///
+  /// Uses PromptCompressor to reduce token count while preserving key information.
+  /// This is an async method unlike [build].
+  ///
+  /// [searchResults] - Chunks ranked by relevance.
+  /// [tokenBudget] - Maximum tokens to use.
+  /// [compressionLevel] - How aggressively to compress (0=minimal, 1=balanced, 2=aggressive).
+  /// [language] - Language for stopword filtering ("ko" or "en").
+  static Future<AssembledContext> buildWithCompression({
+    required List<ChunkSearchResult> searchResults,
+    int tokenBudget = 2000,
+    ContextStrategy strategy = ContextStrategy.relevanceFirst,
+    int compressionLevel = 1, // 0=minimal, 1=balanced, 2=aggressive
+    String language = 'ko',
+    bool singleSourceMode = false,
+  }) async {
+    if (searchResults.isEmpty) {
+      return const AssembledContext(
+        text: '',
+        includedChunks: [],
+        estimatedTokens: 0,
+        remainingBudget: 0,
+      );
+    }
+
+    // First, apply standard filtering and ordering
+    var filteredResults = searchResults;
+    if (singleSourceMode) {
+      filteredResults = _filterToMostRelevantSource(searchResults);
+    }
+
+    final orderedResults = switch (strategy) {
+      ContextStrategy.relevanceFirst => filteredResults,
+      ContextStrategy.diverseSources => _diversifySources(filteredResults),
+      ContextStrategy.chronological => _orderChronologically(filteredResults),
+    };
+
+    // Import compression utilities dynamically
+    final compressText = await _compressChunksText(
+      orderedResults,
+      tokenBudget,
+      compressionLevel,
+      language,
+    );
+
+    final estimatedTokens = (compressText.length / 4).ceil();
+
+    return AssembledContext(
+      text: compressText,
+      includedChunks: orderedResults,
+      estimatedTokens: estimatedTokens,
+      remainingBudget: tokenBudget - estimatedTokens,
+    );
+  }
+
+  /// Internal: Compress chunks text using Rust compression.
+  static Future<String> _compressChunksText(
+    List<ChunkSearchResult> chunks,
+    int tokenBudget,
+    int level,
+    String language,
+  ) async {
+    // Combine text from chunks
+    final combinedText = chunks.map((c) => c.content).join('\n\n');
+    
+    // Apply compression
+    final maxChars = tokenBudget * 4; // Rough token to char conversion
+    final options = compression.CompressionOptions(
+      removeStopwords: false,  // Disabled - damages context
+      removeDuplicates: true,
+      language: language,
+      level: level,
+    );
+    
+    final result = await compression.compressText(
+      text: combinedText,
+      maxChars: maxChars,
+      options: options,
+    );
+    
+    return result.text;
   }
 }
+

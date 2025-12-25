@@ -18,6 +18,8 @@ class ChatMessage {
   final DateTime timestamp;
   final List<ChunkSearchResult>? retrievedChunks;
   final int? tokensUsed;
+  final double? compressionRatio;  // 0.0-1.0, lower = more compressed
+  final int? originalTokens;  // Before compression
   
   // Timing metrics for debug
   final Duration? ragSearchTime;
@@ -30,6 +32,8 @@ class ChatMessage {
     DateTime? timestamp,
     this.retrievedChunks,
     this.tokensUsed,
+    this.compressionRatio,
+    this.originalTokens,
     this.ragSearchTime,
     this.llmGenerationTime,
     this.totalTime,
@@ -71,6 +75,9 @@ class _RagChatScreenState extends State<RagChatScreen> {
   bool _showDebugInfo = true;
   int _totalChunks = 0;
   int _totalSources = 0;
+
+  // Compression settings (Phase 1)
+  int _compressionLevel = 1; // 0=minimal, 1=balanced, 2=aggressive
 
 
   @override
@@ -175,7 +182,7 @@ class _RagChatScreenState extends State<RagChatScreen> {
       final ragResult = await _ragService!.search(
         text,
         topK: 10,
-        tokenBudget: 3000,  // 인접 청크 포함으로 토큰 버짓 증가
+        tokenBudget: 4000,  // 압축 전 더 많은 컨텍스트 수집
         strategy: ContextStrategy.relevanceFirst,
         adjacentChunks: 2,  // 앞뒤 2개 청크 포함
         singleSourceMode: true,  // 가장 관련 높은 소스만 사용
@@ -183,28 +190,96 @@ class _RagChatScreenState extends State<RagChatScreen> {
       ragStopwatch.stop();
       final ragSearchTime = ragStopwatch.elapsed;
 
-      // 2. LLM Generation with timing
+      // 2. Apply actual compression using PromptCompressor
+      final originalText = ragResult.context.text;
+      final originalTokens = ragResult.context.estimatedTokens;
+      
+      // Map compression level to budget: 0=3000, 1=2000, 2=1500
+      final maxChars = _compressionLevel == 2 ? 6000 : _compressionLevel == 1 ? 8000 : 12000;
+      
+      final compressed = await compressText(
+        text: originalText,
+        maxChars: maxChars,
+        options: CompressionOptions(
+          removeStopwords: false,  // Disabled - damages context
+          removeDuplicates: true,
+          language: 'ko',
+          level: _compressionLevel,
+        ),
+      );
+      
+      // Calculate actual compression stats
+      final compressedTokens = (compressed.compressedChars / 4).ceil();
+      final savedPercent = ((1 - compressed.ratio) * 100).toStringAsFixed(1);
+      final chunkCount = ragResult.chunks.length;
+      
+      // Debug log actual compression stats - show breakdown of each step
+      debugPrint('📊 Compression: $originalTokens → $compressedTokens tokens (-$savedPercent%)');
+      if (_showDebugInfo) {
+        debugPrint('   📝 Duplicates: ${compressed.sentencesRemoved} sentences removed');
+        if (compressed.charsSavedStopwords > 0) {
+          debugPrint('   🔤 Stopwords: ${compressed.charsSavedStopwords} chars removed');
+        }
+        if (compressed.charsSavedTruncation > 0) {
+          debugPrint('   ✂️ Truncation: ${compressed.charsSavedTruncation} chars cut');
+        }
+      }
+      
+      // Debug: Show removed/duplicate sentences (only in debug mode with _showDebugInfo)
+      if (_showDebugInfo && compressed.sentencesRemoved > 0) {
+        final originalSentences = await splitSentences(text: originalText);
+        
+        // Count sentence occurrences to find duplicates
+        final sentenceCounts = <String, int>{};
+        for (final sentence in originalSentences) {
+          final normalized = sentence.trim();
+          if (normalized.isNotEmpty) {
+            sentenceCounts[normalized] = (sentenceCounts[normalized] ?? 0) + 1;
+          }
+        }
+        
+        // Find sentences that appeared more than once (duplicates)
+        final duplicates = sentenceCounts.entries
+            .where((e) => e.value > 1)
+            .map((e) => '${e.key} (x${e.value})')
+            .toList();
+        
+        if (duplicates.isNotEmpty) {
+          debugPrint('   🗑️ Duplicates:');
+          for (final dup in duplicates.take(3)) {
+            final preview = dup.length > 60 
+                ? '${dup.substring(0, 60)}...' 
+                : dup;
+            debugPrint('      • $preview');
+          }
+          if (duplicates.length > 3) {
+            debugPrint('      ... and ${duplicates.length - 3} more');
+          }
+        }
+      }
+
+      // 3. LLM Generation with timing
       final llmStopwatch = Stopwatch()..start();
       String response;
       if (widget.mockLlm) {
-        // Mock mode - just show the context
-        response = _generateMockResponse(text, ragResult);
+        // Mock mode - show the compressed context stats
+        response = _generateMockResponse(text, ragResult, savedPercent);
       } else {
-        // Real LLM generation with Ollama
-        response = await _generateOllamaResponse(text, ragResult);
+        // Real LLM generation with Ollama - use compressed text
+        response = await _generateOllamaResponseWithCompressedText(text, compressed.text, ragResult);
       }
       llmStopwatch.stop();
       final llmGenerationTime = llmStopwatch.elapsed;
       
       totalStopwatch.stop();
 
-      // Add AI response with timing metrics
+      // Add AI response with stats
       setState(() {
         _messages.insert(0, ChatMessage(
           content: response,
           isUser: false,
           retrievedChunks: ragResult.chunks,
-          tokensUsed: ragResult.context.estimatedTokens,
+          tokensUsed: compressedTokens,
           ragSearchTime: ragSearchTime,
           llmGenerationTime: llmGenerationTime,
           totalTime: totalStopwatch.elapsed,
@@ -224,14 +299,15 @@ class _RagChatScreenState extends State<RagChatScreen> {
     _scrollToBottom();
   }
 
-  String _generateMockResponse(String query, RagSearchResult ragResult) {
+  String _generateMockResponse(String query, RagSearchResult ragResult, String savedPercent) {
     if (ragResult.chunks.isEmpty) {
       return '📭 No relevant documents found.\n\nPlease add some documents using the menu.';
     }
 
     final buffer = StringBuffer();
     buffer.writeln('📚 Found ${ragResult.chunks.length} relevant chunks:');
-    buffer.writeln('📊 Using ~${ragResult.context.estimatedTokens} tokens\n');
+    buffer.writeln('📊 Using ~${ragResult.context.estimatedTokens} tokens');
+    buffer.writeln('🗜️ Reduced by $savedPercent%\n');
     
     for (var i = 0; i < ragResult.chunks.length && i < 3; i++) {
       final chunk = ragResult.chunks[i];
@@ -245,6 +321,86 @@ class _RagChatScreenState extends State<RagChatScreen> {
     buffer.writeln('💡 This is a mock response. Install an LLM model for real answers.');
     
     return buffer.toString();
+  }
+
+  /// Generate response using Ollama with pre-compressed context text
+  Future<String> _generateOllamaResponseWithCompressedText(
+    String query, 
+    String compressedContext,
+    RagSearchResult ragResult,
+  ) async {
+    try {
+      // Build messages with compressed context
+      final messages = <Message>[];
+      
+      // System message with compressed RAG context
+      if (compressedContext.isNotEmpty) {
+        messages.add(Message(
+          role: MessageRole.system,
+          content: '''당신은 주어진 문맥을 기반으로 질문에 답변하는 도우미입니다.
+
+규칙:
+1. 아래 문맥의 정보만을 기반으로 답변하세요.
+2. 문맥에 관련 정보가 없으면 "문서에서 해당 정보를 찾을 수 없습니다"라고 답변하세요.
+3. 질문과 동일한 언어로 답변하세요.
+4. 조항 번호(제X조)는 문맥에 있는 그대로 인용하세요.
+
+문맥:
+$compressedContext''',
+        ));
+      } else {
+        messages.add(const Message(
+          role: MessageRole.system,
+          content: 'You are a helpful assistant.',
+        ));
+      }
+      
+      // Add current user message
+      messages.add(Message(
+        role: MessageRole.user,
+        content: query,
+      ));
+      
+      // Save to history
+      _chatHistory.add(Message(
+        role: MessageRole.user,
+        content: query,
+      ));
+
+      // Stream response from Ollama
+      final responseBuffer = StringBuffer();
+      
+      final stream = _ollamaClient.generateChatCompletionStream(
+        request: GenerateChatCompletionRequest(
+          model: widget.modelName ?? 'gemma3:4b',
+          messages: messages,
+        ),
+      );
+
+      await for (final chunk in stream) {
+        responseBuffer.write(chunk.message.content);
+      }
+
+      final response = responseBuffer.toString().trim();
+      
+      // Save assistant response to history
+      _chatHistory.add(Message(
+        role: MessageRole.assistant,
+        content: response,
+      ));
+
+      if (response.isEmpty) {
+        return '⚠️ The model returned an empty response. Please try again.';
+      }
+
+      return response;
+    } catch (e, stackTrace) {
+      debugPrint('🔴 Ollama Error: $e');
+      debugPrint('🔴 Stack Trace: $stackTrace');
+      
+      return '⚠️ Ollama Error: $e\n\n'
+             'Make sure Ollama is running (ollama serve) and the model is installed.';
+    }
   }
 
   Future<String> _generateOllamaResponse(String query, RagSearchResult ragResult) async {
@@ -471,6 +627,15 @@ text completions and chat responses.''',
                 case 'clear_chat':
                   setState(() => _messages.clear());
                   break;
+                case 'compression_0':
+                  setState(() => _compressionLevel = 0);
+                  break;
+                case 'compression_1':
+                  setState(() => _compressionLevel = 1);
+                  break;
+                case 'compression_2':
+                  setState(() => _compressionLevel = 2);
+                  break;
               }
             },
             itemBuilder: (context) => [
@@ -496,6 +661,56 @@ text completions and chat responses.''',
                 child: ListTile(
                   leading: Icon(Icons.clear_all),
                   title: Text('Clear Chat'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                enabled: false,
+                child: Text(
+                  'Compression Level',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'compression_0',
+                child: ListTile(
+                  leading: Radio<int>(
+                    value: 0,
+                    groupValue: _compressionLevel,
+                    onChanged: null,
+                  ),
+                  title: const Text('Minimal'),
+                  subtitle: const Text('Max context'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'compression_1',
+                child: ListTile(
+                  leading: Radio<int>(
+                    value: 1,
+                    groupValue: _compressionLevel,
+                    onChanged: null,
+                  ),
+                  title: const Text('Balanced'),
+                  subtitle: const Text('Default'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'compression_2',
+                child: ListTile(
+                  leading: Radio<int>(
+                    value: 2,
+                    groupValue: _compressionLevel,
+                    onChanged: null,
+                  ),
+                  title: const Text('Aggressive'),
+                  subtitle: const Text('Less context'),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
@@ -733,6 +948,10 @@ text completions and chat responses.''',
                 minLines: 1,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _sendMessage(),
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 15,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Ask a question...',
                   hintStyle: TextStyle(color: Colors.grey[500]),

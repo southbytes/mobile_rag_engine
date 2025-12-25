@@ -18,6 +18,8 @@ class ChatMessage {
   final DateTime timestamp;
   final List<ChunkSearchResult>? retrievedChunks;
   final int? tokensUsed;
+  final double? compressionRatio;  // 0.0-1.0, lower = more compressed
+  final int? originalTokens;  // Before compression
 
   ChatMessage({
     required this.content,
@@ -25,6 +27,8 @@ class ChatMessage {
     DateTime? timestamp,
     this.retrievedChunks,
     this.tokensUsed,
+    this.compressionRatio,
+    this.originalTokens,
   }) : timestamp = timestamp ?? DateTime.now();
 }
 
@@ -61,6 +65,10 @@ class _RagChatScreenState extends State<RagChatScreen> {
   bool _showDebugInfo = true;
   int _totalChunks = 0;
   int _totalSources = 0;
+
+  // Compression settings (Phase 1)
+  int _compressionLevel = 1; // 0=minimal, 1=balanced, 2=aggressive
+  bool _compressionEnabled = true;
 
 
   @override
@@ -159,17 +167,27 @@ class _RagChatScreenState extends State<RagChatScreen> {
     });
 
     try {
-      // 1. RAG Search
+      // 1. RAG Search with compression level applied
+      // Use lower token budget to leave room for LLM generation
+      final searchBudget = _compressionLevel == 2 ? 800 : _compressionLevel == 1 ? 1000 : 1200;
+      
       final ragResult = await _ragService!.search(
         text,
         topK: 5,
-        tokenBudget: 1500,
+        tokenBudget: searchBudget,
         strategy: ContextStrategy.relevanceFirst,
       );
 
+      // Calculate token stats for display
+      final compressedTokens = ragResult.context.estimatedTokens;
+      final chunkCount = ragResult.chunks.length;
+      
+      // Debug log stats
+      debugPrint('📊 Context: $compressedTokens tokens from $chunkCount chunks');
+
       String response;
       if (widget.mockLlm) {
-        // Mock mode - just show the context
+        // Mock mode - show the context
         response = _generateMockResponse(text, ragResult);
       } else {
         // Real LLM generation
@@ -182,7 +200,7 @@ class _RagChatScreenState extends State<RagChatScreen> {
           content: response,
           isUser: false,
           retrievedChunks: ragResult.chunks,
-          tokensUsed: ragResult.context.estimatedTokens,
+          tokensUsed: compressedTokens,
         ));
       });
     } catch (e) {
@@ -224,10 +242,20 @@ class _RagChatScreenState extends State<RagChatScreen> {
 
   Future<String> _generateLlmResponse(String query, RagSearchResult ragResult) async {
     try {
-      // Initialize model and chat session if needed
-      if (_llmModel == null) {
-        // Get LLM model - use maxTokens matching model's ekv capacity
-        // Model: Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048 supports 2048 tokens
+      // For RAG queries with documents, use fresh session to avoid context overflow
+      // The 2048 token limit is shared between context + history + generation
+      final hasRagContext = ragResult.chunks.isNotEmpty;
+      
+      if (hasRagContext) {
+        // Reset session for fresh RAG context - prevents previous chat from taking up tokens
+        await _resetChatSession();
+        _llmModel = await FlutterGemma.getActiveModel(
+          maxTokens: 2048,
+          preferredBackend: PreferredBackend.gpu,
+        );
+        _chatSession = await _llmModel!.createChat();
+      } else if (_llmModel == null) {
+        // Initialize model for non-RAG questions
         _llmModel = await FlutterGemma.getActiveModel(
           maxTokens: 2048,
           preferredBackend: PreferredBackend.gpu,
@@ -235,14 +263,14 @@ class _RagChatScreenState extends State<RagChatScreen> {
         _chatSession = await _llmModel!.createChat();
       }
 
-      // Check if this is a follow-up question (no RAG context needed)
+      // Build prompt - RAG context or simple query
       String prompt;
-      if (ragResult.chunks.isEmpty) {
-        // Simple follow-up without RAG context
-        prompt = query;
-      } else {
-        // First question or new topic - include RAG context
+      if (hasRagContext) {
+        // Include RAG context with strict document-only instruction
         prompt = _ragService!.formatPrompt(query, ragResult);
+      } else {
+        // Simple follow-up question
+        prompt = query;
       }
 
       // Add user message to chat history
@@ -519,6 +547,15 @@ AI capabilities without requiring cloud connectivity.''',
                 case 'clear_chat':
                   setState(() => _messages.clear());
                   break;
+                case 'compression_0':
+                  setState(() => _compressionLevel = 0);
+                  break;
+                case 'compression_1':
+                  setState(() => _compressionLevel = 1);
+                  break;
+                case 'compression_2':
+                  setState(() => _compressionLevel = 2);
+                  break;
               }
             },
             itemBuilder: (context) => [
@@ -544,6 +581,56 @@ AI capabilities without requiring cloud connectivity.''',
                 child: ListTile(
                   leading: Icon(Icons.clear_all),
                   title: Text('Clear Chat'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                enabled: false,
+                child: Text(
+                  'Compression Level',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'compression_0',
+                child: ListTile(
+                  leading: Radio<int>(
+                    value: 0,
+                    groupValue: _compressionLevel,
+                    onChanged: null,
+                  ),
+                  title: const Text('Minimal'),
+                  subtitle: const Text('Duplicates only'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'compression_1',
+                child: ListTile(
+                  leading: Radio<int>(
+                    value: 1,
+                    groupValue: _compressionLevel,
+                    onChanged: null,
+                  ),
+                  title: const Text('Balanced'),
+                  subtitle: const Text('+ Light filtering'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'compression_2',
+                child: ListTile(
+                  leading: Radio<int>(
+                    value: 2,
+                    groupValue: _compressionLevel,
+                    onChanged: null,
+                  ),
+                  title: const Text('Aggressive'),
+                  subtitle: const Text('+ Stopwords'),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),

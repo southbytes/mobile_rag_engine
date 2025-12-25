@@ -37,7 +37,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.11.1";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -696072937;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 522678570;
 
 // Section: executor
 
@@ -584,6 +584,117 @@ fn wire__crate__api__hnsw_index__clear_hnsw_index_impl(
                     let output_ok = Result::<_, ()>::Ok({
                         crate::api::hnsw_index::clear_hnsw_index();
                     })?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__compression_utils__compress_text_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "compress_text",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_text = <String>::sse_decode(&mut deserializer);
+            let api_max_chars = <i32>::sse_decode(&mut deserializer);
+            let api_options =
+                <crate::api::compression_utils::CompressionOptions>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok =
+                        Result::<_, ()>::Ok(crate::api::compression_utils::compress_text(
+                            api_text,
+                            api_max_chars,
+                            api_options,
+                        ))?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__compression_utils__compress_text_simple_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "compress_text_simple",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_text = <String>::sse_decode(&mut deserializer);
+            let api_level = <i32>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::compression_utils::compress_text_simple(api_text, api_level),
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__compression_utils__compression_options_default_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "compression_options_default",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::compression_utils::CompressionOptions::default(),
+                    )?;
                     Ok(output_ok)
                 })())
             }
@@ -1858,6 +1969,114 @@ fn wire__crate__api__semantic_chunker__semantic_chunk_with_overlap_impl(
         },
     )
 }
+fn wire__crate__api__compression_utils__sentence_hash_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "sentence_hash",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_sentence = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::compression_utils::sentence_hash(api_sentence),
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__compression_utils__should_compress_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "should_compress",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_text = <String>::sse_decode(&mut deserializer);
+            let api_token_threshold = <i32>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok =
+                        Result::<_, ()>::Ok(crate::api::compression_utils::should_compress(
+                            api_text,
+                            api_token_threshold,
+                        ))?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__compression_utils__split_sentences_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "split_sentences",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_text = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::compression_utils::split_sentences(api_text),
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__tokenizer__tokenize_impl(
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -2004,6 +2223,44 @@ impl SseDecode for crate::api::source_rag::ChunkSearchResult {
             chunk_index: var_chunkIndex,
             content: var_content,
             similarity: var_similarity,
+        };
+    }
+}
+
+impl SseDecode for crate::api::compression_utils::CompressedText {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_text = <String>::sse_decode(deserializer);
+        let mut var_originalChars = <i32>::sse_decode(deserializer);
+        let mut var_compressedChars = <i32>::sse_decode(deserializer);
+        let mut var_ratio = <f64>::sse_decode(deserializer);
+        let mut var_sentencesRemoved = <i32>::sse_decode(deserializer);
+        let mut var_charsSavedStopwords = <i32>::sse_decode(deserializer);
+        let mut var_charsSavedTruncation = <i32>::sse_decode(deserializer);
+        return crate::api::compression_utils::CompressedText {
+            text: var_text,
+            original_chars: var_originalChars,
+            compressed_chars: var_compressedChars,
+            ratio: var_ratio,
+            sentences_removed: var_sentencesRemoved,
+            chars_saved_stopwords: var_charsSavedStopwords,
+            chars_saved_truncation: var_charsSavedTruncation,
+        };
+    }
+}
+
+impl SseDecode for crate::api::compression_utils::CompressionOptions {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_removeStopwords = <bool>::sse_decode(deserializer);
+        let mut var_removeDuplicates = <bool>::sse_decode(deserializer);
+        let mut var_language = <String>::sse_decode(deserializer);
+        let mut var_level = <i32>::sse_decode(deserializer);
+        return crate::api::compression_utils::CompressionOptions {
+            remove_stopwords: var_removeStopwords,
+            remove_duplicates: var_removeDuplicates,
+            language: var_language,
+            level: var_level,
         };
     }
 }
@@ -2355,6 +2612,13 @@ impl SseDecode for u32 {
     }
 }
 
+impl SseDecode for u64 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_u64::<NativeEndian>().unwrap()
+    }
+}
+
 impl SseDecode for u8 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2435,120 +2699,156 @@ fn pde_ffi_dispatcher_primary_impl(
         15 => {
             wire__crate__api__hnsw_index__clear_hnsw_index_impl(port, ptr, rust_vec_len, data_len)
         }
-        17 => wire__crate__api__source_rag__delete_source_impl(port, ptr, rust_vec_len, data_len),
-        18 => wire__crate__api__hnsw_index__embedding_point_new_impl(
+        16 => wire__crate__api__compression_utils__compress_text_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        19 => wire__crate__api__source_rag__get_adjacent_chunks_impl(
+        17 => wire__crate__api__compression_utils__compress_text_simple_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        20 => wire__crate__api__incremental_index__get_buffer_for_merge_impl(
+        18 => wire__crate__api__compression_utils__compression_options_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        21 => wire__crate__api__incremental_index__get_buffer_stats_impl(
+        20 => wire__crate__api__source_rag__delete_source_impl(port, ptr, rust_vec_len, data_len),
+        21 => wire__crate__api__hnsw_index__embedding_point_new_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        22 => {
+        22 => wire__crate__api__source_rag__get_adjacent_chunks_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        23 => wire__crate__api__incremental_index__get_buffer_for_merge_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        24 => wire__crate__api__incremental_index__get_buffer_stats_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        25 => {
             wire__crate__api__simple_rag__get_document_count_impl(port, ptr, rust_vec_len, data_len)
         }
-        23 => wire__crate__api__source_rag__get_source_impl(port, ptr, rust_vec_len, data_len),
-        24 => {
+        26 => wire__crate__api__source_rag__get_source_impl(port, ptr, rust_vec_len, data_len),
+        27 => {
             wire__crate__api__source_rag__get_source_chunks_impl(port, ptr, rust_vec_len, data_len)
         }
-        25 => {
+        28 => {
             wire__crate__api__source_rag__get_source_stats_impl(port, ptr, rust_vec_len, data_len)
         }
-        28 => wire__crate__api__incremental_index__incremental_add_impl(
+        31 => wire__crate__api__incremental_index__incremental_add_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        29 => wire__crate__api__incremental_index__incremental_add_batch_impl(
+        32 => wire__crate__api__incremental_index__incremental_add_batch_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        30 => wire__crate__api__incremental_index__incremental_remove_impl(
+        33 => wire__crate__api__incremental_index__incremental_remove_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        31 => wire__crate__api__incremental_index__incremental_search_impl(
+        34 => wire__crate__api__incremental_index__incremental_search_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        32 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
-        33 => wire__crate__api__simple_rag__init_db_impl(port, ptr, rust_vec_len, data_len),
-        34 => wire__crate__api__source_rag__init_source_db_impl(port, ptr, rust_vec_len, data_len),
-        35 => wire__crate__api__tokenizer__init_tokenizer_impl(port, ptr, rust_vec_len, data_len),
-        36 => wire__crate__api__bm25_search__is_bm25_index_loaded_impl(
+        35 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
+        36 => wire__crate__api__simple_rag__init_db_impl(port, ptr, rust_vec_len, data_len),
+        37 => wire__crate__api__source_rag__init_source_db_impl(port, ptr, rust_vec_len, data_len),
+        38 => wire__crate__api__tokenizer__init_tokenizer_impl(port, ptr, rust_vec_len, data_len),
+        39 => wire__crate__api__bm25_search__is_bm25_index_loaded_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        37 => wire__crate__api__hnsw_index__is_hnsw_index_loaded_impl(
-            port,
-            ptr,
-            rust_vec_len,
-            data_len,
-        ),
-        38 => {
-            wire__crate__api__incremental_index__needs_merge_impl(port, ptr, rust_vec_len, data_len)
-        }
-        39 => {
-            wire__crate__api__simple_rag__rebuild_bm25_index_impl(port, ptr, rust_vec_len, data_len)
-        }
-        40 => wire__crate__api__source_rag__rebuild_chunk_hnsw_index_impl(
+        40 => wire__crate__api__hnsw_index__is_hnsw_index_loaded_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
         41 => {
+            wire__crate__api__incremental_index__needs_merge_impl(port, ptr, rust_vec_len, data_len)
+        }
+        42 => {
+            wire__crate__api__simple_rag__rebuild_bm25_index_impl(port, ptr, rust_vec_len, data_len)
+        }
+        43 => wire__crate__api__source_rag__rebuild_chunk_hnsw_index_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        44 => {
             wire__crate__api__simple_rag__rebuild_hnsw_index_impl(port, ptr, rust_vec_len, data_len)
         }
-        42 => wire__crate__api__hybrid_search__rrf_config_default_impl(
+        45 => wire__crate__api__hybrid_search__rrf_config_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        43 => wire__crate__api__source_rag__search_chunks_impl(port, ptr, rust_vec_len, data_len),
-        44 => wire__crate__api__hnsw_index__search_hnsw_impl(port, ptr, rust_vec_len, data_len),
-        45 => {
+        46 => wire__crate__api__source_rag__search_chunks_impl(port, ptr, rust_vec_len, data_len),
+        47 => wire__crate__api__hnsw_index__search_hnsw_impl(port, ptr, rust_vec_len, data_len),
+        48 => {
             wire__crate__api__hybrid_search__search_hybrid_impl(port, ptr, rust_vec_len, data_len)
         }
-        46 => wire__crate__api__hybrid_search__search_hybrid_simple_impl(
+        49 => wire__crate__api__hybrid_search__search_hybrid_simple_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        47 => wire__crate__api__hybrid_search__search_hybrid_weighted_impl(
+        50 => wire__crate__api__hybrid_search__search_hybrid_weighted_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        48 => wire__crate__api__simple_rag__search_similar_impl(port, ptr, rust_vec_len, data_len),
+        51 => wire__crate__api__simple_rag__search_similar_impl(port, ptr, rust_vec_len, data_len),
+        54 => wire__crate__api__compression_utils__sentence_hash_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        55 => wire__crate__api__compression_utils__should_compress_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        56 => wire__crate__api__compression_utils__split_sentences_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
         _ => unreachable!(),
     }
 }
@@ -2566,16 +2866,16 @@ fn pde_ffi_dispatcher_sync_impl(
             rust_vec_len,
             data_len,
         ),
-        16 => wire__crate__api__tokenizer__decode_tokens_impl(ptr, rust_vec_len, data_len),
-        26 => wire__crate__api__tokenizer__get_vocab_size_impl(ptr, rust_vec_len, data_len),
-        27 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
-        49 => wire__crate__api__semantic_chunker__semantic_chunk_impl(ptr, rust_vec_len, data_len),
-        50 => wire__crate__api__semantic_chunker__semantic_chunk_with_overlap_impl(
+        19 => wire__crate__api__tokenizer__decode_tokens_impl(ptr, rust_vec_len, data_len),
+        29 => wire__crate__api__tokenizer__get_vocab_size_impl(ptr, rust_vec_len, data_len),
+        30 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
+        52 => wire__crate__api__semantic_chunker__semantic_chunk_impl(ptr, rust_vec_len, data_len),
+        53 => wire__crate__api__semantic_chunker__semantic_chunk_with_overlap_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        51 => wire__crate__api__tokenizer__tokenize_impl(ptr, rust_vec_len, data_len),
+        57 => wire__crate__api__tokenizer__tokenize_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -2715,6 +3015,55 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::source_rag::ChunkSearchResult
     for crate::api::source_rag::ChunkSearchResult
 {
     fn into_into_dart(self) -> crate::api::source_rag::ChunkSearchResult {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::compression_utils::CompressedText {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.text.into_into_dart().into_dart(),
+            self.original_chars.into_into_dart().into_dart(),
+            self.compressed_chars.into_into_dart().into_dart(),
+            self.ratio.into_into_dart().into_dart(),
+            self.sentences_removed.into_into_dart().into_dart(),
+            self.chars_saved_stopwords.into_into_dart().into_dart(),
+            self.chars_saved_truncation.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::compression_utils::CompressedText
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::compression_utils::CompressedText>
+    for crate::api::compression_utils::CompressedText
+{
+    fn into_into_dart(self) -> crate::api::compression_utils::CompressedText {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::compression_utils::CompressionOptions {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.remove_stopwords.into_into_dart().into_dart(),
+            self.remove_duplicates.into_into_dart().into_dart(),
+            self.language.into_into_dart().into_dart(),
+            self.level.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::compression_utils::CompressionOptions
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::compression_utils::CompressionOptions>
+    for crate::api::compression_utils::CompressionOptions
+{
+    fn into_into_dart(self) -> crate::api::compression_utils::CompressionOptions {
         self
     }
 }
@@ -2950,6 +3299,29 @@ impl SseEncode for crate::api::source_rag::ChunkSearchResult {
         <i32>::sse_encode(self.chunk_index, serializer);
         <String>::sse_encode(self.content, serializer);
         <f64>::sse_encode(self.similarity, serializer);
+    }
+}
+
+impl SseEncode for crate::api::compression_utils::CompressedText {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.text, serializer);
+        <i32>::sse_encode(self.original_chars, serializer);
+        <i32>::sse_encode(self.compressed_chars, serializer);
+        <f64>::sse_encode(self.ratio, serializer);
+        <i32>::sse_encode(self.sentences_removed, serializer);
+        <i32>::sse_encode(self.chars_saved_stopwords, serializer);
+        <i32>::sse_encode(self.chars_saved_truncation, serializer);
+    }
+}
+
+impl SseEncode for crate::api::compression_utils::CompressionOptions {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.remove_stopwords, serializer);
+        <bool>::sse_encode(self.remove_duplicates, serializer);
+        <String>::sse_encode(self.language, serializer);
+        <i32>::sse_encode(self.level, serializer);
     }
 }
 
@@ -3215,6 +3587,13 @@ impl SseEncode for u32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         serializer.cursor.write_u32::<NativeEndian>(self).unwrap();
+    }
+}
+
+impl SseEncode for u64 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_u64::<NativeEndian>(self).unwrap();
     }
 }
 
