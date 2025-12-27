@@ -247,17 +247,7 @@ mod tests {
         assert_ne!(hash1, hash2);
     }
 
-    #[test]
-    fn test_filter_stopwords_english() {
-        let text = "The quick brown fox jumps over the lazy dog".to_string();
-        let filtered = filter_stopwords(text, "en".to_string());
-        
-        // "The", "the", "over" should be removed
-        assert!(!filtered.contains("The "));
-        assert!(!filtered.contains(" the "));
-        assert!(filtered.contains("quick"));
-        assert!(filtered.contains("fox"));
-    }
+
 
     #[test]
     fn test_compress_text_removes_duplicates() {

@@ -152,15 +152,8 @@ class PromptCompressor {
     return rust.splitSentences(text: text);
   }
 
-  /// Filter stopwords from text.
-  ///
-  /// [language] - "ko" for Korean, "en" for English.
-  static Future<String> filterStopwords({
-    required String text,
-    String language = 'ko',
-  }) async {
-    return rust.filterStopwords(text: text, language: language);
-  }
+  // NOTE: filterStopwords was removed - stopword filtering damages context quality.
+  // See Rust code comment: modern LLM systems use perplexity-based methods instead.
 
   // ============================================================
   // Phase 2: Similarity-based sentence selection
