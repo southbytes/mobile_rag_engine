@@ -45,7 +45,7 @@ app.*.map.json
 /android/app/release
 
 # Environment files (keep .env.sample but ignore actual .env with secrets)
-assets/.env
-assets/model.onnx
-assets/model.onnx.backup
-assets/tokenizer.json
+# assets/.env
+# assets/model.onnx
+# assets/model.onnx.backup
+# assets/tokenizer.json

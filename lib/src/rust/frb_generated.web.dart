@@ -7,6 +7,7 @@
 // ignore_for_file: argument_type_not_assignable
 
 import 'api/bm25_search.dart';
+import 'api/compression_utils.dart';
 import 'api/hnsw_index.dart';
 import 'api/hybrid_search.dart';
 import 'api/incremental_index.dart';
@@ -47,6 +48,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool dco_decode_bool(dynamic raw);
 
   @protected
+  CompressionOptions dco_decode_box_autoadd_compression_options(dynamic raw);
+
+  @protected
   RrfConfig dco_decode_box_autoadd_rrf_config(dynamic raw);
 
   @protected
@@ -57,6 +61,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ChunkSearchResult dco_decode_chunk_search_result(dynamic raw);
+
+  @protected
+  CompressedText dco_decode_compressed_text(dynamic raw);
+
+  @protected
+  CompressionOptions dco_decode_compression_options(dynamic raw);
 
   @protected
   EmbeddingPoint dco_decode_embedding_point(dynamic raw);
@@ -157,6 +167,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   int dco_decode_u_32(dynamic raw);
 
   @protected
+  BigInt dco_decode_u_64(dynamic raw);
+
+  @protected
   int dco_decode_u_8(dynamic raw);
 
   @protected
@@ -186,6 +199,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool sse_decode_bool(SseDeserializer deserializer);
 
   @protected
+  CompressionOptions sse_decode_box_autoadd_compression_options(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   RrfConfig sse_decode_box_autoadd_rrf_config(SseDeserializer deserializer);
 
   @protected
@@ -196,6 +214,14 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ChunkSearchResult sse_decode_chunk_search_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  CompressedText sse_decode_compressed_text(SseDeserializer deserializer);
+
+  @protected
+  CompressionOptions sse_decode_compression_options(
     SseDeserializer deserializer,
   );
 
@@ -320,6 +346,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   int sse_decode_u_32(SseDeserializer deserializer);
 
   @protected
+  BigInt sse_decode_u_64(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_u_8(SseDeserializer deserializer);
 
   @protected
@@ -359,6 +388,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_bool(bool self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_compression_options(
+    CompressionOptions self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_rrf_config(
     RrfConfig self,
     SseSerializer serializer,
@@ -373,6 +408,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_chunk_search_result(
     ChunkSearchResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_compressed_text(
+    CompressedText self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_compression_options(
+    CompressionOptions self,
     SseSerializer serializer,
   );
 
@@ -531,6 +578,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_u_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_u_64(BigInt self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_8(int self, SseSerializer serializer);

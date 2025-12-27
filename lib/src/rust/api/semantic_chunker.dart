@@ -6,21 +6,25 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+// These functions are ignored because they are not marked as `pub`: `is_article_title`, `split_by_article_titles`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`
 
-/// Split text into semantic chunks using Unicode boundaries.
+/// Split text into semantic chunks using paragraph boundaries first.
 ///
-/// Uses `text-splitter` crate which splits on:
-/// 1. Unicode Sentence Boundaries (preferred)
-/// 2. Unicode Word Boundaries (fallback)
-/// 3. Never splits in the middle of a word
+/// Strategy:
+/// 1. First split by double newlines (\n\n) - paragraph boundaries
+/// 2. If a paragraph is too long, split by single newlines (\n)
+/// 3. If still too long, use text-splitter for Unicode sentence/word boundaries
+///
+/// This approach works better for Korean and other languages where
+/// newlines often indicate logical section boundaries.
 ///
 /// # Arguments
 /// * `text` - The text to chunk
 /// * `max_chars` - Maximum characters per chunk (soft limit, may exceed slightly to preserve sentence)
 ///
 /// # Returns
-/// Vector of SemanticChunk with complete sentences/words
+/// Vector of SemanticChunk with complete paragraphs/sentences/words
 List<SemanticChunk> semanticChunk({
   required String text,
   required int maxChars,
@@ -37,7 +41,7 @@ List<SemanticChunk> semanticChunk({
 /// # Arguments
 /// * `text` - The text to chunk
 /// * `max_chars` - Maximum characters per chunk
-/// * `overlap_chars` - Target overlap between consecutive chunks
+/// * `overlap_chars` - Target overlap between consecutive chunks (not used in paragraph mode, kept for API compatibility)
 List<SemanticChunk> semanticChunkWithOverlap({
   required String text,
   required int maxChars,

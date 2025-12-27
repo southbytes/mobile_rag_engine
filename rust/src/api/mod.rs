@@ -7,6 +7,7 @@ pub mod semantic_chunker;
 pub mod bm25_search;
 pub mod hybrid_search;
 pub mod incremental_index;
+pub mod compression_utils;
 // embedding module removed: ONNX inference moved to Flutter layer
 
 

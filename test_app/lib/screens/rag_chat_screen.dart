@@ -18,6 +18,8 @@ class ChatMessage {
   final DateTime timestamp;
   final List<ChunkSearchResult>? retrievedChunks;
   final int? tokensUsed;
+  final double? compressionRatio; // 0.0-1.0, lower = more compressed
+  final int? originalTokens; // Before compression
 
   ChatMessage({
     required this.content,
@@ -25,16 +27,15 @@ class ChatMessage {
     DateTime? timestamp,
     this.retrievedChunks,
     this.tokensUsed,
+    this.compressionRatio,
+    this.originalTokens,
   }) : timestamp = timestamp ?? DateTime.now();
 }
 
 class RagChatScreen extends StatefulWidget {
   final bool mockLlm;
 
-  const RagChatScreen({
-    super.key,
-    this.mockLlm = false,
-  });
+  const RagChatScreen({super.key, this.mockLlm = false});
 
   @override
   State<RagChatScreen> createState() => _RagChatScreenState();
@@ -46,22 +47,25 @@ class _RagChatScreenState extends State<RagChatScreen> {
   final FocusNode _focusNode = FocusNode();
 
   final List<ChatMessage> _messages = [];
-  
+
   SourceRagService? _ragService;
   bool _isInitialized = false;
   bool _isLoading = false;
   bool _isGenerating = false;
   String _status = 'Initializing...';
-  
+
   // LLM model and chat session (persistent for conversation history)
   InferenceModel? _llmModel;
   InferenceChat? _chatSession;
-  
+
   // Debug info
   bool _showDebugInfo = true;
   int _totalChunks = 0;
   int _totalSources = 0;
 
+  // Compression settings (Phase 1)
+  int _compressionLevel = 1; // 0=minimal, 1=balanced, 2=aggressive
+  final bool _compressionEnabled = true;
 
   @override
   void initState() {
@@ -135,10 +139,7 @@ class _RagChatScreenState extends State<RagChatScreen> {
 
   void _addSystemMessage(String content) {
     setState(() {
-      _messages.insert(0, ChatMessage(
-        content: content,
-        isUser: false,
-      ));
+      _messages.insert(0, ChatMessage(content: content, isUser: false));
     });
   }
 
@@ -151,25 +152,38 @@ class _RagChatScreenState extends State<RagChatScreen> {
 
     // Add user message
     setState(() {
-      _messages.insert(0, ChatMessage(
-        content: text,
-        isUser: true,
-      ));
+      _messages.insert(0, ChatMessage(content: text, isUser: true));
       _isGenerating = true;
     });
 
     try {
-      // 1. RAG Search
+      // 1. RAG Search with compression level applied
+      // Use lower token budget to leave room for LLM generation
+      final searchBudget = _compressionLevel == 2
+          ? 800
+          : _compressionLevel == 1
+          ? 1000
+          : 1200;
+
       final ragResult = await _ragService!.search(
         text,
         topK: 5,
-        tokenBudget: 1500,
+        tokenBudget: searchBudget,
         strategy: ContextStrategy.relevanceFirst,
+      );
+
+      // Calculate token stats for display
+      final compressedTokens = ragResult.context.estimatedTokens;
+      final chunkCount = ragResult.chunks.length;
+
+      // Debug log stats
+      debugPrint(
+        '📊 Context: $compressedTokens tokens from $chunkCount chunks',
       );
 
       String response;
       if (widget.mockLlm) {
-        // Mock mode - just show the context
+        // Mock mode - show the context
         response = _generateMockResponse(text, ragResult);
       } else {
         // Real LLM generation
@@ -178,19 +192,19 @@ class _RagChatScreenState extends State<RagChatScreen> {
 
       // Add AI response
       setState(() {
-        _messages.insert(0, ChatMessage(
-          content: response,
-          isUser: false,
-          retrievedChunks: ragResult.chunks,
-          tokensUsed: ragResult.context.estimatedTokens,
-        ));
+        _messages.insert(
+          0,
+          ChatMessage(
+            content: response,
+            isUser: false,
+            retrievedChunks: ragResult.chunks,
+            tokensUsed: compressedTokens,
+          ),
+        );
       });
     } catch (e) {
       setState(() {
-        _messages.insert(0, ChatMessage(
-          content: '❌ Error: $e',
-          isUser: false,
-        ));
+        _messages.insert(0, ChatMessage(content: '❌ Error: $e', isUser: false));
       });
     } finally {
       setState(() => _isGenerating = false);
@@ -207,27 +221,42 @@ class _RagChatScreenState extends State<RagChatScreen> {
     final buffer = StringBuffer();
     buffer.writeln('📚 Found ${ragResult.chunks.length} relevant chunks:');
     buffer.writeln('📊 Using ~${ragResult.context.estimatedTokens} tokens\n');
-    
+
     for (var i = 0; i < ragResult.chunks.length && i < 3; i++) {
       final chunk = ragResult.chunks[i];
-      final preview = chunk.content.length > 100 
-          ? '${chunk.content.substring(0, 100)}...' 
+      final preview = chunk.content.length > 100
+          ? '${chunk.content.substring(0, 100)}...'
           : chunk.content;
       buffer.writeln('${i + 1}. $preview\n');
     }
 
     buffer.writeln('---');
-    buffer.writeln('💡 This is a mock response. Install an LLM model for real answers.');
-    
+    buffer.writeln(
+      '💡 This is a mock response. Install an LLM model for real answers.',
+    );
+
     return buffer.toString();
   }
 
-  Future<String> _generateLlmResponse(String query, RagSearchResult ragResult) async {
+  Future<String> _generateLlmResponse(
+    String query,
+    RagSearchResult ragResult,
+  ) async {
     try {
-      // Initialize model and chat session if needed
-      if (_llmModel == null) {
-        // Get LLM model - use maxTokens matching model's ekv capacity
-        // Model: Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048 supports 2048 tokens
+      // For RAG queries with documents, use fresh session to avoid context overflow
+      // The 2048 token limit is shared between context + history + generation
+      final hasRagContext = ragResult.chunks.isNotEmpty;
+
+      if (hasRagContext) {
+        // Reset session for fresh RAG context - prevents previous chat from taking up tokens
+        await _resetChatSession();
+        _llmModel = await FlutterGemma.getActiveModel(
+          maxTokens: 2048,
+          preferredBackend: PreferredBackend.gpu,
+        );
+        _chatSession = await _llmModel!.createChat();
+      } else if (_llmModel == null) {
+        // Initialize model for non-RAG questions
         _llmModel = await FlutterGemma.getActiveModel(
           maxTokens: 2048,
           preferredBackend: PreferredBackend.gpu,
@@ -235,76 +264,76 @@ class _RagChatScreenState extends State<RagChatScreen> {
         _chatSession = await _llmModel!.createChat();
       }
 
-      // Check if this is a follow-up question (no RAG context needed)
+      // Build prompt - RAG context or simple query
       String prompt;
-      if (ragResult.chunks.isEmpty) {
-        // Simple follow-up without RAG context
-        prompt = query;
-      } else {
-        // First question or new topic - include RAG context
+      if (hasRagContext) {
+        // Include RAG context with strict document-only instruction
         prompt = _ragService!.formatPrompt(query, ragResult);
+      } else {
+        // Simple follow-up question
+        prompt = query;
       }
 
       // Add user message to chat history
-      await _chatSession!.addQueryChunk(Message.text(
-        text: prompt,
-        isUser: true,
-      ));
+      await _chatSession!.addQueryChunk(
+        Message.text(text: prompt, isUser: true),
+      );
 
       // Generate response
       final response = await _chatSession!.generateChatResponse();
 
       // Extract text from response
       String responseText = '';
-      if (response != null) {
-        // Handle different response types
-        if (response is TextResponse) {
-          responseText = response.token;
+      // Handle different response types
+      if (response is TextResponse) {
+        responseText = response.token;
+      } else {
+        // Fallback: try to extract text from toString()
+        final raw = response.toString();
+        // Parse TextResponse("...") format if needed
+        final match = RegExp(
+          r'TextResponse\("(.*)"\)$',
+          dotAll: true,
+        ).firstMatch(raw);
+        if (match != null) {
+          responseText = match.group(1) ?? raw;
         } else {
-          // Fallback: try to extract text from toString()
-          final raw = response.toString();
-          // Parse TextResponse("...") format if needed
-          final match = RegExp(r'TextResponse\("(.*)"\)$', dotAll: true).firstMatch(raw);
-          if (match != null) {
-            responseText = match.group(1) ?? raw;
-          } else {
-            responseText = raw;
-          }
+          responseText = raw;
         }
       }
-
 
       // Disabled: _cleanRepetition was truncating valid content
       // responseText = _cleanRepetition(responseText);
 
       // Handle empty response - likely context overflow, reset and retry
       if (responseText.trim().isEmpty) {
-        debugPrint('🟡 Empty response detected, resetting session and retrying...');
+        debugPrint(
+          '🟡 Empty response detected, resetting session and retrying...',
+        );
         await _resetChatSession();
-        
+
         // Retry with fresh session
         _llmModel = await FlutterGemma.getActiveModel(
           maxTokens: 2048,
           preferredBackend: PreferredBackend.gpu,
         );
         _chatSession = await _llmModel!.createChat();
-        
+
         // Use full RAG prompt for fresh session
         final freshPrompt = _ragService!.formatPrompt(query, ragResult);
-        await _chatSession!.addQueryChunk(Message.text(
-          text: freshPrompt,
-          isUser: true,
-        ));
-        
+        await _chatSession!.addQueryChunk(
+          Message.text(text: freshPrompt, isUser: true),
+        );
+
         final retryResponse = await _chatSession!.generateChatResponse();
-        if (retryResponse != null && retryResponse is TextResponse) {
+        if (retryResponse is TextResponse) {
           responseText = retryResponse.token; // Disabled: _cleanRepetition
         }
-        
+
         if (responseText.trim().isEmpty) {
           return '⚠️ The model could not generate a response.\n\n'
-                 'This may happen when the context is too long.\n'
-                 'Try asking a simpler question.';
+              'This may happen when the context is too long.\n'
+              'Try asking a simpler question.';
         }
       }
 
@@ -313,10 +342,10 @@ class _RagChatScreenState extends State<RagChatScreen> {
       // Log detailed error to terminal
       debugPrint('🔴 LLM Error: $e');
       debugPrint('🔴 Stack Trace: $stackTrace');
-      
+
       // Reset session on error (will be recreated on next message)
       await _resetChatSession();
-      
+
       // Get error type for user-friendly message
       String errorType = 'Unknown error';
       if (e.toString().contains('PlatformException')) {
@@ -328,10 +357,10 @@ class _RagChatScreenState extends State<RagChatScreen> {
       } else if (e.toString().contains('OUT_OF_RANGE')) {
         errorType = 'Context too long';
       }
-      
+
       return '⚠️ LLM Error: $errorType\n\n'
-             'The model encountered an issue. Please try again.\n'
-             '(Check console for details)';
+          'The model encountered an issue. Please try again.\n'
+          '(Check console for details)';
     }
   }
 
@@ -370,19 +399,19 @@ class _RagChatScreenState extends State<RagChatScreen> {
   /// Preserves original formatting (newlines, markdown)
   String _cleanRepetition(String text) {
     if (text.length < 200) return text;
-    
+
     // Only detect actual repeated substrings (30+ chars, 2+ times)
     // This preserves the original text structure
     for (int len = 40; len <= 100; len += 10) {
       for (int i = 0; i < text.length - len * 2; i++) {
         final pattern = text.substring(i, i + len);
-        
+
         // Skip patterns that are mostly whitespace
         if (pattern.trim().length < 20) continue;
-        
+
         final rest = text.substring(i + len);
         final idx = rest.indexOf(pattern);
-        
+
         if (idx != -1 && idx < len * 2) {
           // Found repetition close to original - truncate here
           debugPrint('🔄 Repetition detected, truncating...');
@@ -390,40 +419,41 @@ class _RagChatScreenState extends State<RagChatScreen> {
         }
       }
     }
-    
+
     return text;
   }
-
 
   /// Parse simple markdown (bold **text**) into TextSpan
   TextSpan _parseMarkdown(String text) {
     final spans = <TextSpan>[];
     final regex = RegExp(r'\*\*(.+?)\*\*');
     int lastEnd = 0;
-    
+
     for (final match in regex.allMatches(text)) {
       // Add text before the match
       if (match.start > lastEnd) {
         spans.add(TextSpan(text: text.substring(lastEnd, match.start)));
       }
       // Add bold text
-      spans.add(TextSpan(
-        text: match.group(1),
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ));
+      spans.add(
+        TextSpan(
+          text: match.group(1),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      );
       lastEnd = match.end;
     }
-    
+
     // Add remaining text
     if (lastEnd < text.length) {
       spans.add(TextSpan(text: text.substring(lastEnd)));
     }
-    
+
     // If no matches, return plain text
     if (spans.isEmpty) {
       spans.add(TextSpan(text: text));
     }
-    
+
     return TextSpan(children: spans);
   }
 
@@ -471,7 +501,9 @@ AI capabilities without requiring cloud connectivity.''',
       ];
 
       for (var i = 0; i < samples.length; i++) {
-        setState(() => _status = 'Adding document ${i + 1}/${samples.length}...');
+        setState(
+          () => _status = 'Adding document ${i + 1}/${samples.length}...',
+        );
         await _ragService!.addSourceWithChunking(samples[i]);
       }
 
@@ -483,10 +515,13 @@ AI capabilities without requiring cloud connectivity.''',
 
       setState(() {
         _isLoading = false;
-        _status = 'Added ${samples.length} documents! Total chunks: $_totalChunks';
+        _status =
+            'Added ${samples.length} documents! Total chunks: $_totalChunks';
       });
 
-      _addSystemMessage('✅ Added ${samples.length} sample documents with $_totalChunks chunks.');
+      _addSystemMessage(
+        '✅ Added ${samples.length} sample documents with $_totalChunks chunks.',
+      );
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -503,7 +538,9 @@ AI capabilities without requiring cloud connectivity.''',
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(_showDebugInfo ? Icons.bug_report : Icons.bug_report_outlined),
+            icon: Icon(
+              _showDebugInfo ? Icons.bug_report : Icons.bug_report_outlined,
+            ),
             tooltip: 'Toggle debug info',
             onPressed: () => setState(() => _showDebugInfo = !_showDebugInfo),
           ),
@@ -518,6 +555,15 @@ AI capabilities without requiring cloud connectivity.''',
                   break;
                 case 'clear_chat':
                   setState(() => _messages.clear());
+                  break;
+                case 'compression_0':
+                  setState(() => _compressionLevel = 0);
+                  break;
+                case 'compression_1':
+                  setState(() => _compressionLevel = 1);
+                  break;
+                case 'compression_2':
+                  setState(() => _compressionLevel = 2);
                   break;
               }
             },
@@ -544,6 +590,56 @@ AI capabilities without requiring cloud connectivity.''',
                 child: ListTile(
                   leading: Icon(Icons.clear_all),
                   title: Text('Clear Chat'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                enabled: false,
+                child: Text(
+                  'Compression Level',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'compression_0',
+                child: ListTile(
+                  leading: Radio<int>(
+                    value: 0,
+                    groupValue: _compressionLevel,
+                    onChanged: null,
+                  ),
+                  title: const Text('Minimal'),
+                  subtitle: const Text('Duplicates only'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'compression_1',
+                child: ListTile(
+                  leading: Radio<int>(
+                    value: 1,
+                    groupValue: _compressionLevel,
+                    onChanged: null,
+                  ),
+                  title: const Text('Balanced'),
+                  subtitle: const Text('+ Light filtering'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'compression_2',
+                child: ListTile(
+                  leading: Radio<int>(
+                    value: 2,
+                    groupValue: _compressionLevel,
+                    onChanged: null,
+                  ),
+                  title: const Text('Aggressive'),
+                  subtitle: const Text('+ Stopwords'),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
@@ -589,9 +685,7 @@ AI capabilities without requiring cloud connectivity.''',
             ),
 
           // Messages
-          Expanded(
-            child: _buildMessageList(),
-          ),
+          Expanded(child: _buildMessageList()),
 
           // Input area (inspired by existing chat UI)
           _buildInputArea(),
@@ -606,16 +700,9 @@ AI capabilities without requiring cloud connectivity.''',
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.chat_bubble_outline,
-              size: 64,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
-            Text(
-              'No messages yet',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
+            Text('No messages yet', style: TextStyle(color: Colors.grey[600])),
             const SizedBox(height: 8),
             TextButton.icon(
               onPressed: _addSampleDocuments,
@@ -641,11 +728,13 @@ AI capabilities without requiring cloud connectivity.''',
 
   Widget _buildMessageBubble(ChatMessage message) {
     final isUser = message.isUser;
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
@@ -658,18 +747,21 @@ AI capabilities without requiring cloud connectivity.''',
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isUser
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     // User: pink bubble, AI: white bubble (matching existing style)
-                    color: isUser 
-                        ? const Color(0xFFFFE6E6)
-                        : Colors.white,
+                    color: isUser ? const Color(0xFFFFE6E6) : Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isUser 
+                      color: isUser
                           ? const Color(0xFFFFDADA)
                           : const Color(0xFFE5E5E5),
                     ),
@@ -692,10 +784,7 @@ AI capabilities without requiring cloud connectivity.''',
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       '~${message.tokensUsed} tokens • ${message.retrievedChunks?.length ?? 0} chunks',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[500],
-                      ),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                     ),
                   ),
                 // Timestamp
@@ -703,10 +792,7 @@ AI capabilities without requiring cloud connectivity.''',
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     _formatTime(message.timestamp),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                   ),
                 ),
               ],
@@ -789,8 +875,8 @@ AI capabilities without requiring cloud connectivity.''',
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _isGenerating 
-                      ? Colors.grey 
+                  color: _isGenerating
+                      ? Colors.grey
                       : Theme.of(context).colorScheme.primary,
                   shape: BoxShape.circle,
                 ),
@@ -817,7 +903,7 @@ AI capabilities without requiring cloud connectivity.''',
 
   void _showAddDocumentDialog() {
     final controller = TextEditingController();
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -860,29 +946,32 @@ AI capabilities without requiring cloud connectivity.''',
                     onPressed: () async {
                       final text = controller.text.trim();
                       if (text.isEmpty) return;
-                      
+
                       Navigator.pop(context);
-                      
+
                       setState(() {
                         _isLoading = true;
                         _status = 'Adding document...';
                       });
-                      
+
                       try {
-                        final result = await _ragService!.addSourceWithChunking(text);
+                        final result = await _ragService!.addSourceWithChunking(
+                          text,
+                        );
                         await _ragService!.rebuildIndex();
-                        
+
                         final stats = await _ragService!.getStats();
                         _totalSources = stats.sourceCount.toInt();
                         _totalChunks = stats.chunkCount.toInt();
-                        
+
                         setState(() {
                           _isLoading = false;
-                          _status = 'Document added! Chunks: ${result.chunkCount}';
+                          _status =
+                              'Document added! Chunks: ${result.chunkCount}';
                         });
-                        
+
                         _addSystemMessage(
-                          '✅ Document added with ${result.chunkCount} chunks.'
+                          '✅ Document added with ${result.chunkCount} chunks.',
                         );
                       } catch (e) {
                         setState(() {
