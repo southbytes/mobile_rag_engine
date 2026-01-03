@@ -12,6 +12,7 @@ import 'dart:typed_data';
 import '../src/rust/api/source_rag.dart';
 import '../src/rust/api/semantic_chunker.dart';
 import '../src/rust/api/hybrid_search.dart' as hybrid;
+import '../src/rust/api/hnsw_index.dart' as hnsw;
 import 'context_builder.dart';
 import 'embedding_service.dart';
 
@@ -57,9 +58,38 @@ class SourceRagService {
     this.overlapChars = 50,
   });
 
+  /// Get the HNSW index path (derived from dbPath)
+  String get _indexPath => dbPath.replaceAll('.db', '_hnsw');
+
   /// Initialize the source database.
   Future<void> init() async {
     await initSourceDb(dbPath: dbPath);
+  }
+
+  /// Try to load cached HNSW index.
+  ///
+  /// Returns true if a previously built index exists (marker found).
+  /// The actual index data is rebuilt from DB when [rebuildIndex] is called.
+  ///
+  /// Usage pattern:
+  /// ```dart
+  /// await service.init();
+  /// final hasCached = await service.tryLoadCachedIndex();
+  /// if (!hasCached || forceRebuild) {
+  ///   await service.rebuildIndex();
+  /// }
+  /// ```
+  Future<bool> tryLoadCachedIndex() async {
+    final exists = await hnsw.loadHnswIndex(basePath: _indexPath);
+    return exists;
+  }
+
+  /// Save HNSW index marker to disk.
+  ///
+  /// Call this after [rebuildIndex] to mark that an index was built.
+  /// This allows faster startup detection on next app launch.
+  Future<void> saveIndex() async {
+    await hnsw.saveHnswIndex(basePath: _indexPath);
   }
 
   /// Add a source document with automatic chunking and embedding.

@@ -240,7 +240,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<bool> crateApiHnswIndexIsHnswIndexLoaded();
 
-  Future<bool> crateApiHnswIndexLoadHnswIndex({required String fullPath});
+  Future<bool> crateApiHnswIndexLoadHnswIndex({required String basePath});
 
   Future<bool> crateApiIncrementalIndexNeedsMerge();
 
@@ -252,7 +252,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<RrfConfig> crateApiHybridSearchRrfConfigDefault();
 
-  Future<void> crateApiHnswIndexSaveHnswIndex({required String fullPath});
+  Future<void> crateApiHnswIndexSaveHnswIndex({required String basePath});
 
   Future<List<ChunkSearchResult>> crateApiSourceRagSearchChunks({
     required String dbPath,
@@ -1618,12 +1618,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "is_hnsw_index_loaded", argNames: []);
 
   @override
-  Future<bool> crateApiHnswIndexLoadHnswIndex({required String fullPath}) {
+  Future<bool> crateApiHnswIndexLoadHnswIndex({required String basePath}) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(fullPath, serializer);
+          sse_encode_String(basePath, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -1636,14 +1636,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiHnswIndexLoadHnswIndexConstMeta,
-        argValues: [fullPath],
+        argValues: [basePath],
         apiImpl: this,
       ),
     );
   }
 
   TaskConstMeta get kCrateApiHnswIndexLoadHnswIndexConstMeta =>
-      const TaskConstMeta(debugName: "load_hnsw_index", argNames: ["fullPath"]);
+      const TaskConstMeta(debugName: "load_hnsw_index", argNames: ["basePath"]);
 
   @override
   Future<bool> crateApiIncrementalIndexNeedsMerge() {
@@ -1795,12 +1795,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "rrf_config_default", argNames: []);
 
   @override
-  Future<void> crateApiHnswIndexSaveHnswIndex({required String fullPath}) {
+  Future<void> crateApiHnswIndexSaveHnswIndex({required String basePath}) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(fullPath, serializer);
+          sse_encode_String(basePath, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -1813,14 +1813,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiHnswIndexSaveHnswIndexConstMeta,
-        argValues: [fullPath],
+        argValues: [basePath],
         apiImpl: this,
       ),
     );
   }
 
   TaskConstMeta get kCrateApiHnswIndexSaveHnswIndexConstMeta =>
-      const TaskConstMeta(debugName: "save_hnsw_index", argNames: ["fullPath"]);
+      const TaskConstMeta(debugName: "save_hnsw_index", argNames: ["basePath"]);
 
   @override
   Future<List<ChunkSearchResult>> crateApiSourceRagSearchChunks({

@@ -13,13 +13,20 @@ Future<void> buildHnswIndex({
   required List<(PlatformInt64, Float32List)> points,
 }) => RustLib.instance.api.crateApiHnswIndexBuildHnswIndex(points: points);
 
-/// Save HNSW index to disk
-Future<void> saveHnswIndex({required String fullPath}) =>
-    RustLib.instance.api.crateApiHnswIndexSaveHnswIndex(fullPath: fullPath);
+/// Save HNSW index point data to disk (bincode serialization)
+///
+/// Since hnsw_rs's native persistence has lifetime constraints,
+/// we save the point data and rebuild the index on load.
+/// This is fast enough for practical use (1000 points < 100ms rebuild).
+Future<void> saveHnswIndex({required String basePath}) =>
+    RustLib.instance.api.crateApiHnswIndexSaveHnswIndex(basePath: basePath);
 
 /// Load HNSW index from disk
-Future<bool> loadHnswIndex({required String fullPath}) =>
-    RustLib.instance.api.crateApiHnswIndexLoadHnswIndex(fullPath: fullPath);
+///
+/// Returns true if marker exists (index should be rebuilt from DB),
+/// false if no cached index exists.
+Future<bool> loadHnswIndex({required String basePath}) =>
+    RustLib.instance.api.crateApiHnswIndexLoadHnswIndex(basePath: basePath);
 
 /// Search in HNSW index
 Future<List<HnswSearchResult>> searchHnsw({

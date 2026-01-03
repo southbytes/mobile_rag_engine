@@ -1528,12 +1528,12 @@ fn wire__crate__api__hnsw_index__load_hnsw_index_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api__full_path = <String>::sse_decode(&mut deserializer);
+            let api_base_path = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
-                        let output_ok = crate::api::hnsw_index::load_hnsw_index(&api__full_path)?;
+                        let output_ok = crate::api::hnsw_index::load_hnsw_index(&api_base_path)?;
                         Ok(output_ok)
                     })(),
                 )
@@ -1735,12 +1735,12 @@ fn wire__crate__api__hnsw_index__save_hnsw_index_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api__full_path = <String>::sse_decode(&mut deserializer);
+            let api_base_path = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
-                        let output_ok = crate::api::hnsw_index::save_hnsw_index(&api__full_path)?;
+                        let output_ok = crate::api::hnsw_index::save_hnsw_index(&api_base_path)?;
                         Ok(output_ok)
                     })(),
                 )
