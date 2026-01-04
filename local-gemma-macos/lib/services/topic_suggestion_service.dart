@@ -350,7 +350,18 @@ JSON 형식으로만 응답하세요:
         return [];
       }
 
-      final jsonStr = jsonMatch.group(0)!;
+      String jsonStr = jsonMatch.group(0)!;
+
+      // Sanitize JSON string: remove control characters and fix smart quotes
+      jsonStr = jsonStr
+          .replaceAll(''', "'")  // Left single quote
+          .replaceAll(''', "'") // Right single quote
+          .replaceAll('"', '"') // Left double quote
+          .replaceAll('"', '"') // Right double quote
+          .replaceAll('–', '-') // En dash
+          .replaceAll('—', '-') // Em dash
+          .replaceAll(RegExp(r'[\x00-\x1F\x7F]'), ''); // Remove control chars
+
       final List<dynamic> jsonList = jsonDecode(jsonStr) as List<dynamic>;
 
       return jsonList

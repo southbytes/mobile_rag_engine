@@ -15,6 +15,9 @@ dependencies:
   ollama_dart: ^0.3.0+1
   path_provider: ^2.1.5
   flutter_rust_bridge: ^2.0.0
+  force_directed_graphview: ^0.6.2
+  flutter_markdown: ^0.7.3
+  scrollable_positioned_list: ^0.3.8
 
 dev_dependencies:
   flutter_test:

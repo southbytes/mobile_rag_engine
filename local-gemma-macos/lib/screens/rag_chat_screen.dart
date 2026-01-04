@@ -13,76 +13,14 @@ import 'package:ollama_dart/ollama_dart.dart';
 import 'dart:convert';
 
 import '../services/topic_suggestion_service.dart';
+import '../models/chat_models.dart';
+import '../widgets/knowledge_graph_panel.dart';
+import '../widgets/chunk_detail_sidebar.dart';
+import '../widgets/suggestion_chips.dart';
+import '../widgets/chat_input_area.dart';
+import '../widgets/document_style_response.dart';
 
-/// Query intent types for RAG parameter optimization
-enum QueryIntent {
-  summary, // 요약, 정리, 핵심 → 적은 청크, 낮은 토큰
-  definition, // ~란, 뜻, 의미 → 정확한 정의
-  broad, // 전체, 모든, 목록 → 많은 청크
-  detail, // 자세히, 왜, 어떻게 → 중간 청크
-  general, // 기본 질문
-}
-
-/// Analysis result from LLM intent classification
-class QueryAnalysis {
-  final QueryIntent intent;
-  final int adjacentChunks;
-  final int tokenBudget;
-  final int topK;
-  final String refinedQuery; // LLM이 정제한 검색 키워드
-
-  const QueryAnalysis({
-    required this.intent,
-    required this.adjacentChunks,
-    required this.tokenBudget,
-    required this.topK,
-    required this.refinedQuery,
-  });
-
-  /// Default fallback analysis
-  factory QueryAnalysis.defaultFor(String query) {
-    return QueryAnalysis(
-      intent: QueryIntent.general,
-      adjacentChunks: 2,
-      tokenBudget: 2000,
-      topK: 10,
-      refinedQuery: query,
-    );
-  }
-
-  @override
-  String toString() =>
-      'QueryAnalysis(intent: $intent, adjacent: $adjacentChunks, budget: $tokenBudget, topK: $topK, query: "$refinedQuery")';
-}
-
-/// Message model for chat
-class ChatMessage {
-  final String content;
-  final bool isUser;
-  final DateTime timestamp;
-  final List<ChunkSearchResult>? retrievedChunks;
-  final int? tokensUsed;
-  final double? compressionRatio; // 0.0-1.0, lower = more compressed
-  final int? originalTokens; // Before compression
-
-  // Timing metrics for debug
-  final Duration? ragSearchTime;
-  final Duration? llmGenerationTime;
-  final Duration? totalTime;
-
-  ChatMessage({
-    required this.content,
-    required this.isUser,
-    DateTime? timestamp,
-    this.retrievedChunks,
-    this.tokensUsed,
-    this.compressionRatio,
-    this.originalTokens,
-    this.ragSearchTime,
-    this.llmGenerationTime,
-    this.totalTime,
-  }) : timestamp = timestamp ?? DateTime.now();
-}
+// Models are now in models/chat_models.dart
 
 class RagChatScreen extends StatefulWidget {
   final bool mockLlm;
@@ -131,6 +69,13 @@ class _RagChatScreenState extends State<RagChatScreen> {
   bool _isSuggestionsExpanded = true; // Collapsible suggestions panel
   final Set<int> _expandedSourceMessages =
       {}; // Track which messages have sources expanded
+
+  // Knowledge Graph panel state
+  bool _showGraphPanel = true; // Toggle graph panel visibility
+  ChunkSearchResult? _selectedChunk; // Currently selected chunk in graph
+  String? _lastQuery; // Last query for graph display
+  List<ChunkSearchResult> _lastChunks = []; // Last chunks for graph display
+  int? _activeGraphMessageIndex; // Track which message's chunks are in graph
 
   /// Calculate optimal adjacent chunks based on query characteristics.
   ///
@@ -470,6 +415,10 @@ JSON 형식:
 
       // Add AI response with stats
       setState(() {
+        // Update graph panel data
+        _lastQuery = text;
+        _lastChunks = ragResult.chunks;
+
         _messages.insert(
           0,
           ChatMessage(
@@ -967,13 +916,26 @@ text completions and chat responses.''',
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
-        title: const Text('RAG Chat'),
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text('RAG Chat', style: TextStyle(color: Colors.white)),
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          // Graph panel toggle
+          IconButton(
+            icon: Icon(
+              _showGraphPanel ? Icons.hub : Icons.hub_outlined,
+              color: _showGraphPanel ? Colors.purple : Colors.grey,
+            ),
+            tooltip: 'Toggle Knowledge Graph',
+            onPressed: () => setState(() => _showGraphPanel = !_showGraphPanel),
+          ),
           IconButton(
             icon: Icon(
               _showDebugInfo ? Icons.bug_report : Icons.bug_report_outlined,
+              color: Colors.grey,
             ),
             tooltip: 'Toggle debug info',
             onPressed: () => setState(() => _showDebugInfo = !_showDebugInfo),
@@ -1105,51 +1067,126 @@ text completions and chat responses.''',
           ),
         ],
       ),
-      body: Column(
+      body: Row(
         children: [
-          // Status bar
-          if (_showDebugInfo)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: Row(
+          // Left: Chat area (flex 5)
+          Expanded(
+            flex: 5,
+            child: Container(
+              color: const Color(0xFF121212),
+              child: Column(
                 children: [
-                  if (_isLoading)
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else
-                    Icon(
-                      _isInitialized ? Icons.check_circle : Icons.error,
-                      size: 16,
-                      color: _isInitialized ? Colors.green : Colors.red,
+                  // Status bar
+                  if (_showDebugInfo)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      color: const Color(0xFF1A1A1A),
+                      child: Row(
+                        children: [
+                          if (_isLoading)
+                            const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          else
+                            Icon(
+                              _isInitialized ? Icons.check_circle : Icons.error,
+                              size: 16,
+                              color: _isInitialized ? Colors.green : Colors.red,
+                            ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _status,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            '📄$_totalSources 📦$_totalChunks',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _status,
-                      style: const TextStyle(fontSize: 12),
-                      overflow: TextOverflow.ellipsis,
+
+                  // Suggestion chips
+                  SuggestionChipsPanel(
+                    suggestions: _suggestedQuestions,
+                    isLoading: _isLoadingSuggestions,
+                    isExpanded: _isSuggestionsExpanded,
+                    isDisabled: _isGenerating,
+                    onToggleExpanded: () => setState(
+                      () => _isSuggestionsExpanded = !_isSuggestionsExpanded,
                     ),
+                    onRefresh: () {
+                      _topicService.invalidateCache();
+                      _generateTopicSuggestions();
+                    },
+                    onQuestionSelected: _sendSuggestedQuestion,
                   ),
-                  Text(
-                    '📄$_totalSources 📦$_totalChunks',
-                    style: const TextStyle(fontSize: 12),
+
+                  // Messages
+                  Expanded(child: _buildMessageList()),
+
+                  // Input area
+                  ChatInputArea(
+                    controller: _messageController,
+                    focusNode: _focusNode,
+                    isEnabled: _isInitialized,
+                    isGenerating: _isGenerating,
+                    onSend: _sendMessage,
+                    onAttach: _showAddDocumentDialog,
                   ),
                 ],
               ),
             ),
+          ),
 
-          // Suggestion chips (topic-based questions)
-          _buildSuggestionChips(),
+          // Divider
+          if (_showGraphPanel) Container(width: 1, color: Colors.grey[800]),
 
-          // Messages
-          Expanded(child: _buildMessageList()),
+          // Middle: Graph panel (flex 3-4)
+          if (_showGraphPanel)
+            Expanded(
+              flex: 4,
+              child: KnowledgeGraphPanel(
+                query: _lastQuery,
+                chunks: _lastChunks,
+                similarityThreshold: _minSimilarityThreshold,
+                selectedChunk: _selectedChunk,
+                onChunkSelected: (chunk) {
+                  setState(() => _selectedChunk = chunk);
+                },
+              ),
+            ),
 
-          // Input area
-          _buildInputArea(),
+          // Divider
+          if (_showGraphPanel) Container(width: 1, color: Colors.grey[800]),
+
+          // Right: Chunk detail sidebar (flex 1-2)
+          if (_showGraphPanel)
+            Expanded(
+              flex: 2,
+              child: ChunkDetailSidebar(
+                chunks: _lastChunks,
+                selectedChunk: _selectedChunk,
+                searchQuery: _lastQuery,
+                onChunkSelected: (chunk) {
+                  setState(() => _selectedChunk = chunk);
+                },
+              ),
+            ),
         ],
       ),
     );
@@ -1182,9 +1219,41 @@ text completions and chat responses.''',
       itemCount: _messages.length,
       itemBuilder: (context, index) {
         final message = _messages[index];
-        return _buildMessageBubble(message);
+        // Use document style for AI responses, bubble for user
+        if (message.isUser) {
+          return UserMessageBubble(message: message);
+        } else {
+          return DocumentStyleResponse(
+            message: message,
+            showDebugInfo: _showDebugInfo,
+            isGraphActive: _showGraphPanel && _activeGraphMessageIndex == index,
+            onViewGraph:
+                message.retrievedChunks != null &&
+                    message.retrievedChunks!.isNotEmpty
+                ? () {
+                    setState(() {
+                      _lastQuery = _getQueryForMessage(index);
+                      _lastChunks = message.retrievedChunks!;
+                      _activeGraphMessageIndex = index;
+                      _showGraphPanel = true;
+                    });
+                  }
+                : null,
+          );
+        }
       },
     );
+  }
+
+  /// Get the user query that generated this AI response
+  String? _getQueryForMessage(int aiMessageIndex) {
+    // The user message is typically the next one (since list is reversed)
+    for (var i = aiMessageIndex + 1; i < _messages.length; i++) {
+      if (_messages[i].isUser) {
+        return _messages[i].content;
+      }
+    }
+    return null;
   }
 
   /// Build suggestion chips for topic-based questions (collapsible)
