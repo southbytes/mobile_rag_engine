@@ -56,8 +56,10 @@ class SuggestionChipsPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(
           context,
-        ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-        border: Border(bottom: BorderSide(color: Colors.grey.withOpacity(0.2))),
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: .5),
+        border: Border(
+          bottom: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,7 +93,7 @@ class SuggestionChipsPanel extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.2),
+                      color: Colors.amber.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -147,16 +149,16 @@ class SuggestionChipsPanel extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     backgroundColor: isDisabled
-                        ? Colors.grey.withOpacity(0.2)
+                        ? Colors.grey.withValues(alpha: 0.2)
                         : Theme.of(
                             context,
-                          ).colorScheme.primaryContainer.withOpacity(0.5),
+                          ).colorScheme.primaryContainer.withValues(alpha: 0.5),
                     side: BorderSide(
                       color: isDisabled
-                          ? Colors.grey.withOpacity(0.3)
+                          ? Colors.grey.withValues(alpha: 0.3)
                           : Theme.of(
                               context,
-                            ).colorScheme.primary.withOpacity(0.3),
+                            ).colorScheme.primary.withValues(alpha: 0.3),
                     ),
                     onPressed: isDisabled ? null : () => onQuestionSelected(q),
                   );

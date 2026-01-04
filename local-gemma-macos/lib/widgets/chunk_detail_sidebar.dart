@@ -4,7 +4,7 @@
 // Uses scrollable_positioned_list for reliable scroll-to-index
 
 import 'package:flutter/material.dart';
-import 'package:mobile_rag_engine/src/rust/api/source_rag.dart';
+import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 /// Obsidian-style chunk detail sidebar with auto-scroll to selected chunk
@@ -171,7 +171,7 @@ class _ChunkCard extends StatelessWidget {
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isSelected
-              ? Colors.blue.withOpacity(0.25)
+              ? Colors.blue.withValues(alpha: 0.25)
               : const Color(0xFF2A2A2A),
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
@@ -181,7 +181,7 @@ class _ChunkCard extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.blue.withOpacity(0.4),
+                    color: Colors.blue.withValues(alpha: 0.4),
                     blurRadius: 10,
                     spreadRadius: 2,
                   ),
@@ -202,7 +202,9 @@ class _ChunkCard extends StatelessWidget {
                       vertical: 1,
                     ),
                     decoration: BoxDecoration(
-                      color: _getSimilarityColor(similarity).withOpacity(0.2),
+                      color: _getSimilarityColor(
+                        similarity,
+                      ).withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(3),
                     ),
                     child: Text(
@@ -221,7 +223,7 @@ class _ChunkCard extends StatelessWidget {
                       vertical: 1,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.2),
+                      color: Colors.grey.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(3),
                     ),
                     child: Text(
@@ -238,7 +240,7 @@ class _ChunkCard extends StatelessWidget {
                       vertical: 1,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.3),
+                      color: Colors.blue.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(3),
                     ),
                     child: Row(

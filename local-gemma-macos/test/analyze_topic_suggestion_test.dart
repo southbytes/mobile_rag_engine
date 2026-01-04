@@ -4,14 +4,15 @@
 // Run with: dart test test/analyze_topic_suggestion_test.dart --reporter expanded
 
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 import 'package:ollama_dart/ollama_dart.dart';
 
 /// Run analysis to understand topic suggestion failures
 void main() async {
-  print('=' * 70);
-  print('📊 TOPIC SUGGESTION FAILURE ANALYSIS');
-  print('=' * 70);
+  debugPrint('=' * 70);
+  debugPrint('📊 TOPIC SUGGESTION FAILURE ANALYSIS');
+  debugPrint('=' * 70);
 
   // DB path - same as app uses
   final homeDir = Platform.environment['HOME']!;
@@ -20,28 +21,28 @@ void main() async {
 
   // Check if DB exists
   if (!File(dbPath).existsSync()) {
-    print('❌ Database not found at: $dbPath');
-    print('   Please run the app first to create the database.');
+    debugPrint('❌ Database not found at: $dbPath');
+    debugPrint('   Please run the app first to create the database.');
     return;
   }
 
-  print('📁 Using DB: $dbPath\n');
+  debugPrint('📁 Using DB: $dbPath\n');
 
   // 1. Get all chunks from database
-  print('📚 STEP 1: Loading all chunks from database...');
-  print('-' * 50);
+  debugPrint('📚 STEP 1: Loading all chunks from database...');
+  debugPrint('-' * 50);
 
   final allChunks = await getAllChunkIdsAndContents(dbPath: dbPath);
-  print('   Total chunks: ${allChunks.length}');
+  debugPrint('   Total chunks: ${allChunks.length}');
 
   if (allChunks.isEmpty) {
-    print('❌ No chunks found in database.');
+    debugPrint('❌ No chunks found in database.');
     return;
   }
 
   // 2. Analyze chunk topics
-  print('\n📋 STEP 2: Analyzing chunk content topics...');
-  print('-' * 50);
+  debugPrint('\n📋 STEP 2: Analyzing chunk content topics...');
+  debugPrint('-' * 50);
 
   // Extract key topics by looking at chunk content
   final Set<String> allKeywords = {};
@@ -56,20 +57,20 @@ void main() async {
   }
 
   // Show sample chunks
-  print('   Sample chunk contents (first 5):');
+  debugPrint('   Sample chunk contents (first 5):');
   for (var i = 0; i < allChunks.length && i < 5; i++) {
     final preview = allChunks[i].content.length > 100
         ? '${allChunks[i].content.substring(0, 100)}...'
         : allChunks[i].content;
-    print('   [$i] ${preview.replaceAll('\n', ' ')}');
+    debugPrint('   [$i] ${preview.replaceAll('\n', ' ')}');
   }
 
-  print('\n   Unique keywords extracted: ${allKeywords.length}');
-  print('   Sample keywords: ${allKeywords.take(30).join(', ')}');
+  debugPrint('\n   Unique keywords extracted: ${allKeywords.length}');
+  debugPrint('   Sample keywords: ${allKeywords.take(30).join(', ')}');
 
   // 3. Simulate LLM question generation
-  print('\n🤖 STEP 3: Generating questions via LLM...');
-  print('-' * 50);
+  debugPrint('\n🤖 STEP 3: Generating questions via LLM...');
+  debugPrint('-' * 50);
 
   final ollamaClient = OllamaClient();
 
@@ -82,14 +83,14 @@ void main() async {
       ? '${sampleText.substring(0, 4000)}...'
       : sampleText;
 
-  print('   Sampled ${sampledChunks.length} chunks for analysis');
-  print('   Total sample text length: ${truncatedText.length} chars');
+  debugPrint('   Sampled ${sampledChunks.length} chunks for analysis');
+  debugPrint('   Total sample text length: ${truncatedText.length} chars');
 
   // Show sampled chunk text for debugging
-  print('\n   📜 SAMPLED CHUNK TEXT (for LLM):');
-  print('   ' + '=' * 60);
-  print(truncatedText);
-  print('   ' + '=' * 60);
+  debugPrint('\n   📜 SAMPLED CHUNK TEXT (for LLM):');
+  debugPrint('   ${'=' * 60}');
+  debugPrint(truncatedText);
+  debugPrint('   ${'=' * 60}');
 
   // Generate questions
   final candidateCount = 6;
@@ -113,7 +114,7 @@ JSON 형식으로만 응답하세요:
   {"topic": "주제2", "question": "질문2?"}
 ]''';
 
-  print('\n   🔄 Calling Ollama for question generation...');
+  debugPrint('\n   🔄 Calling Ollama for question generation...');
 
   try {
     final response = await ollamaClient.generateCompletion(
@@ -125,16 +126,16 @@ JSON 형식으로만 응답하세요:
     );
 
     final responseText = response.response?.trim() ?? '';
-    print('\n   📝 LLM Response:');
-    print('   ${responseText.replaceAll('\n', '\n   ')}');
+    debugPrint('\n   📝 LLM Response:');
+    debugPrint('   ${responseText.replaceAll('\n', '\n   ')}');
 
     // Parse questions
     final questions = _parseQuestions(responseText);
-    print('\n   Parsed ${questions.length} questions');
+    debugPrint('\n   Parsed ${questions.length} questions');
 
     // 4. Validate each question
-    print('\n🔍 STEP 4: Validating questions with RAG search...');
-    print('-' * 50);
+    debugPrint('\n🔍 STEP 4: Validating questions with RAG search...');
+    debugPrint('-' * 50);
 
     // Initialize tokenizer and embedding model
     final tokenizerPath =
@@ -146,10 +147,10 @@ JSON 형식으로만 응답하세요:
     if (File(modelPath).existsSync()) {
       final modelBytes = await File(modelPath).readAsBytes();
       await EmbeddingService.init(modelBytes);
-      print('   ✅ Embedding model loaded');
+      debugPrint('   ✅ Embedding model loaded');
     } else {
-      print('   ❌ Embedding model not found at: $modelPath');
-      print('   Skipping validation...');
+      debugPrint('   ❌ Embedding model not found at: $modelPath');
+      debugPrint('   Skipping validation...');
       return;
     }
 
@@ -163,8 +164,8 @@ JSON 형식으로만 응답하세요:
 
     // Validate each question
     for (final q in questions) {
-      print('\n   📌 Question: "${q['question']}"');
-      print('      Topic: ${q['topic']}');
+      debugPrint('\n   📌 Question: "${q['question']}"');
+      debugPrint('      Topic: ${q['topic']}');
 
       // Search for the question
       final result = await ragService.search(
@@ -174,10 +175,10 @@ JSON 형식으로만 응답하세요:
         adjacentChunks: 0,
       );
 
-      print('      RAG Results:');
+      debugPrint('      RAG Results:');
 
       if (result.chunks.isEmpty) {
-        print('      ❌ NO CHUNKS FOUND');
+        debugPrint('      ❌ NO CHUNKS FOUND');
         continue;
       }
 
@@ -208,11 +209,11 @@ JSON 형식으로만 응답하세요:
             ? '❌ NO MATCH'
             : '✅ ${matchingWords.length} matches (${matchingWords.take(3).join(', ')})';
 
-        print(
+        debugPrint(
           '      [$i] sim=${chunk.similarity.toStringAsFixed(3)}: '
           '${preview.replaceAll('\n', ' ')}',
         );
-        print('          $matchIndicator');
+        debugPrint('          $matchIndicator');
       }
 
       // Analysis
@@ -226,23 +227,23 @@ JSON 형식으로만 응답하세요:
           .length;
 
       if (bestScore >= 0.5 && highQualityCount >= 2) {
-        print(
+        debugPrint(
           '      ✅ PASSES validation (score: ${bestScore.toStringAsFixed(3)}, quality chunks: $highQualityCount)',
         );
       } else {
-        print(
+        debugPrint(
           '      ❌ FAILS validation (score: ${bestScore.toStringAsFixed(3)}, quality chunks: $highQualityCount)',
         );
       }
     }
   } catch (e, st) {
-    print('   ❌ Error: $e');
-    print('   Stack: $st');
+    debugPrint('   ❌ Error: $e');
+    debugPrint('   Stack: $st');
   }
 
-  print('\n' + '=' * 70);
-  print('📊 ANALYSIS COMPLETE');
-  print('=' * 70);
+  debugPrint('\n${'=' * 70}');
+  debugPrint('📊 ANALYSIS COMPLETE');
+  debugPrint('=' * 70);
 }
 
 /// Sample chunks (same logic as TopicSuggestionService)
@@ -273,7 +274,7 @@ List<Map<String, String>> _parseQuestions(String responseText) {
   try {
     final jsonMatch = RegExp(r'\[[\s\S]*\]').firstMatch(responseText);
     if (jsonMatch == null) {
-      print('   ⚠️ No JSON array found in response');
+      debugPrint('   ⚠️ No JSON array found in response');
       return [];
     }
 
@@ -291,7 +292,7 @@ List<Map<String, String>> _parseQuestions(String responseText) {
 
     return questions;
   } catch (e) {
-    print('   ⚠️ Failed to parse response: $e');
+    debugPrint('   ⚠️ Failed to parse response: $e');
     return [];
   }
 }

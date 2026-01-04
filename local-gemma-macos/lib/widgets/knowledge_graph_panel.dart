@@ -6,7 +6,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:mobile_rag_engine/src/rust/api/source_rag.dart';
+import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
 /// Node types in the knowledge graph
 enum GraphNodeType {
@@ -267,9 +267,9 @@ class _KnowledgeGraphPanelState extends State<KnowledgeGraphPanel>
       case GraphNodeType.selected:
         return Colors.green;
       case GraphNodeType.candidate:
-        return Colors.orange.withOpacity(0.7);
+        return Colors.orange.withValues(alpha: 0.7);
       case GraphNodeType.adjacent:
-        return Colors.grey.withOpacity(0.5);
+        return Colors.grey.withValues(alpha: 0.5);
     }
   }
 
@@ -431,7 +431,7 @@ class _KnowledgeGraphPanelState extends State<KnowledgeGraphPanel>
                                           BoxShadow(
                                             color: _getNodeColor(
                                               node.type,
-                                            ).withOpacity(0.5),
+                                            ).withValues(alpha: 0.5),
                                             blurRadius: isSelected ? 12 : 6,
                                           ),
                                         ],
@@ -473,7 +473,7 @@ class _KnowledgeGraphPanelState extends State<KnowledgeGraphPanel>
                 const SizedBox(width: 16),
                 _buildLegendItem(Colors.green, 'Selected'),
                 const SizedBox(width: 16),
-                _buildLegendItem(Colors.orange.withOpacity(0.7), 'Low'),
+                _buildLegendItem(Colors.orange.withValues(alpha: 0.7), 'Low'),
               ],
             ),
           ),
@@ -531,7 +531,7 @@ class _GraphPainter extends CustomPainter {
       final animatedEnd = Offset.lerp(start, end, animationValue.clamp(0, 1))!;
 
       final paint = Paint()
-        ..color = Colors.grey.withOpacity(0.3)
+        ..color = Colors.grey.withValues(alpha: 0.3)
         ..strokeWidth = edge.isDashed ? 1.0 : 1.5
         ..style = PaintingStyle.stroke;
 

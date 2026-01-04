@@ -2,7 +2,7 @@
 //
 // Data models for RAG chat functionality
 
-import 'package:mobile_rag_engine/src/rust/api/source_rag.dart';
+import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
 /// Query intent types for RAG parameter optimization
 enum QueryIntent {

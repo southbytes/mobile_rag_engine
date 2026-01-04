@@ -18,7 +18,7 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
   bool _isDownloading = false;
   bool _isComplete = false;
   String? _error;
-  
+
   final OllamaClient _client = OllamaClient();
 
   // Model options for Ollama
@@ -77,7 +77,8 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
           final progress = (event.completed ?? 0) / event.total!;
           setState(() {
             _progress = progress;
-            _status = '${event.status ?? "Downloading"}: ${(progress * 100).toStringAsFixed(1)}%';
+            _status =
+                '${event.status ?? "Downloading"}: ${(progress * 100).toStringAsFixed(1)}%';
           });
         } else {
           setState(() {
@@ -103,9 +104,7 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Download LLM Model'),
-      ),
+      appBar: AppBar(title: const Text('Download LLM Model')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -123,11 +122,15 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 16),
+                    // ignore: deprecated_member_use - RadioGroup requires refactoring
                     ...List.generate(_models.length, (index) {
                       final model = _models[index];
+                      // ignore: deprecated_member_use
                       return RadioListTile<int>(
                         value: index,
+                        // ignore: deprecated_member_use
                         groupValue: _selectedModelIndex,
+                        // ignore: deprecated_member_use
                         onChanged: _isDownloading
                             ? null
                             : (value) {
@@ -160,28 +163,23 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
                           _isComplete
                               ? Icons.check_circle
                               : _error != null
-                                  ? Icons.error
-                                  : Icons.info,
+                              ? Icons.error
+                              : Icons.info,
                           color: _isComplete
                               ? Colors.green
                               : _error != null
-                                  ? Colors.red
-                                  : Colors.blue,
+                              ? Colors.red
+                              : Colors.blue,
                         ),
                         const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(_status),
-                        ),
+                        Expanded(child: Text(_status)),
                       ],
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 8),
                       Text(
                         _error!,
-                        style: TextStyle(
-                          color: Colors.red[700],
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.red[700], fontSize: 12),
                       ),
                     ],
                   ],
@@ -205,12 +203,14 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
                         ),
                       )
                     : const Icon(Icons.download),
-                label: Text(_isDownloading ? 'Downloading...' : 'Download Model'),
+                label: Text(
+                  _isDownloading ? 'Downloading...' : 'Download Model',
+                ),
               ),
             if (_isComplete)
               FilledButton.icon(
                 onPressed: () => Navigator.pop(
-                  context, 
+                  context,
                   _models[_selectedModelIndex].modelId,
                 ),
                 icon: const Icon(Icons.check),
