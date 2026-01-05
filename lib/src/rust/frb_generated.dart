@@ -13,3871 +13,2810 @@ import 'api/simple.dart';
 import 'api/simple_rag.dart';
 import 'api/source_rag.dart';
 import 'api/tokenizer.dart';
+import 'api/user_intent.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
-import 'frb_generated.io.dart'
-    if (dart.library.js_interop) 'frb_generated.web.dart';
+import 'frb_generated.io.dart' if (dart.library.js_interop) 'frb_generated.web.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-/// Main entrypoint of the Rust API
-class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
-  @internal
-  static final instance = RustLib._();
-
-  RustLib._();
-
-  /// Initialize flutter_rust_bridge
-  static Future<void> init({
-    RustLibApi? api,
-    BaseHandler? handler,
-    ExternalLibrary? externalLibrary,
-    bool forceSameCodegenVersion = true,
-  }) async {
-    await instance.initImpl(
-      api: api,
-      handler: handler,
-      externalLibrary: externalLibrary,
-      forceSameCodegenVersion: forceSameCodegenVersion,
-    );
-  }
-
-  /// Initialize flutter_rust_bridge in mock mode.
-  /// No libraries for FFI are loaded.
-  static void initMock({required RustLibApi api}) {
-    instance.initMockImpl(api: api);
-  }
-
-  /// Dispose flutter_rust_bridge
-  ///
-  /// The call to this function is optional, since flutter_rust_bridge (and everything else)
-  /// is automatically disposed when the app stops.
-  static void dispose() => instance.disposeImpl();
-
-  @override
-  ApiImplConstructor<RustLibApiImpl, RustLibWire> get apiImplConstructor =>
-      RustLibApiImpl.new;
-
-  @override
-  WireConstructor<RustLibWire> get wireConstructor =>
-      RustLibWire.fromExternalLibrary;
-
-  @override
-  Future<void> executeRustInitializers() async {
-    await api.crateApiSimpleInitApp();
-  }
-
-  @override
-  ExternalLibraryLoaderConfig get defaultExternalLibraryLoaderConfig =>
-      kDefaultExternalLibraryLoaderConfig;
-
-  @override
-  String get codegenVersion => '2.11.1';
-
-  @override
-  int get rustContentHash => -203478054;
-
-  static const kDefaultExternalLibraryLoaderConfig =
-      ExternalLibraryLoaderConfig(
-        stem: 'rust_lib_mobile_rag_engine',
-        ioDirectory: 'rust/target/release/',
-        webPrefix: 'pkg/',
-      );
-}
-
-abstract class RustLibApi extends BaseApi {
-  Future<int> crateApiSourceRagAddChunks({
-    required String dbPath,
-    required PlatformInt64 sourceId,
-    required List<ChunkData> chunks,
-  });
-
-  Future<AddDocumentResult> crateApiSimpleRagAddDocument({
-    required String dbPath,
-    required String content,
-    required List<double> embedding,
-  });
-
-  Future<void> crateApiSimpleRagAddDocumentSimple({
-    required String dbPath,
-    required String content,
-    required List<double> embedding,
-  });
-
-  Future<AddSourceResult> crateApiSourceRagAddSource({
-    required String dbPath,
-    required String content,
-    String? metadata,
-  });
-
-  Future<void> crateApiBm25SearchBm25AddDocument({
-    required PlatformInt64 docId,
-    required String content,
-  });
-
-  Future<void> crateApiBm25SearchBm25AddDocuments({
-    required List<(PlatformInt64, String)> docs,
-  });
-
-  Future<void> crateApiBm25SearchBm25ClearIndex();
-
-  Future<BigInt> crateApiBm25SearchBm25GetDocumentCount();
 
-  Future<void> crateApiBm25SearchBm25RemoveDocument({
-    required PlatformInt64 docId,
-  });
+                /// Main entrypoint of the Rust API
+                class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
+                  @internal
+                  static final instance = RustLib._();
 
-  Future<List<Bm25SearchResult>> crateApiBm25SearchBm25Search({
-    required String query,
-    required int topK,
-  });
+                  RustLib._();
 
-  Future<void> crateApiHnswIndexBuildHnswIndex({
-    required List<(PlatformInt64, Float32List)> points,
-  });
+                  /// Initialize flutter_rust_bridge
+                  static Future<void> init({
+                    RustLibApi? api,
+                    BaseHandler? handler,
+                    ExternalLibrary? externalLibrary,
+                    bool forceSameCodegenVersion = true,
+                  }) async {
+                    await instance.initImpl(
+                      api: api,
+                      handler: handler,
+                      externalLibrary: externalLibrary,
+                      forceSameCodegenVersion: forceSameCodegenVersion,
+                    );
+                  }
 
-  double crateApiSimpleRagCalculateCosineSimilarity({
-    required List<double> vecA,
-    required List<double> vecB,
-  });
+                  /// Initialize flutter_rust_bridge in mock mode.
+                  /// No libraries for FFI are loaded.
+                  static void initMock({
+                    required RustLibApi api,
+                  }) {
+                    instance.initMockImpl(
+                      api: api,
+                    );
+                  }
 
-  Future<void> crateApiSemanticChunkerChunkTypeAsStr({required ChunkType that});
+                  /// Dispose flutter_rust_bridge
+                  ///
+                  /// The call to this function is optional, since flutter_rust_bridge (and everything else)
+                  /// is automatically disposed when the app stops.
+                  static void dispose() => instance.disposeImpl();
 
-  Future<ChunkType> crateApiSemanticChunkerChunkTypeFromStr({
-    required String s,
-  });
+                  @override
+                  ApiImplConstructor<RustLibApiImpl, RustLibWire> get apiImplConstructor => RustLibApiImpl.new;
 
-  ChunkType crateApiSemanticChunkerClassifyChunk({required String text});
+                  @override
+                  WireConstructor<RustLibWire> get wireConstructor => RustLibWire.fromExternalLibrary;
 
-  Future<void> crateApiSimpleRagClearAllDocuments({required String dbPath});
+                  @override
+                  Future<void> executeRustInitializers() async {
+                    await api.crateApiSimpleInitApp();
 
-  Future<void> crateApiIncrementalIndexClearBuffer();
+                  }
 
-  Future<void> crateApiHnswIndexClearHnswIndex();
+                  @override
+                  ExternalLibraryLoaderConfig get defaultExternalLibraryLoaderConfig => kDefaultExternalLibraryLoaderConfig;
 
-  Future<CompressedText> crateApiCompressionUtilsCompressText({
-    required String text,
-    required int maxChars,
-    required CompressionOptions options,
-  });
+                  @override
+                  String get codegenVersion => '2.11.1';
 
-  Future<String> crateApiCompressionUtilsCompressTextSimple({
-    required String text,
-    required int level,
-  });
+                  @override
+                  int get rustContentHash => 930055699;
 
-  Future<CompressionOptions>
-  crateApiCompressionUtilsCompressionOptionsDefault();
+                  static const kDefaultExternalLibraryLoaderConfig = ExternalLibraryLoaderConfig(
+                    stem: 'rust_lib_mobile_rag_engine',
+                    ioDirectory: 'rust/target/release/',
+                    webPrefix: 'pkg/',
+                  );
+                }
+                
 
-  String crateApiTokenizerDecodeTokens({required List<int> tokenIds});
+                abstract class RustLibApi extends BaseApi {
+                  Future<int> crateApiSourceRagAddChunks({required String dbPath , required PlatformInt64 sourceId , required List<ChunkData> chunks });
 
-  Future<void> crateApiSourceRagDeleteSource({
-    required String dbPath,
-    required PlatformInt64 sourceId,
-  });
+Future<AddDocumentResult> crateApiSimpleRagAddDocument({required String dbPath , required String content , required List<double> embedding });
 
-  Future<EmbeddingPoint> crateApiHnswIndexEmbeddingPointNew({
-    required PlatformInt64 id,
-    required List<double> embedding,
-  });
+Future<void> crateApiSimpleRagAddDocumentSimple({required String dbPath , required String content , required List<double> embedding });
 
-  Future<List<ChunkSearchResult>> crateApiSourceRagGetAdjacentChunks({
-    required String dbPath,
-    required PlatformInt64 sourceId,
-    required int minIndex,
-    required int maxIndex,
-  });
+Future<AddSourceResult> crateApiSourceRagAddSource({required String dbPath , required String content , String? metadata });
 
-  Future<List<ChunkForReembedding>> crateApiSourceRagGetAllChunkIdsAndContents({
-    required String dbPath,
-  });
+Future<void> crateApiBm25SearchBm25AddDocument({required PlatformInt64 docId , required String content });
 
-  Future<List<(PlatformInt64, Float32List)>>
-  crateApiIncrementalIndexGetBufferForMerge();
+Future<void> crateApiBm25SearchBm25AddDocuments({required List<(PlatformInt64,String)> docs });
 
-  Future<BufferStats> crateApiIncrementalIndexGetBufferStats();
+Future<void> crateApiBm25SearchBm25ClearIndex();
 
-  Future<PlatformInt64> crateApiSimpleRagGetDocumentCount({
-    required String dbPath,
-  });
+Future<BigInt> crateApiBm25SearchBm25GetDocumentCount();
 
-  Future<String?> crateApiSourceRagGetSource({
-    required String dbPath,
-    required PlatformInt64 sourceId,
-  });
+Future<void> crateApiBm25SearchBm25RemoveDocument({required PlatformInt64 docId });
 
-  Future<List<String>> crateApiSourceRagGetSourceChunks({
-    required String dbPath,
-    required PlatformInt64 sourceId,
-  });
+Future<List<Bm25SearchResult>> crateApiBm25SearchBm25Search({required String query , required int topK });
 
-  Future<SourceStats> crateApiSourceRagGetSourceStats({required String dbPath});
+Future<void> crateApiHnswIndexBuildHnswIndex({required List<(PlatformInt64,Float32List)> points });
 
-  int crateApiTokenizerGetVocabSize();
+double crateApiSimpleRagCalculateCosineSimilarity({required List<double> vecA , required List<double> vecB });
 
-  String crateApiSimpleGreet({required String name});
+Future<void> crateApiSemanticChunkerChunkTypeAsStr({required ChunkType that });
 
-  Future<void> crateApiIncrementalIndexIncrementalAdd({
-    required PlatformInt64 docId,
-    required List<double> embedding,
-  });
+Future<ChunkType> crateApiSemanticChunkerChunkTypeFromStr({required String s });
 
-  Future<void> crateApiIncrementalIndexIncrementalAddBatch({
-    required List<(PlatformInt64, Float32List)> docs,
-  });
+ChunkType crateApiSemanticChunkerClassifyChunk({required String text });
 
-  Future<void> crateApiIncrementalIndexIncrementalRemove({
-    required PlatformInt64 docId,
-  });
+Future<void> crateApiSimpleRagClearAllDocuments({required String dbPath });
 
-  Future<List<IncrementalSearchResult>>
-  crateApiIncrementalIndexIncrementalSearch({
-    required List<double> queryEmbedding,
-    required BigInt topK,
-  });
+Future<void> crateApiIncrementalIndexClearBuffer();
 
-  Future<void> crateApiSimpleInitApp();
+Future<void> crateApiHnswIndexClearHnswIndex();
 
-  Future<void> crateApiSimpleRagInitDb({required String dbPath});
+Future<CompressedText> crateApiCompressionUtilsCompressText({required String text , required int maxChars , required CompressionOptions options });
 
-  Future<void> crateApiSourceRagInitSourceDb({required String dbPath});
+Future<String> crateApiCompressionUtilsCompressTextSimple({required String text , required int level });
 
-  Future<void> crateApiTokenizerInitTokenizer({required String tokenizerPath});
+Future<CompressionOptions> crateApiCompressionUtilsCompressionOptionsDefault();
 
-  Future<bool> crateApiBm25SearchIsBm25IndexLoaded();
+String crateApiTokenizerDecodeTokens({required List<int> tokenIds });
 
-  Future<bool> crateApiHnswIndexIsHnswIndexLoaded();
+Future<void> crateApiSourceRagDeleteSource({required String dbPath , required PlatformInt64 sourceId });
 
-  Future<bool> crateApiHnswIndexLoadHnswIndex({required String basePath});
+Future<EmbeddingPoint> crateApiHnswIndexEmbeddingPointNew({required PlatformInt64 id , required List<double> embedding });
 
-  Future<bool> crateApiIncrementalIndexNeedsMerge();
+Future<List<ChunkSearchResult>> crateApiSourceRagGetAdjacentChunks({required String dbPath , required PlatformInt64 sourceId , required int minIndex , required int maxIndex });
 
-  Future<void> crateApiSimpleRagRebuildBm25Index({required String dbPath});
+Future<List<ChunkForReembedding>> crateApiSourceRagGetAllChunkIdsAndContents({required String dbPath });
 
-  Future<void> crateApiSourceRagRebuildChunkHnswIndex({required String dbPath});
+Future<List<(PlatformInt64,Float32List)>> crateApiIncrementalIndexGetBufferForMerge();
 
-  Future<void> crateApiSimpleRagRebuildHnswIndex({required String dbPath});
-
-  Future<RrfConfig> crateApiHybridSearchRrfConfigDefault();
-
-  Future<void> crateApiHnswIndexSaveHnswIndex({required String basePath});
-
-  Future<List<ChunkSearchResult>> crateApiSourceRagSearchChunks({
-    required String dbPath,
-    required List<double> queryEmbedding,
-    required int topK,
-  });
-
-  Future<List<HnswSearchResult>> crateApiHnswIndexSearchHnsw({
-    required List<double> queryEmbedding,
-    required BigInt topK,
-  });
-
-  Future<List<HybridSearchResult>> crateApiHybridSearchSearchHybrid({
-    required String dbPath,
-    required String queryText,
-    required List<double> queryEmbedding,
-    required int topK,
-    RrfConfig? config,
-  });
-
-  Future<List<String>> crateApiHybridSearchSearchHybridSimple({
-    required String dbPath,
-    required String queryText,
-    required List<double> queryEmbedding,
-    required int topK,
-  });
-
-  Future<List<HybridSearchResult>> crateApiHybridSearchSearchHybridWeighted({
-    required String dbPath,
-    required String queryText,
-    required List<double> queryEmbedding,
-    required int topK,
-    required double vectorWeight,
-    required double bm25Weight,
-  });
-
-  Future<List<String>> crateApiSimpleRagSearchSimilar({
-    required String dbPath,
-    required List<double> queryEmbedding,
-    required int topK,
-  });
-
-  List<SemanticChunk> crateApiSemanticChunkerSemanticChunk({
-    required String text,
-    required int maxChars,
-  });
-
-  List<SemanticChunk> crateApiSemanticChunkerSemanticChunkWithOverlap({
-    required String text,
-    required int maxChars,
-    required int overlapChars,
-  });
-
-  Future<BigInt> crateApiCompressionUtilsSentenceHash({
-    required String sentence,
-  });
-
-  Future<bool> crateApiCompressionUtilsShouldCompress({
-    required String text,
-    required int tokenThreshold,
-  });
-
-  Future<List<String>> crateApiCompressionUtilsSplitSentences({
-    required String text,
-  });
-
-  Uint32List crateApiTokenizerTokenize({required String text});
-
-  Future<void> crateApiSourceRagUpdateChunkEmbedding({
-    required String dbPath,
-    required PlatformInt64 chunkId,
-    required List<double> embedding,
-  });
-}
-
-class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
-  RustLibApiImpl({
-    required super.handler,
-    required super.wire,
-    required super.generalizedFrbRustBinding,
-    required super.portManager,
-  });
-
-  @override
-  Future<int> crateApiSourceRagAddChunks({
-    required String dbPath,
-    required PlatformInt64 sourceId,
-    required List<ChunkData> chunks,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          sse_encode_i_64(sourceId, serializer);
-          sse_encode_list_chunk_data(chunks, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 1,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+Future<BufferStats> crateApiIncrementalIndexGetBufferStats();
+
+Future<PlatformInt64> crateApiSimpleRagGetDocumentCount({required String dbPath });
+
+Future<String?> crateApiSourceRagGetSource({required String dbPath , required PlatformInt64 sourceId });
+
+Future<List<String>> crateApiSourceRagGetSourceChunks({required String dbPath , required PlatformInt64 sourceId });
+
+Future<SourceStats> crateApiSourceRagGetSourceStats({required String dbPath });
+
+int crateApiTokenizerGetVocabSize();
+
+String crateApiSimpleGreet({required String name });
+
+Future<void> crateApiIncrementalIndexIncrementalAdd({required PlatformInt64 docId , required List<double> embedding });
+
+Future<void> crateApiIncrementalIndexIncrementalAddBatch({required List<(PlatformInt64,Float32List)> docs });
+
+Future<void> crateApiIncrementalIndexIncrementalRemove({required PlatformInt64 docId });
+
+Future<List<IncrementalSearchResult>> crateApiIncrementalIndexIncrementalSearch({required List<double> queryEmbedding , required BigInt topK });
+
+Future<void> crateApiSimpleInitApp();
+
+Future<void> crateApiSimpleRagInitDb({required String dbPath });
+
+Future<void> crateApiSourceRagInitSourceDb({required String dbPath });
+
+Future<void> crateApiTokenizerInitTokenizer({required String tokenizerPath });
+
+Future<bool> crateApiBm25SearchIsBm25IndexLoaded();
+
+Future<bool> crateApiHnswIndexIsHnswIndexLoaded();
+
+Future<bool> crateApiHnswIndexLoadHnswIndex({required String basePath });
+
+Future<bool> crateApiIncrementalIndexNeedsMerge();
+
+ParsedIntent crateApiUserIntentParseIntent({required String input });
+
+UserIntent crateApiUserIntentParseUserIntent({required String input });
+
+Future<void> crateApiSimpleRagRebuildBm25Index({required String dbPath });
+
+Future<void> crateApiSourceRagRebuildChunkHnswIndex({required String dbPath });
+
+Future<void> crateApiSimpleRagRebuildHnswIndex({required String dbPath });
+
+Future<RrfConfig> crateApiHybridSearchRrfConfigDefault();
+
+Future<void> crateApiHnswIndexSaveHnswIndex({required String basePath });
+
+Future<List<ChunkSearchResult>> crateApiSourceRagSearchChunks({required String dbPath , required List<double> queryEmbedding , required int topK });
+
+Future<List<HnswSearchResult>> crateApiHnswIndexSearchHnsw({required List<double> queryEmbedding , required BigInt topK });
+
+Future<List<HybridSearchResult>> crateApiHybridSearchSearchHybrid({required String dbPath , required String queryText , required List<double> queryEmbedding , required int topK , RrfConfig? config });
+
+Future<List<String>> crateApiHybridSearchSearchHybridSimple({required String dbPath , required String queryText , required List<double> queryEmbedding , required int topK });
+
+Future<List<HybridSearchResult>> crateApiHybridSearchSearchHybridWeighted({required String dbPath , required String queryText , required List<double> queryEmbedding , required int topK , required double vectorWeight , required double bm25Weight });
+
+Future<List<String>> crateApiSimpleRagSearchSimilar({required String dbPath , required List<double> queryEmbedding , required int topK });
+
+List<SemanticChunk> crateApiSemanticChunkerSemanticChunk({required String text , required int maxChars });
+
+List<SemanticChunk> crateApiSemanticChunkerSemanticChunkWithOverlap({required String text , required int maxChars , required int overlapChars });
+
+Future<BigInt> crateApiCompressionUtilsSentenceHash({required String sentence });
+
+Future<bool> crateApiCompressionUtilsShouldCompress({required String text , required int tokenThreshold });
+
+Future<List<String>> crateApiCompressionUtilsSplitSentences({required String text });
+
+Uint32List crateApiTokenizerTokenize({required String text });
+
+Future<void> crateApiSourceRagUpdateChunkEmbedding({required String dbPath , required PlatformInt64 chunkId , required List<double> embedding });
+
+Future<void> crateApiUserIntentUserIntentGetQuery({required UserIntent that });
+
+Future<void> crateApiUserIntentUserIntentIntentType({required UserIntent that });
+
+
+                }
+                
+
+                class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
+                  RustLibApiImpl({
+                    required super.handler,
+                    required super.wire,
+                    required super.generalizedFrbRustBinding,
+                    required super.portManager,
+                  });
+
+                  @override Future<int> crateApiSourceRagAddChunks({required String dbPath , required PlatformInt64 sourceId , required List<ChunkData> chunks })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+sse_encode_i_64(sourceId, serializer);
+sse_encode_list_chunk_data(chunks, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 1, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_i_32,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSourceRagAddChunksConstMeta,
-        argValues: [dbPath, sourceId, chunks],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSourceRagAddChunksConstMeta,
+            argValues: [dbPath, sourceId, chunks],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSourceRagAddChunksConstMeta => const TaskConstMeta(
-    debugName: "add_chunks",
-    argNames: ["dbPath", "sourceId", "chunks"],
-  );
 
-  @override
-  Future<AddDocumentResult> crateApiSimpleRagAddDocument({
-    required String dbPath,
-    required String content,
-    required List<double> embedding,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          sse_encode_String(content, serializer);
-          sse_encode_list_prim_f_32_loose(embedding, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 2,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSourceRagAddChunksConstMeta => const TaskConstMeta(
+            debugName: "add_chunks",
+            argNames: ["dbPath", "sourceId", "chunks"],
+        );
+        
+
+@override Future<AddDocumentResult> crateApiSimpleRagAddDocument({required String dbPath , required String content , required List<double> embedding })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+sse_encode_String(content, serializer);
+sse_encode_list_prim_f_32_loose(embedding, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 2, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_add_document_result,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSimpleRagAddDocumentConstMeta,
-        argValues: [dbPath, content, embedding],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSimpleRagAddDocumentConstMeta,
+            argValues: [dbPath, content, embedding],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSimpleRagAddDocumentConstMeta =>
-      const TaskConstMeta(
-        debugName: "add_document",
-        argNames: ["dbPath", "content", "embedding"],
-      );
 
-  @override
-  Future<void> crateApiSimpleRagAddDocumentSimple({
-    required String dbPath,
-    required String content,
-    required List<double> embedding,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          sse_encode_String(content, serializer);
-          sse_encode_list_prim_f_32_loose(embedding, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 3,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSimpleRagAddDocumentConstMeta => const TaskConstMeta(
+            debugName: "add_document",
+            argNames: ["dbPath", "content", "embedding"],
+        );
+        
+
+@override Future<void> crateApiSimpleRagAddDocumentSimple({required String dbPath , required String content , required List<double> embedding })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+sse_encode_String(content, serializer);
+sse_encode_list_prim_f_32_loose(embedding, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 3, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSimpleRagAddDocumentSimpleConstMeta,
-        argValues: [dbPath, content, embedding],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSimpleRagAddDocumentSimpleConstMeta,
+            argValues: [dbPath, content, embedding],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSimpleRagAddDocumentSimpleConstMeta =>
-      const TaskConstMeta(
-        debugName: "add_document_simple",
-        argNames: ["dbPath", "content", "embedding"],
-      );
 
-  @override
-  Future<AddSourceResult> crateApiSourceRagAddSource({
-    required String dbPath,
-    required String content,
-    String? metadata,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          sse_encode_String(content, serializer);
-          sse_encode_opt_String(metadata, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 4,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSimpleRagAddDocumentSimpleConstMeta => const TaskConstMeta(
+            debugName: "add_document_simple",
+            argNames: ["dbPath", "content", "embedding"],
+        );
+        
+
+@override Future<AddSourceResult> crateApiSourceRagAddSource({required String dbPath , required String content , String? metadata })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+sse_encode_String(content, serializer);
+sse_encode_opt_String(metadata, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 4, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_add_source_result,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSourceRagAddSourceConstMeta,
-        argValues: [dbPath, content, metadata],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSourceRagAddSourceConstMeta,
+            argValues: [dbPath, content, metadata],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSourceRagAddSourceConstMeta => const TaskConstMeta(
-    debugName: "add_source",
-    argNames: ["dbPath", "content", "metadata"],
-  );
 
-  @override
-  Future<void> crateApiBm25SearchBm25AddDocument({
-    required PlatformInt64 docId,
-    required String content,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_i_64(docId, serializer);
-          sse_encode_String(content, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 5,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSourceRagAddSourceConstMeta => const TaskConstMeta(
+            debugName: "add_source",
+            argNames: ["dbPath", "content", "metadata"],
+        );
+        
+
+@override Future<void> crateApiBm25SearchBm25AddDocument({required PlatformInt64 docId , required String content })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_i_64(docId, serializer);
+sse_encode_String(content, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 5, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiBm25SearchBm25AddDocumentConstMeta,
-        argValues: [docId, content],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiBm25SearchBm25AddDocumentConstMeta,
+            argValues: [docId, content],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiBm25SearchBm25AddDocumentConstMeta =>
-      const TaskConstMeta(
-        debugName: "bm25_add_document",
-        argNames: ["docId", "content"],
-      );
 
-  @override
-  Future<void> crateApiBm25SearchBm25AddDocuments({
-    required List<(PlatformInt64, String)> docs,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_list_record_i_64_string(docs, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 6,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiBm25SearchBm25AddDocumentConstMeta => const TaskConstMeta(
+            debugName: "bm25_add_document",
+            argNames: ["docId", "content"],
+        );
+        
+
+@override Future<void> crateApiBm25SearchBm25AddDocuments({required List<(PlatformInt64,String)> docs })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_list_record_i_64_string(docs, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 6, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiBm25SearchBm25AddDocumentsConstMeta,
-        argValues: [docs],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiBm25SearchBm25AddDocumentsConstMeta,
+            argValues: [docs],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiBm25SearchBm25AddDocumentsConstMeta =>
-      const TaskConstMeta(debugName: "bm25_add_documents", argNames: ["docs"]);
 
-  @override
-  Future<void> crateApiBm25SearchBm25ClearIndex() {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 7,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiBm25SearchBm25AddDocumentsConstMeta => const TaskConstMeta(
+            debugName: "bm25_add_documents",
+            argNames: ["docs"],
+        );
+        
+
+@override Future<void> crateApiBm25SearchBm25ClearIndex()  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiBm25SearchBm25ClearIndexConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiBm25SearchBm25ClearIndexConstMeta,
+            argValues: [],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiBm25SearchBm25ClearIndexConstMeta =>
-      const TaskConstMeta(debugName: "bm25_clear_index", argNames: []);
 
-  @override
-  Future<BigInt> crateApiBm25SearchBm25GetDocumentCount() {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 8,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiBm25SearchBm25ClearIndexConstMeta => const TaskConstMeta(
+            debugName: "bm25_clear_index",
+            argNames: [],
+        );
+        
+
+@override Future<BigInt> crateApiBm25SearchBm25GetDocumentCount()  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 8, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_usize,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiBm25SearchBm25GetDocumentCountConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiBm25SearchBm25GetDocumentCountConstMeta,
+            argValues: [],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiBm25SearchBm25GetDocumentCountConstMeta =>
-      const TaskConstMeta(debugName: "bm25_get_document_count", argNames: []);
 
-  @override
-  Future<void> crateApiBm25SearchBm25RemoveDocument({
-    required PlatformInt64 docId,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_i_64(docId, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 9,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiBm25SearchBm25GetDocumentCountConstMeta => const TaskConstMeta(
+            debugName: "bm25_get_document_count",
+            argNames: [],
+        );
+        
+
+@override Future<void> crateApiBm25SearchBm25RemoveDocument({required PlatformInt64 docId })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_i_64(docId, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 9, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiBm25SearchBm25RemoveDocumentConstMeta,
-        argValues: [docId],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiBm25SearchBm25RemoveDocumentConstMeta,
+            argValues: [docId],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiBm25SearchBm25RemoveDocumentConstMeta =>
-      const TaskConstMeta(
-        debugName: "bm25_remove_document",
-        argNames: ["docId"],
-      );
 
-  @override
-  Future<List<Bm25SearchResult>> crateApiBm25SearchBm25Search({
-    required String query,
-    required int topK,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(query, serializer);
-          sse_encode_u_32(topK, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 10,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiBm25SearchBm25RemoveDocumentConstMeta => const TaskConstMeta(
+            debugName: "bm25_remove_document",
+            argNames: ["docId"],
+        );
+        
+
+@override Future<List<Bm25SearchResult>> crateApiBm25SearchBm25Search({required String query , required int topK })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(query, serializer);
+sse_encode_u_32(topK, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 10, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_list_bm_25_search_result,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiBm25SearchBm25SearchConstMeta,
-        argValues: [query, topK],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiBm25SearchBm25SearchConstMeta,
+            argValues: [query, topK],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiBm25SearchBm25SearchConstMeta =>
-      const TaskConstMeta(
-        debugName: "bm25_search",
-        argNames: ["query", "topK"],
-      );
 
-  @override
-  Future<void> crateApiHnswIndexBuildHnswIndex({
-    required List<(PlatformInt64, Float32List)> points,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_list_record_i_64_list_prim_f_32_strict(points, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 11,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiBm25SearchBm25SearchConstMeta => const TaskConstMeta(
+            debugName: "bm25_search",
+            argNames: ["query", "topK"],
+        );
+        
+
+@override Future<void> crateApiHnswIndexBuildHnswIndex({required List<(PlatformInt64,Float32List)> points })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_list_record_i_64_list_prim_f_32_strict(points, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 11, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiHnswIndexBuildHnswIndexConstMeta,
-        argValues: [points],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiHnswIndexBuildHnswIndexConstMeta,
+            argValues: [points],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiHnswIndexBuildHnswIndexConstMeta =>
-      const TaskConstMeta(debugName: "build_hnsw_index", argNames: ["points"]);
 
-  @override
-  double crateApiSimpleRagCalculateCosineSimilarity({
-    required List<double> vecA,
-    required List<double> vecB,
-  }) {
-    return handler.executeSync(
-      SyncTask(
-        callFfi: () {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_list_prim_f_32_loose(vecA, serializer);
-          sse_encode_list_prim_f_32_loose(vecB, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 12)!;
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiHnswIndexBuildHnswIndexConstMeta => const TaskConstMeta(
+            debugName: "build_hnsw_index",
+            argNames: ["points"],
+        );
+        
+
+@override double crateApiSimpleRagCalculateCosineSimilarity({required List<double> vecA , required List<double> vecB })  { return handler.executeSync(SyncTask(
+            callFfi: () {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_list_prim_f_32_loose(vecA, serializer);
+sse_encode_list_prim_f_32_loose(vecB, serializer);
+            return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 12)!;
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_f_64,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiSimpleRagCalculateCosineSimilarityConstMeta,
-        argValues: [vecA, vecB],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSimpleRagCalculateCosineSimilarityConstMeta,
+            argValues: [vecA, vecB],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSimpleRagCalculateCosineSimilarityConstMeta =>
-      const TaskConstMeta(
-        debugName: "calculate_cosine_similarity",
-        argNames: ["vecA", "vecB"],
-      );
 
-  @override
-  Future<void> crateApiSemanticChunkerChunkTypeAsStr({
-    required ChunkType that,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_chunk_type(that, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 13,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSimpleRagCalculateCosineSimilarityConstMeta => const TaskConstMeta(
+            debugName: "calculate_cosine_similarity",
+            argNames: ["vecA", "vecB"],
+        );
+        
+
+@override Future<void> crateApiSemanticChunkerChunkTypeAsStr({required ChunkType that })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_chunk_type(that, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 13, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiSemanticChunkerChunkTypeAsStrConstMeta,
-        argValues: [that],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSemanticChunkerChunkTypeAsStrConstMeta,
+            argValues: [that],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSemanticChunkerChunkTypeAsStrConstMeta =>
-      const TaskConstMeta(debugName: "chunk_type_as_str", argNames: ["that"]);
 
-  @override
-  Future<ChunkType> crateApiSemanticChunkerChunkTypeFromStr({
-    required String s,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(s, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 14,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSemanticChunkerChunkTypeAsStrConstMeta => const TaskConstMeta(
+            debugName: "chunk_type_as_str",
+            argNames: ["that"],
+        );
+        
+
+@override Future<ChunkType> crateApiSemanticChunkerChunkTypeFromStr({required String s })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(s, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 14, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_chunk_type,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiSemanticChunkerChunkTypeFromStrConstMeta,
-        argValues: [s],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSemanticChunkerChunkTypeFromStrConstMeta,
+            argValues: [s],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSemanticChunkerChunkTypeFromStrConstMeta =>
-      const TaskConstMeta(debugName: "chunk_type_from_str", argNames: ["s"]);
 
-  @override
-  ChunkType crateApiSemanticChunkerClassifyChunk({required String text}) {
-    return handler.executeSync(
-      SyncTask(
-        callFfi: () {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(text, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 15)!;
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSemanticChunkerChunkTypeFromStrConstMeta => const TaskConstMeta(
+            debugName: "chunk_type_from_str",
+            argNames: ["s"],
+        );
+        
+
+@override ChunkType crateApiSemanticChunkerClassifyChunk({required String text })  { return handler.executeSync(SyncTask(
+            callFfi: () {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(text, serializer);
+            return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 15)!;
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_chunk_type,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiSemanticChunkerClassifyChunkConstMeta,
-        argValues: [text],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSemanticChunkerClassifyChunkConstMeta,
+            argValues: [text],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSemanticChunkerClassifyChunkConstMeta =>
-      const TaskConstMeta(debugName: "classify_chunk", argNames: ["text"]);
 
-  @override
-  Future<void> crateApiSimpleRagClearAllDocuments({required String dbPath}) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 16,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSemanticChunkerClassifyChunkConstMeta => const TaskConstMeta(
+            debugName: "classify_chunk",
+            argNames: ["text"],
+        );
+        
+
+@override Future<void> crateApiSimpleRagClearAllDocuments({required String dbPath })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 16, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSimpleRagClearAllDocumentsConstMeta,
-        argValues: [dbPath],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSimpleRagClearAllDocumentsConstMeta,
+            argValues: [dbPath],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSimpleRagClearAllDocumentsConstMeta =>
-      const TaskConstMeta(
-        debugName: "clear_all_documents",
-        argNames: ["dbPath"],
-      );
 
-  @override
-  Future<void> crateApiIncrementalIndexClearBuffer() {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 17,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSimpleRagClearAllDocumentsConstMeta => const TaskConstMeta(
+            debugName: "clear_all_documents",
+            argNames: ["dbPath"],
+        );
+        
+
+@override Future<void> crateApiIncrementalIndexClearBuffer()  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 17, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiIncrementalIndexClearBufferConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiIncrementalIndexClearBufferConstMeta,
+            argValues: [],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiIncrementalIndexClearBufferConstMeta =>
-      const TaskConstMeta(debugName: "clear_buffer", argNames: []);
 
-  @override
-  Future<void> crateApiHnswIndexClearHnswIndex() {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 18,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiIncrementalIndexClearBufferConstMeta => const TaskConstMeta(
+            debugName: "clear_buffer",
+            argNames: [],
+        );
+        
+
+@override Future<void> crateApiHnswIndexClearHnswIndex()  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 18, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiHnswIndexClearHnswIndexConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiHnswIndexClearHnswIndexConstMeta,
+            argValues: [],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiHnswIndexClearHnswIndexConstMeta =>
-      const TaskConstMeta(debugName: "clear_hnsw_index", argNames: []);
 
-  @override
-  Future<CompressedText> crateApiCompressionUtilsCompressText({
-    required String text,
-    required int maxChars,
-    required CompressionOptions options,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(text, serializer);
-          sse_encode_i_32(maxChars, serializer);
-          sse_encode_box_autoadd_compression_options(options, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 19,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiHnswIndexClearHnswIndexConstMeta => const TaskConstMeta(
+            debugName: "clear_hnsw_index",
+            argNames: [],
+        );
+        
+
+@override Future<CompressedText> crateApiCompressionUtilsCompressText({required String text , required int maxChars , required CompressionOptions options })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(text, serializer);
+sse_encode_i_32(maxChars, serializer);
+sse_encode_box_autoadd_compression_options(options, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 19, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_compressed_text,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiCompressionUtilsCompressTextConstMeta,
-        argValues: [text, maxChars, options],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiCompressionUtilsCompressTextConstMeta,
+            argValues: [text, maxChars, options],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiCompressionUtilsCompressTextConstMeta =>
-      const TaskConstMeta(
-        debugName: "compress_text",
-        argNames: ["text", "maxChars", "options"],
-      );
 
-  @override
-  Future<String> crateApiCompressionUtilsCompressTextSimple({
-    required String text,
-    required int level,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(text, serializer);
-          sse_encode_i_32(level, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 20,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiCompressionUtilsCompressTextConstMeta => const TaskConstMeta(
+            debugName: "compress_text",
+            argNames: ["text", "maxChars", "options"],
+        );
+        
+
+@override Future<String> crateApiCompressionUtilsCompressTextSimple({required String text , required int level })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(text, serializer);
+sse_encode_i_32(level, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 20, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_String,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiCompressionUtilsCompressTextSimpleConstMeta,
-        argValues: [text, level],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiCompressionUtilsCompressTextSimpleConstMeta,
+            argValues: [text, level],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiCompressionUtilsCompressTextSimpleConstMeta =>
-      const TaskConstMeta(
-        debugName: "compress_text_simple",
-        argNames: ["text", "level"],
-      );
 
-  @override
-  Future<CompressionOptions>
-  crateApiCompressionUtilsCompressionOptionsDefault() {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 21,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiCompressionUtilsCompressTextSimpleConstMeta => const TaskConstMeta(
+            debugName: "compress_text_simple",
+            argNames: ["text", "level"],
+        );
+        
+
+@override Future<CompressionOptions> crateApiCompressionUtilsCompressionOptionsDefault()  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 21, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_compression_options,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiCompressionUtilsCompressionOptionsDefaultConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiCompressionUtilsCompressionOptionsDefaultConstMeta,
+            argValues: [],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta
-  get kCrateApiCompressionUtilsCompressionOptionsDefaultConstMeta =>
-      const TaskConstMeta(
-        debugName: "compression_options_default",
-        argNames: [],
-      );
 
-  @override
-  String crateApiTokenizerDecodeTokens({required List<int> tokenIds}) {
-    return handler.executeSync(
-      SyncTask(
-        callFfi: () {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_list_prim_u_32_loose(tokenIds, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 22)!;
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiCompressionUtilsCompressionOptionsDefaultConstMeta => const TaskConstMeta(
+            debugName: "compression_options_default",
+            argNames: [],
+        );
+        
+
+@override String crateApiTokenizerDecodeTokens({required List<int> tokenIds })  { return handler.executeSync(SyncTask(
+            callFfi: () {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_list_prim_u_32_loose(tokenIds, serializer);
+            return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 22)!;
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_String,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiTokenizerDecodeTokensConstMeta,
-        argValues: [tokenIds],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiTokenizerDecodeTokensConstMeta,
+            argValues: [tokenIds],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiTokenizerDecodeTokensConstMeta =>
-      const TaskConstMeta(debugName: "decode_tokens", argNames: ["tokenIds"]);
 
-  @override
-  Future<void> crateApiSourceRagDeleteSource({
-    required String dbPath,
-    required PlatformInt64 sourceId,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          sse_encode_i_64(sourceId, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 23,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiTokenizerDecodeTokensConstMeta => const TaskConstMeta(
+            debugName: "decode_tokens",
+            argNames: ["tokenIds"],
+        );
+        
+
+@override Future<void> crateApiSourceRagDeleteSource({required String dbPath , required PlatformInt64 sourceId })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+sse_encode_i_64(sourceId, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 23, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSourceRagDeleteSourceConstMeta,
-        argValues: [dbPath, sourceId],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSourceRagDeleteSourceConstMeta,
+            argValues: [dbPath, sourceId],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSourceRagDeleteSourceConstMeta =>
-      const TaskConstMeta(
-        debugName: "delete_source",
-        argNames: ["dbPath", "sourceId"],
-      );
 
-  @override
-  Future<EmbeddingPoint> crateApiHnswIndexEmbeddingPointNew({
-    required PlatformInt64 id,
-    required List<double> embedding,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_i_64(id, serializer);
-          sse_encode_list_prim_f_32_loose(embedding, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 24,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSourceRagDeleteSourceConstMeta => const TaskConstMeta(
+            debugName: "delete_source",
+            argNames: ["dbPath", "sourceId"],
+        );
+        
+
+@override Future<EmbeddingPoint> crateApiHnswIndexEmbeddingPointNew({required PlatformInt64 id , required List<double> embedding })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_i_64(id, serializer);
+sse_encode_list_prim_f_32_loose(embedding, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 24, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_embedding_point,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiHnswIndexEmbeddingPointNewConstMeta,
-        argValues: [id, embedding],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiHnswIndexEmbeddingPointNewConstMeta,
+            argValues: [id, embedding],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiHnswIndexEmbeddingPointNewConstMeta =>
-      const TaskConstMeta(
-        debugName: "embedding_point_new",
-        argNames: ["id", "embedding"],
-      );
 
-  @override
-  Future<List<ChunkSearchResult>> crateApiSourceRagGetAdjacentChunks({
-    required String dbPath,
-    required PlatformInt64 sourceId,
-    required int minIndex,
-    required int maxIndex,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          sse_encode_i_64(sourceId, serializer);
-          sse_encode_i_32(minIndex, serializer);
-          sse_encode_i_32(maxIndex, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 25,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiHnswIndexEmbeddingPointNewConstMeta => const TaskConstMeta(
+            debugName: "embedding_point_new",
+            argNames: ["id", "embedding"],
+        );
+        
+
+@override Future<List<ChunkSearchResult>> crateApiSourceRagGetAdjacentChunks({required String dbPath , required PlatformInt64 sourceId , required int minIndex , required int maxIndex })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+sse_encode_i_64(sourceId, serializer);
+sse_encode_i_32(minIndex, serializer);
+sse_encode_i_32(maxIndex, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 25, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_list_chunk_search_result,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSourceRagGetAdjacentChunksConstMeta,
-        argValues: [dbPath, sourceId, minIndex, maxIndex],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSourceRagGetAdjacentChunksConstMeta,
+            argValues: [dbPath, sourceId, minIndex, maxIndex],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSourceRagGetAdjacentChunksConstMeta =>
-      const TaskConstMeta(
-        debugName: "get_adjacent_chunks",
-        argNames: ["dbPath", "sourceId", "minIndex", "maxIndex"],
-      );
 
-  @override
-  Future<List<ChunkForReembedding>> crateApiSourceRagGetAllChunkIdsAndContents({
-    required String dbPath,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 26,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSourceRagGetAdjacentChunksConstMeta => const TaskConstMeta(
+            debugName: "get_adjacent_chunks",
+            argNames: ["dbPath", "sourceId", "minIndex", "maxIndex"],
+        );
+        
+
+@override Future<List<ChunkForReembedding>> crateApiSourceRagGetAllChunkIdsAndContents({required String dbPath })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 26, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_list_chunk_for_reembedding,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSourceRagGetAllChunkIdsAndContentsConstMeta,
-        argValues: [dbPath],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSourceRagGetAllChunkIdsAndContentsConstMeta,
+            argValues: [dbPath],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSourceRagGetAllChunkIdsAndContentsConstMeta =>
-      const TaskConstMeta(
-        debugName: "get_all_chunk_ids_and_contents",
-        argNames: ["dbPath"],
-      );
 
-  @override
-  Future<List<(PlatformInt64, Float32List)>>
-  crateApiIncrementalIndexGetBufferForMerge() {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 27,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSourceRagGetAllChunkIdsAndContentsConstMeta => const TaskConstMeta(
+            debugName: "get_all_chunk_ids_and_contents",
+            argNames: ["dbPath"],
+        );
+        
+
+@override Future<List<(PlatformInt64,Float32List)>> crateApiIncrementalIndexGetBufferForMerge()  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 27, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_list_record_i_64_list_prim_f_32_strict,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiIncrementalIndexGetBufferForMergeConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiIncrementalIndexGetBufferForMergeConstMeta,
+            argValues: [],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiIncrementalIndexGetBufferForMergeConstMeta =>
-      const TaskConstMeta(debugName: "get_buffer_for_merge", argNames: []);
 
-  @override
-  Future<BufferStats> crateApiIncrementalIndexGetBufferStats() {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 28,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiIncrementalIndexGetBufferForMergeConstMeta => const TaskConstMeta(
+            debugName: "get_buffer_for_merge",
+            argNames: [],
+        );
+        
+
+@override Future<BufferStats> crateApiIncrementalIndexGetBufferStats()  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 28, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_buffer_stats,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiIncrementalIndexGetBufferStatsConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiIncrementalIndexGetBufferStatsConstMeta,
+            argValues: [],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiIncrementalIndexGetBufferStatsConstMeta =>
-      const TaskConstMeta(debugName: "get_buffer_stats", argNames: []);
 
-  @override
-  Future<PlatformInt64> crateApiSimpleRagGetDocumentCount({
-    required String dbPath,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 29,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiIncrementalIndexGetBufferStatsConstMeta => const TaskConstMeta(
+            debugName: "get_buffer_stats",
+            argNames: [],
+        );
+        
+
+@override Future<PlatformInt64> crateApiSimpleRagGetDocumentCount({required String dbPath })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 29, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_i_64,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSimpleRagGetDocumentCountConstMeta,
-        argValues: [dbPath],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSimpleRagGetDocumentCountConstMeta,
+            argValues: [dbPath],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSimpleRagGetDocumentCountConstMeta =>
-      const TaskConstMeta(
-        debugName: "get_document_count",
-        argNames: ["dbPath"],
-      );
 
-  @override
-  Future<String?> crateApiSourceRagGetSource({
-    required String dbPath,
-    required PlatformInt64 sourceId,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          sse_encode_i_64(sourceId, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 30,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSimpleRagGetDocumentCountConstMeta => const TaskConstMeta(
+            debugName: "get_document_count",
+            argNames: ["dbPath"],
+        );
+        
+
+@override Future<String?> crateApiSourceRagGetSource({required String dbPath , required PlatformInt64 sourceId })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+sse_encode_i_64(sourceId, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 30, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_opt_String,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSourceRagGetSourceConstMeta,
-        argValues: [dbPath, sourceId],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSourceRagGetSourceConstMeta,
+            argValues: [dbPath, sourceId],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSourceRagGetSourceConstMeta => const TaskConstMeta(
-    debugName: "get_source",
-    argNames: ["dbPath", "sourceId"],
-  );
 
-  @override
-  Future<List<String>> crateApiSourceRagGetSourceChunks({
-    required String dbPath,
-    required PlatformInt64 sourceId,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          sse_encode_i_64(sourceId, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 31,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSourceRagGetSourceConstMeta => const TaskConstMeta(
+            debugName: "get_source",
+            argNames: ["dbPath", "sourceId"],
+        );
+        
+
+@override Future<List<String>> crateApiSourceRagGetSourceChunks({required String dbPath , required PlatformInt64 sourceId })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+sse_encode_i_64(sourceId, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 31, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_list_String,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSourceRagGetSourceChunksConstMeta,
-        argValues: [dbPath, sourceId],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSourceRagGetSourceChunksConstMeta,
+            argValues: [dbPath, sourceId],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSourceRagGetSourceChunksConstMeta =>
-      const TaskConstMeta(
-        debugName: "get_source_chunks",
-        argNames: ["dbPath", "sourceId"],
-      );
 
-  @override
-  Future<SourceStats> crateApiSourceRagGetSourceStats({
-    required String dbPath,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 32,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSourceRagGetSourceChunksConstMeta => const TaskConstMeta(
+            debugName: "get_source_chunks",
+            argNames: ["dbPath", "sourceId"],
+        );
+        
+
+@override Future<SourceStats> crateApiSourceRagGetSourceStats({required String dbPath })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 32, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_source_stats,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSourceRagGetSourceStatsConstMeta,
-        argValues: [dbPath],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSourceRagGetSourceStatsConstMeta,
+            argValues: [dbPath],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSourceRagGetSourceStatsConstMeta =>
-      const TaskConstMeta(debugName: "get_source_stats", argNames: ["dbPath"]);
 
-  @override
-  int crateApiTokenizerGetVocabSize() {
-    return handler.executeSync(
-      SyncTask(
-        callFfi: () {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 33)!;
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSourceRagGetSourceStatsConstMeta => const TaskConstMeta(
+            debugName: "get_source_stats",
+            argNames: ["dbPath"],
+        );
+        
+
+@override int crateApiTokenizerGetVocabSize()  { return handler.executeSync(SyncTask(
+            callFfi: () {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 33)!;
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_u_32,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiTokenizerGetVocabSizeConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiTokenizerGetVocabSizeConstMeta,
+            argValues: [],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiTokenizerGetVocabSizeConstMeta =>
-      const TaskConstMeta(debugName: "get_vocab_size", argNames: []);
 
-  @override
-  String crateApiSimpleGreet({required String name}) {
-    return handler.executeSync(
-      SyncTask(
-        callFfi: () {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 34)!;
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiTokenizerGetVocabSizeConstMeta => const TaskConstMeta(
+            debugName: "get_vocab_size",
+            argNames: [],
+        );
+        
+
+@override String crateApiSimpleGreet({required String name })  { return handler.executeSync(SyncTask(
+            callFfi: () {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(name, serializer);
+            return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 34)!;
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_String,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiSimpleGreetConstMeta,
-        argValues: [name],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSimpleGreetConstMeta,
+            argValues: [name],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSimpleGreetConstMeta =>
-      const TaskConstMeta(debugName: "greet", argNames: ["name"]);
 
-  @override
-  Future<void> crateApiIncrementalIndexIncrementalAdd({
-    required PlatformInt64 docId,
-    required List<double> embedding,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_i_64(docId, serializer);
-          sse_encode_list_prim_f_32_loose(embedding, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 35,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSimpleGreetConstMeta => const TaskConstMeta(
+            debugName: "greet",
+            argNames: ["name"],
+        );
+        
+
+@override Future<void> crateApiIncrementalIndexIncrementalAdd({required PlatformInt64 docId , required List<double> embedding })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_i_64(docId, serializer);
+sse_encode_list_prim_f_32_loose(embedding, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 35, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiIncrementalIndexIncrementalAddConstMeta,
-        argValues: [docId, embedding],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiIncrementalIndexIncrementalAddConstMeta,
+            argValues: [docId, embedding],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiIncrementalIndexIncrementalAddConstMeta =>
-      const TaskConstMeta(
-        debugName: "incremental_add",
-        argNames: ["docId", "embedding"],
-      );
 
-  @override
-  Future<void> crateApiIncrementalIndexIncrementalAddBatch({
-    required List<(PlatformInt64, Float32List)> docs,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_list_record_i_64_list_prim_f_32_strict(docs, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 36,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiIncrementalIndexIncrementalAddConstMeta => const TaskConstMeta(
+            debugName: "incremental_add",
+            argNames: ["docId", "embedding"],
+        );
+        
+
+@override Future<void> crateApiIncrementalIndexIncrementalAddBatch({required List<(PlatformInt64,Float32List)> docs })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_list_record_i_64_list_prim_f_32_strict(docs, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 36, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiIncrementalIndexIncrementalAddBatchConstMeta,
-        argValues: [docs],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiIncrementalIndexIncrementalAddBatchConstMeta,
+            argValues: [docs],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiIncrementalIndexIncrementalAddBatchConstMeta =>
-      const TaskConstMeta(
-        debugName: "incremental_add_batch",
-        argNames: ["docs"],
-      );
 
-  @override
-  Future<void> crateApiIncrementalIndexIncrementalRemove({
-    required PlatformInt64 docId,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_i_64(docId, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 37,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiIncrementalIndexIncrementalAddBatchConstMeta => const TaskConstMeta(
+            debugName: "incremental_add_batch",
+            argNames: ["docs"],
+        );
+        
+
+@override Future<void> crateApiIncrementalIndexIncrementalRemove({required PlatformInt64 docId })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_i_64(docId, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 37, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiIncrementalIndexIncrementalRemoveConstMeta,
-        argValues: [docId],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiIncrementalIndexIncrementalRemoveConstMeta,
+            argValues: [docId],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiIncrementalIndexIncrementalRemoveConstMeta =>
-      const TaskConstMeta(debugName: "incremental_remove", argNames: ["docId"]);
 
-  @override
-  Future<List<IncrementalSearchResult>>
-  crateApiIncrementalIndexIncrementalSearch({
-    required List<double> queryEmbedding,
-    required BigInt topK,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
-          sse_encode_usize(topK, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 38,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiIncrementalIndexIncrementalRemoveConstMeta => const TaskConstMeta(
+            debugName: "incremental_remove",
+            argNames: ["docId"],
+        );
+        
+
+@override Future<List<IncrementalSearchResult>> crateApiIncrementalIndexIncrementalSearch({required List<double> queryEmbedding , required BigInt topK })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
+sse_encode_usize(topK, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 38, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_list_incremental_search_result,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiIncrementalIndexIncrementalSearchConstMeta,
-        argValues: [queryEmbedding, topK],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiIncrementalIndexIncrementalSearchConstMeta,
+            argValues: [queryEmbedding, topK],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiIncrementalIndexIncrementalSearchConstMeta =>
-      const TaskConstMeta(
-        debugName: "incremental_search",
-        argNames: ["queryEmbedding", "topK"],
-      );
 
-  @override
-  Future<void> crateApiSimpleInitApp() {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 39,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiIncrementalIndexIncrementalSearchConstMeta => const TaskConstMeta(
+            debugName: "incremental_search",
+            argNames: ["queryEmbedding", "topK"],
+        );
+        
+
+@override Future<void> crateApiSimpleInitApp()  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 39, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiSimpleInitAppConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSimpleInitAppConstMeta,
+            argValues: [],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSimpleInitAppConstMeta =>
-      const TaskConstMeta(debugName: "init_app", argNames: []);
 
-  @override
-  Future<void> crateApiSimpleRagInitDb({required String dbPath}) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 40,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSimpleInitAppConstMeta => const TaskConstMeta(
+            debugName: "init_app",
+            argNames: [],
+        );
+        
+
+@override Future<void> crateApiSimpleRagInitDb({required String dbPath })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 40, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSimpleRagInitDbConstMeta,
-        argValues: [dbPath],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSimpleRagInitDbConstMeta,
+            argValues: [dbPath],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSimpleRagInitDbConstMeta =>
-      const TaskConstMeta(debugName: "init_db", argNames: ["dbPath"]);
 
-  @override
-  Future<void> crateApiSourceRagInitSourceDb({required String dbPath}) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 41,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSimpleRagInitDbConstMeta => const TaskConstMeta(
+            debugName: "init_db",
+            argNames: ["dbPath"],
+        );
+        
+
+@override Future<void> crateApiSourceRagInitSourceDb({required String dbPath })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 41, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSourceRagInitSourceDbConstMeta,
-        argValues: [dbPath],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSourceRagInitSourceDbConstMeta,
+            argValues: [dbPath],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSourceRagInitSourceDbConstMeta =>
-      const TaskConstMeta(debugName: "init_source_db", argNames: ["dbPath"]);
 
-  @override
-  Future<void> crateApiTokenizerInitTokenizer({required String tokenizerPath}) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(tokenizerPath, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 42,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSourceRagInitSourceDbConstMeta => const TaskConstMeta(
+            debugName: "init_source_db",
+            argNames: ["dbPath"],
+        );
+        
+
+@override Future<void> crateApiTokenizerInitTokenizer({required String tokenizerPath })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(tokenizerPath, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 42, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiTokenizerInitTokenizerConstMeta,
-        argValues: [tokenizerPath],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiTokenizerInitTokenizerConstMeta,
+            argValues: [tokenizerPath],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiTokenizerInitTokenizerConstMeta =>
-      const TaskConstMeta(
-        debugName: "init_tokenizer",
-        argNames: ["tokenizerPath"],
-      );
 
-  @override
-  Future<bool> crateApiBm25SearchIsBm25IndexLoaded() {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 43,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiTokenizerInitTokenizerConstMeta => const TaskConstMeta(
+            debugName: "init_tokenizer",
+            argNames: ["tokenizerPath"],
+        );
+        
+
+@override Future<bool> crateApiBm25SearchIsBm25IndexLoaded()  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 43, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_bool,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiBm25SearchIsBm25IndexLoadedConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiBm25SearchIsBm25IndexLoadedConstMeta,
+            argValues: [],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiBm25SearchIsBm25IndexLoadedConstMeta =>
-      const TaskConstMeta(debugName: "is_bm25_index_loaded", argNames: []);
 
-  @override
-  Future<bool> crateApiHnswIndexIsHnswIndexLoaded() {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 44,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiBm25SearchIsBm25IndexLoadedConstMeta => const TaskConstMeta(
+            debugName: "is_bm25_index_loaded",
+            argNames: [],
+        );
+        
+
+@override Future<bool> crateApiHnswIndexIsHnswIndexLoaded()  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 44, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_bool,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiHnswIndexIsHnswIndexLoadedConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiHnswIndexIsHnswIndexLoadedConstMeta,
+            argValues: [],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiHnswIndexIsHnswIndexLoadedConstMeta =>
-      const TaskConstMeta(debugName: "is_hnsw_index_loaded", argNames: []);
 
-  @override
-  Future<bool> crateApiHnswIndexLoadHnswIndex({required String basePath}) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(basePath, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 45,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiHnswIndexIsHnswIndexLoadedConstMeta => const TaskConstMeta(
+            debugName: "is_hnsw_index_loaded",
+            argNames: [],
+        );
+        
+
+@override Future<bool> crateApiHnswIndexLoadHnswIndex({required String basePath })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(basePath, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 45, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_bool,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiHnswIndexLoadHnswIndexConstMeta,
-        argValues: [basePath],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiHnswIndexLoadHnswIndexConstMeta,
+            argValues: [basePath],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiHnswIndexLoadHnswIndexConstMeta =>
-      const TaskConstMeta(debugName: "load_hnsw_index", argNames: ["basePath"]);
 
-  @override
-  Future<bool> crateApiIncrementalIndexNeedsMerge() {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 46,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiHnswIndexLoadHnswIndexConstMeta => const TaskConstMeta(
+            debugName: "load_hnsw_index",
+            argNames: ["basePath"],
+        );
+        
+
+@override Future<bool> crateApiIncrementalIndexNeedsMerge()  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 46, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_bool,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiIncrementalIndexNeedsMergeConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiIncrementalIndexNeedsMergeConstMeta,
+            argValues: [],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiIncrementalIndexNeedsMergeConstMeta =>
-      const TaskConstMeta(debugName: "needs_merge", argNames: []);
 
-  @override
-  Future<void> crateApiSimpleRagRebuildBm25Index({required String dbPath}) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 47,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiIncrementalIndexNeedsMergeConstMeta => const TaskConstMeta(
+            debugName: "needs_merge",
+            argNames: [],
+        );
+        
+
+@override ParsedIntent crateApiUserIntentParseIntent({required String input })  { return handler.executeSync(SyncTask(
+            callFfi: () {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(input, serializer);
+            return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 47)!;
+            
+            },
+            codec: 
+        SseCodec(
+          decodeSuccessData: sse_decode_parsed_intent,
+          decodeErrorData: null,
+        )
+        ,
+            constMeta: kCrateApiUserIntentParseIntentConstMeta,
+            argValues: [input],
+            apiImpl: this,
+        )); }
+
+
+        TaskConstMeta get kCrateApiUserIntentParseIntentConstMeta => const TaskConstMeta(
+            debugName: "parse_intent",
+            argNames: ["input"],
+        );
+        
+
+@override UserIntent crateApiUserIntentParseUserIntent({required String input })  { return handler.executeSync(SyncTask(
+            callFfi: () {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(input, serializer);
+            return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 48)!;
+            
+            },
+            codec: 
+        SseCodec(
+          decodeSuccessData: sse_decode_user_intent,
+          decodeErrorData: null,
+        )
+        ,
+            constMeta: kCrateApiUserIntentParseUserIntentConstMeta,
+            argValues: [input],
+            apiImpl: this,
+        )); }
+
+
+        TaskConstMeta get kCrateApiUserIntentParseUserIntentConstMeta => const TaskConstMeta(
+            debugName: "parse_user_intent",
+            argNames: ["input"],
+        );
+        
+
+@override Future<void> crateApiSimpleRagRebuildBm25Index({required String dbPath })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 49, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSimpleRagRebuildBm25IndexConstMeta,
-        argValues: [dbPath],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSimpleRagRebuildBm25IndexConstMeta,
+            argValues: [dbPath],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSimpleRagRebuildBm25IndexConstMeta =>
-      const TaskConstMeta(
-        debugName: "rebuild_bm25_index",
-        argNames: ["dbPath"],
-      );
 
-  @override
-  Future<void> crateApiSourceRagRebuildChunkHnswIndex({
-    required String dbPath,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 48,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSimpleRagRebuildBm25IndexConstMeta => const TaskConstMeta(
+            debugName: "rebuild_bm25_index",
+            argNames: ["dbPath"],
+        );
+        
+
+@override Future<void> crateApiSourceRagRebuildChunkHnswIndex({required String dbPath })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 50, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSourceRagRebuildChunkHnswIndexConstMeta,
-        argValues: [dbPath],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSourceRagRebuildChunkHnswIndexConstMeta,
+            argValues: [dbPath],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSourceRagRebuildChunkHnswIndexConstMeta =>
-      const TaskConstMeta(
-        debugName: "rebuild_chunk_hnsw_index",
-        argNames: ["dbPath"],
-      );
 
-  @override
-  Future<void> crateApiSimpleRagRebuildHnswIndex({required String dbPath}) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 49,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSourceRagRebuildChunkHnswIndexConstMeta => const TaskConstMeta(
+            debugName: "rebuild_chunk_hnsw_index",
+            argNames: ["dbPath"],
+        );
+        
+
+@override Future<void> crateApiSimpleRagRebuildHnswIndex({required String dbPath })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 51, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSimpleRagRebuildHnswIndexConstMeta,
-        argValues: [dbPath],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSimpleRagRebuildHnswIndexConstMeta,
+            argValues: [dbPath],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSimpleRagRebuildHnswIndexConstMeta =>
-      const TaskConstMeta(
-        debugName: "rebuild_hnsw_index",
-        argNames: ["dbPath"],
-      );
 
-  @override
-  Future<RrfConfig> crateApiHybridSearchRrfConfigDefault() {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 50,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSimpleRagRebuildHnswIndexConstMeta => const TaskConstMeta(
+            debugName: "rebuild_hnsw_index",
+            argNames: ["dbPath"],
+        );
+        
+
+@override Future<RrfConfig> crateApiHybridSearchRrfConfigDefault()  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 52, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_rrf_config,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiHybridSearchRrfConfigDefaultConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiHybridSearchRrfConfigDefaultConstMeta,
+            argValues: [],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiHybridSearchRrfConfigDefaultConstMeta =>
-      const TaskConstMeta(debugName: "rrf_config_default", argNames: []);
 
-  @override
-  Future<void> crateApiHnswIndexSaveHnswIndex({required String basePath}) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(basePath, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 51,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiHybridSearchRrfConfigDefaultConstMeta => const TaskConstMeta(
+            debugName: "rrf_config_default",
+            argNames: [],
+        );
+        
+
+@override Future<void> crateApiHnswIndexSaveHnswIndex({required String basePath })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(basePath, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 53, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiHnswIndexSaveHnswIndexConstMeta,
-        argValues: [basePath],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiHnswIndexSaveHnswIndexConstMeta,
+            argValues: [basePath],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiHnswIndexSaveHnswIndexConstMeta =>
-      const TaskConstMeta(debugName: "save_hnsw_index", argNames: ["basePath"]);
 
-  @override
-  Future<List<ChunkSearchResult>> crateApiSourceRagSearchChunks({
-    required String dbPath,
-    required List<double> queryEmbedding,
-    required int topK,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
-          sse_encode_u_32(topK, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 52,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiHnswIndexSaveHnswIndexConstMeta => const TaskConstMeta(
+            debugName: "save_hnsw_index",
+            argNames: ["basePath"],
+        );
+        
+
+@override Future<List<ChunkSearchResult>> crateApiSourceRagSearchChunks({required String dbPath , required List<double> queryEmbedding , required int topK })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
+sse_encode_u_32(topK, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 54, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_list_chunk_search_result,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSourceRagSearchChunksConstMeta,
-        argValues: [dbPath, queryEmbedding, topK],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSourceRagSearchChunksConstMeta,
+            argValues: [dbPath, queryEmbedding, topK],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSourceRagSearchChunksConstMeta =>
-      const TaskConstMeta(
-        debugName: "search_chunks",
-        argNames: ["dbPath", "queryEmbedding", "topK"],
-      );
 
-  @override
-  Future<List<HnswSearchResult>> crateApiHnswIndexSearchHnsw({
-    required List<double> queryEmbedding,
-    required BigInt topK,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
-          sse_encode_usize(topK, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 53,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSourceRagSearchChunksConstMeta => const TaskConstMeta(
+            debugName: "search_chunks",
+            argNames: ["dbPath", "queryEmbedding", "topK"],
+        );
+        
+
+@override Future<List<HnswSearchResult>> crateApiHnswIndexSearchHnsw({required List<double> queryEmbedding , required BigInt topK })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
+sse_encode_usize(topK, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 55, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_list_hnsw_search_result,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiHnswIndexSearchHnswConstMeta,
-        argValues: [queryEmbedding, topK],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiHnswIndexSearchHnswConstMeta,
+            argValues: [queryEmbedding, topK],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiHnswIndexSearchHnswConstMeta =>
-      const TaskConstMeta(
-        debugName: "search_hnsw",
-        argNames: ["queryEmbedding", "topK"],
-      );
 
-  @override
-  Future<List<HybridSearchResult>> crateApiHybridSearchSearchHybrid({
-    required String dbPath,
-    required String queryText,
-    required List<double> queryEmbedding,
-    required int topK,
-    RrfConfig? config,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          sse_encode_String(queryText, serializer);
-          sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
-          sse_encode_u_32(topK, serializer);
-          sse_encode_opt_box_autoadd_rrf_config(config, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 54,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiHnswIndexSearchHnswConstMeta => const TaskConstMeta(
+            debugName: "search_hnsw",
+            argNames: ["queryEmbedding", "topK"],
+        );
+        
+
+@override Future<List<HybridSearchResult>> crateApiHybridSearchSearchHybrid({required String dbPath , required String queryText , required List<double> queryEmbedding , required int topK , RrfConfig? config })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+sse_encode_String(queryText, serializer);
+sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
+sse_encode_u_32(topK, serializer);
+sse_encode_opt_box_autoadd_rrf_config(config, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 56, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_list_hybrid_search_result,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiHybridSearchSearchHybridConstMeta,
-        argValues: [dbPath, queryText, queryEmbedding, topK, config],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiHybridSearchSearchHybridConstMeta,
+            argValues: [dbPath, queryText, queryEmbedding, topK, config],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiHybridSearchSearchHybridConstMeta =>
-      const TaskConstMeta(
-        debugName: "search_hybrid",
-        argNames: ["dbPath", "queryText", "queryEmbedding", "topK", "config"],
-      );
 
-  @override
-  Future<List<String>> crateApiHybridSearchSearchHybridSimple({
-    required String dbPath,
-    required String queryText,
-    required List<double> queryEmbedding,
-    required int topK,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          sse_encode_String(queryText, serializer);
-          sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
-          sse_encode_u_32(topK, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 55,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiHybridSearchSearchHybridConstMeta => const TaskConstMeta(
+            debugName: "search_hybrid",
+            argNames: ["dbPath", "queryText", "queryEmbedding", "topK", "config"],
+        );
+        
+
+@override Future<List<String>> crateApiHybridSearchSearchHybridSimple({required String dbPath , required String queryText , required List<double> queryEmbedding , required int topK })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+sse_encode_String(queryText, serializer);
+sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
+sse_encode_u_32(topK, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 57, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_list_String,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiHybridSearchSearchHybridSimpleConstMeta,
-        argValues: [dbPath, queryText, queryEmbedding, topK],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiHybridSearchSearchHybridSimpleConstMeta,
+            argValues: [dbPath, queryText, queryEmbedding, topK],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiHybridSearchSearchHybridSimpleConstMeta =>
-      const TaskConstMeta(
-        debugName: "search_hybrid_simple",
-        argNames: ["dbPath", "queryText", "queryEmbedding", "topK"],
-      );
 
-  @override
-  Future<List<HybridSearchResult>> crateApiHybridSearchSearchHybridWeighted({
-    required String dbPath,
-    required String queryText,
-    required List<double> queryEmbedding,
-    required int topK,
-    required double vectorWeight,
-    required double bm25Weight,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          sse_encode_String(queryText, serializer);
-          sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
-          sse_encode_u_32(topK, serializer);
-          sse_encode_f_64(vectorWeight, serializer);
-          sse_encode_f_64(bm25Weight, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 56,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiHybridSearchSearchHybridSimpleConstMeta => const TaskConstMeta(
+            debugName: "search_hybrid_simple",
+            argNames: ["dbPath", "queryText", "queryEmbedding", "topK"],
+        );
+        
+
+@override Future<List<HybridSearchResult>> crateApiHybridSearchSearchHybridWeighted({required String dbPath , required String queryText , required List<double> queryEmbedding , required int topK , required double vectorWeight , required double bm25Weight })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+sse_encode_String(queryText, serializer);
+sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
+sse_encode_u_32(topK, serializer);
+sse_encode_f_64(vectorWeight, serializer);
+sse_encode_f_64(bm25Weight, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 58, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_list_hybrid_search_result,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiHybridSearchSearchHybridWeightedConstMeta,
-        argValues: [
-          dbPath,
-          queryText,
-          queryEmbedding,
-          topK,
-          vectorWeight,
-          bm25Weight,
-        ],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiHybridSearchSearchHybridWeightedConstMeta,
+            argValues: [dbPath, queryText, queryEmbedding, topK, vectorWeight, bm25Weight],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiHybridSearchSearchHybridWeightedConstMeta =>
-      const TaskConstMeta(
-        debugName: "search_hybrid_weighted",
-        argNames: [
-          "dbPath",
-          "queryText",
-          "queryEmbedding",
-          "topK",
-          "vectorWeight",
-          "bm25Weight",
-        ],
-      );
 
-  @override
-  Future<List<String>> crateApiSimpleRagSearchSimilar({
-    required String dbPath,
-    required List<double> queryEmbedding,
-    required int topK,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
-          sse_encode_u_32(topK, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 57,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiHybridSearchSearchHybridWeightedConstMeta => const TaskConstMeta(
+            debugName: "search_hybrid_weighted",
+            argNames: ["dbPath", "queryText", "queryEmbedding", "topK", "vectorWeight", "bm25Weight"],
+        );
+        
+
+@override Future<List<String>> crateApiSimpleRagSearchSimilar({required String dbPath , required List<double> queryEmbedding , required int topK })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
+sse_encode_u_32(topK, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 59, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_list_String,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSimpleRagSearchSimilarConstMeta,
-        argValues: [dbPath, queryEmbedding, topK],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSimpleRagSearchSimilarConstMeta,
+            argValues: [dbPath, queryEmbedding, topK],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSimpleRagSearchSimilarConstMeta =>
-      const TaskConstMeta(
-        debugName: "search_similar",
-        argNames: ["dbPath", "queryEmbedding", "topK"],
-      );
 
-  @override
-  List<SemanticChunk> crateApiSemanticChunkerSemanticChunk({
-    required String text,
-    required int maxChars,
-  }) {
-    return handler.executeSync(
-      SyncTask(
-        callFfi: () {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(text, serializer);
-          sse_encode_i_32(maxChars, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 58)!;
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSimpleRagSearchSimilarConstMeta => const TaskConstMeta(
+            debugName: "search_similar",
+            argNames: ["dbPath", "queryEmbedding", "topK"],
+        );
+        
+
+@override List<SemanticChunk> crateApiSemanticChunkerSemanticChunk({required String text , required int maxChars })  { return handler.executeSync(SyncTask(
+            callFfi: () {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(text, serializer);
+sse_encode_i_32(maxChars, serializer);
+            return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 60)!;
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_list_semantic_chunk,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiSemanticChunkerSemanticChunkConstMeta,
-        argValues: [text, maxChars],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSemanticChunkerSemanticChunkConstMeta,
+            argValues: [text, maxChars],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSemanticChunkerSemanticChunkConstMeta =>
-      const TaskConstMeta(
-        debugName: "semantic_chunk",
-        argNames: ["text", "maxChars"],
-      );
 
-  @override
-  List<SemanticChunk> crateApiSemanticChunkerSemanticChunkWithOverlap({
-    required String text,
-    required int maxChars,
-    required int overlapChars,
-  }) {
-    return handler.executeSync(
-      SyncTask(
-        callFfi: () {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(text, serializer);
-          sse_encode_i_32(maxChars, serializer);
-          sse_encode_i_32(overlapChars, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 59)!;
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSemanticChunkerSemanticChunkConstMeta => const TaskConstMeta(
+            debugName: "semantic_chunk",
+            argNames: ["text", "maxChars"],
+        );
+        
+
+@override List<SemanticChunk> crateApiSemanticChunkerSemanticChunkWithOverlap({required String text , required int maxChars , required int overlapChars })  { return handler.executeSync(SyncTask(
+            callFfi: () {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(text, serializer);
+sse_encode_i_32(maxChars, serializer);
+sse_encode_i_32(overlapChars, serializer);
+            return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 61)!;
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_list_semantic_chunk,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiSemanticChunkerSemanticChunkWithOverlapConstMeta,
-        argValues: [text, maxChars, overlapChars],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiSemanticChunkerSemanticChunkWithOverlapConstMeta,
+            argValues: [text, maxChars, overlapChars],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiSemanticChunkerSemanticChunkWithOverlapConstMeta =>
-      const TaskConstMeta(
-        debugName: "semantic_chunk_with_overlap",
-        argNames: ["text", "maxChars", "overlapChars"],
-      );
 
-  @override
-  Future<BigInt> crateApiCompressionUtilsSentenceHash({
-    required String sentence,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(sentence, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 60,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiSemanticChunkerSemanticChunkWithOverlapConstMeta => const TaskConstMeta(
+            debugName: "semantic_chunk_with_overlap",
+            argNames: ["text", "maxChars", "overlapChars"],
+        );
+        
+
+@override Future<BigInt> crateApiCompressionUtilsSentenceHash({required String sentence })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(sentence, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 62, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_u_64,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiCompressionUtilsSentenceHashConstMeta,
-        argValues: [sentence],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiCompressionUtilsSentenceHashConstMeta,
+            argValues: [sentence],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiCompressionUtilsSentenceHashConstMeta =>
-      const TaskConstMeta(debugName: "sentence_hash", argNames: ["sentence"]);
 
-  @override
-  Future<bool> crateApiCompressionUtilsShouldCompress({
-    required String text,
-    required int tokenThreshold,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(text, serializer);
-          sse_encode_i_32(tokenThreshold, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 61,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiCompressionUtilsSentenceHashConstMeta => const TaskConstMeta(
+            debugName: "sentence_hash",
+            argNames: ["sentence"],
+        );
+        
+
+@override Future<bool> crateApiCompressionUtilsShouldCompress({required String text , required int tokenThreshold })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(text, serializer);
+sse_encode_i_32(tokenThreshold, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 63, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_bool,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiCompressionUtilsShouldCompressConstMeta,
-        argValues: [text, tokenThreshold],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiCompressionUtilsShouldCompressConstMeta,
+            argValues: [text, tokenThreshold],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiCompressionUtilsShouldCompressConstMeta =>
-      const TaskConstMeta(
-        debugName: "should_compress",
-        argNames: ["text", "tokenThreshold"],
-      );
 
-  @override
-  Future<List<String>> crateApiCompressionUtilsSplitSentences({
-    required String text,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(text, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 62,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiCompressionUtilsShouldCompressConstMeta => const TaskConstMeta(
+            debugName: "should_compress",
+            argNames: ["text", "tokenThreshold"],
+        );
+        
+
+@override Future<List<String>> crateApiCompressionUtilsSplitSentences({required String text })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(text, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 64, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_list_String,
           decodeErrorData: null,
-        ),
-        constMeta: kCrateApiCompressionUtilsSplitSentencesConstMeta,
-        argValues: [text],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiCompressionUtilsSplitSentencesConstMeta,
+            argValues: [text],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiCompressionUtilsSplitSentencesConstMeta =>
-      const TaskConstMeta(debugName: "split_sentences", argNames: ["text"]);
 
-  @override
-  Uint32List crateApiTokenizerTokenize({required String text}) {
-    return handler.executeSync(
-      SyncTask(
-        callFfi: () {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(text, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 63)!;
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiCompressionUtilsSplitSentencesConstMeta => const TaskConstMeta(
+            debugName: "split_sentences",
+            argNames: ["text"],
+        );
+        
+
+@override Uint32List crateApiTokenizerTokenize({required String text })  { return handler.executeSync(SyncTask(
+            callFfi: () {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(text, serializer);
+            return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 65)!;
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_list_prim_u_32_strict,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiTokenizerTokenizeConstMeta,
-        argValues: [text],
-        apiImpl: this,
-      ),
-    );
-  }
+        )
+        ,
+            constMeta: kCrateApiTokenizerTokenizeConstMeta,
+            argValues: [text],
+            apiImpl: this,
+        )); }
 
-  TaskConstMeta get kCrateApiTokenizerTokenizeConstMeta =>
-      const TaskConstMeta(debugName: "tokenize", argNames: ["text"]);
 
-  @override
-  Future<void> crateApiSourceRagUpdateChunkEmbedding({
-    required String dbPath,
-    required PlatformInt64 chunkId,
-    required List<double> embedding,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
-          sse_encode_i_64(chunkId, serializer);
-          sse_encode_list_prim_f_32_loose(embedding, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 64,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
+        TaskConstMeta get kCrateApiTokenizerTokenizeConstMeta => const TaskConstMeta(
+            debugName: "tokenize",
+            argNames: ["text"],
+        );
+        
+
+@override Future<void> crateApiSourceRagUpdateChunkEmbedding({required String dbPath , required PlatformInt64 chunkId , required List<double> embedding })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_String(dbPath, serializer);
+sse_encode_i_64(chunkId, serializer);
+sse_encode_list_prim_f_32_loose(embedding, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 66, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateApiSourceRagUpdateChunkEmbeddingConstMeta,
-        argValues: [dbPath, chunkId, embedding],
-        apiImpl: this,
-      ),
-    );
-  }
-
-  TaskConstMeta get kCrateApiSourceRagUpdateChunkEmbeddingConstMeta =>
-      const TaskConstMeta(
-        debugName: "update_chunk_embedding",
-        argNames: ["dbPath", "chunkId", "embedding"],
-      );
-
-  @protected
-  AnyhowException dco_decode_AnyhowException(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return AnyhowException(raw as String);
-  }
-
-  @protected
-  String dco_decode_String(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as String;
-  }
-
-  @protected
-  AddDocumentResult dco_decode_add_document_result(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 3)
-      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
-    return AddDocumentResult(
-      success: dco_decode_bool(arr[0]),
-      isDuplicate: dco_decode_bool(arr[1]),
-      message: dco_decode_String(arr[2]),
-    );
-  }
-
-  @protected
-  AddSourceResult dco_decode_add_source_result(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 4)
-      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
-    return AddSourceResult(
-      sourceId: dco_decode_i_64(arr[0]),
-      isDuplicate: dco_decode_bool(arr[1]),
-      chunkCount: dco_decode_i_32(arr[2]),
-      message: dco_decode_String(arr[3]),
-    );
-  }
-
-  @protected
-  Bm25SearchResult dco_decode_bm_25_search_result(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 2)
-      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
-    return Bm25SearchResult(
-      docId: dco_decode_i_64(arr[0]),
-      score: dco_decode_f_64(arr[1]),
-    );
-  }
-
-  @protected
-  bool dco_decode_bool(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as bool;
-  }
-
-  @protected
-  CompressionOptions dco_decode_box_autoadd_compression_options(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return dco_decode_compression_options(raw);
-  }
-
-  @protected
-  RrfConfig dco_decode_box_autoadd_rrf_config(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return dco_decode_rrf_config(raw);
-  }
-
-  @protected
-  BufferStats dco_decode_buffer_stats(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 3)
-      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
-    return BufferStats(
-      bufferSize: dco_decode_usize(arr[0]),
-      threshold: dco_decode_usize(arr[1]),
-      hnswLoaded: dco_decode_bool(arr[2]),
-    );
-  }
-
-  @protected
-  ChunkData dco_decode_chunk_data(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 6)
-      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
-    return ChunkData(
-      content: dco_decode_String(arr[0]),
-      chunkIndex: dco_decode_i_32(arr[1]),
-      startPos: dco_decode_i_32(arr[2]),
-      endPos: dco_decode_i_32(arr[3]),
-      chunkType: dco_decode_String(arr[4]),
-      embedding: dco_decode_list_prim_f_32_strict(arr[5]),
-    );
-  }
-
-  @protected
-  ChunkForReembedding dco_decode_chunk_for_reembedding(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 2)
-      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
-    return ChunkForReembedding(
-      chunkId: dco_decode_i_64(arr[0]),
-      content: dco_decode_String(arr[1]),
-    );
-  }
-
-  @protected
-  ChunkSearchResult dco_decode_chunk_search_result(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 6)
-      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
-    return ChunkSearchResult(
-      chunkId: dco_decode_i_64(arr[0]),
-      sourceId: dco_decode_i_64(arr[1]),
-      chunkIndex: dco_decode_i_32(arr[2]),
-      content: dco_decode_String(arr[3]),
-      chunkType: dco_decode_String(arr[4]),
-      similarity: dco_decode_f_64(arr[5]),
-    );
-  }
-
-  @protected
-  ChunkType dco_decode_chunk_type(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return ChunkType.values[raw as int];
-  }
-
-  @protected
-  CompressedText dco_decode_compressed_text(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 7)
-      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
-    return CompressedText(
-      text: dco_decode_String(arr[0]),
-      originalChars: dco_decode_i_32(arr[1]),
-      compressedChars: dco_decode_i_32(arr[2]),
-      ratio: dco_decode_f_64(arr[3]),
-      sentencesRemoved: dco_decode_i_32(arr[4]),
-      charsSavedStopwords: dco_decode_i_32(arr[5]),
-      charsSavedTruncation: dco_decode_i_32(arr[6]),
-    );
-  }
-
-  @protected
-  CompressionOptions dco_decode_compression_options(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 4)
-      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
-    return CompressionOptions(
-      removeStopwords: dco_decode_bool(arr[0]),
-      removeDuplicates: dco_decode_bool(arr[1]),
-      language: dco_decode_String(arr[2]),
-      level: dco_decode_i_32(arr[3]),
-    );
-  }
-
-  @protected
-  EmbeddingPoint dco_decode_embedding_point(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 3)
-      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
-    return EmbeddingPoint(
-      id: dco_decode_i_64(arr[0]),
-      embedding: dco_decode_list_prim_f_32_strict(arr[1]),
-      norm: dco_decode_f_32(arr[2]),
-    );
-  }
-
-  @protected
-  double dco_decode_f_32(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as double;
-  }
-
-  @protected
-  double dco_decode_f_64(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as double;
-  }
-
-  @protected
-  HnswSearchResult dco_decode_hnsw_search_result(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 2)
-      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
-    return HnswSearchResult(
-      id: dco_decode_i_64(arr[0]),
-      distance: dco_decode_f_32(arr[1]),
-    );
-  }
-
-  @protected
-  HybridSearchResult dco_decode_hybrid_search_result(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 5)
-      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
-    return HybridSearchResult(
-      docId: dco_decode_i_64(arr[0]),
-      content: dco_decode_String(arr[1]),
-      score: dco_decode_f_64(arr[2]),
-      vectorRank: dco_decode_u_32(arr[3]),
-      bm25Rank: dco_decode_u_32(arr[4]),
-    );
-  }
-
-  @protected
-  int dco_decode_i_32(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as int;
-  }
-
-  @protected
-  PlatformInt64 dco_decode_i_64(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return dcoDecodeI64(raw);
-  }
-
-  @protected
-  IncrementalSearchResult dco_decode_incremental_search_result(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 3)
-      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
-    return IncrementalSearchResult(
-      docId: dco_decode_i_64(arr[0]),
-      distance: dco_decode_f_32(arr[1]),
-      source: dco_decode_String(arr[2]),
-    );
-  }
-
-  @protected
-  List<String> dco_decode_list_String(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return (raw as List<dynamic>).map(dco_decode_String).toList();
-  }
-
-  @protected
-  List<Bm25SearchResult> dco_decode_list_bm_25_search_result(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return (raw as List<dynamic>).map(dco_decode_bm_25_search_result).toList();
-  }
-
-  @protected
-  List<ChunkData> dco_decode_list_chunk_data(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return (raw as List<dynamic>).map(dco_decode_chunk_data).toList();
-  }
-
-  @protected
-  List<ChunkForReembedding> dco_decode_list_chunk_for_reembedding(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return (raw as List<dynamic>)
-        .map(dco_decode_chunk_for_reembedding)
-        .toList();
-  }
-
-  @protected
-  List<ChunkSearchResult> dco_decode_list_chunk_search_result(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return (raw as List<dynamic>).map(dco_decode_chunk_search_result).toList();
-  }
-
-  @protected
-  List<HnswSearchResult> dco_decode_list_hnsw_search_result(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return (raw as List<dynamic>).map(dco_decode_hnsw_search_result).toList();
-  }
-
-  @protected
-  List<HybridSearchResult> dco_decode_list_hybrid_search_result(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return (raw as List<dynamic>).map(dco_decode_hybrid_search_result).toList();
-  }
-
-  @protected
-  List<IncrementalSearchResult> dco_decode_list_incremental_search_result(
-    dynamic raw,
-  ) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return (raw as List<dynamic>)
-        .map(dco_decode_incremental_search_result)
-        .toList();
-  }
-
-  @protected
-  List<double> dco_decode_list_prim_f_32_loose(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as List<double>;
-  }
-
-  @protected
-  Float32List dco_decode_list_prim_f_32_strict(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as Float32List;
-  }
-
-  @protected
-  List<int> dco_decode_list_prim_u_32_loose(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as List<int>;
-  }
-
-  @protected
-  Uint32List dco_decode_list_prim_u_32_strict(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as Uint32List;
-  }
-
-  @protected
-  Uint8List dco_decode_list_prim_u_8_strict(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as Uint8List;
-  }
-
-  @protected
-  List<(PlatformInt64, Float32List)>
-  dco_decode_list_record_i_64_list_prim_f_32_strict(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return (raw as List<dynamic>)
-        .map(dco_decode_record_i_64_list_prim_f_32_strict)
-        .toList();
-  }
-
-  @protected
-  List<(PlatformInt64, String)> dco_decode_list_record_i_64_string(
-    dynamic raw,
-  ) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return (raw as List<dynamic>).map(dco_decode_record_i_64_string).toList();
-  }
-
-  @protected
-  List<SemanticChunk> dco_decode_list_semantic_chunk(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return (raw as List<dynamic>).map(dco_decode_semantic_chunk).toList();
-  }
-
-  @protected
-  String? dco_decode_opt_String(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw == null ? null : dco_decode_String(raw);
-  }
-
-  @protected
-  RrfConfig? dco_decode_opt_box_autoadd_rrf_config(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw == null ? null : dco_decode_box_autoadd_rrf_config(raw);
-  }
-
-  @protected
-  (PlatformInt64, Float32List) dco_decode_record_i_64_list_prim_f_32_strict(
-    dynamic raw,
-  ) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 2) {
-      throw Exception('Expected 2 elements, got ${arr.length}');
-    }
-    return (dco_decode_i_64(arr[0]), dco_decode_list_prim_f_32_strict(arr[1]));
-  }
-
-  @protected
-  (PlatformInt64, String) dco_decode_record_i_64_string(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 2) {
-      throw Exception('Expected 2 elements, got ${arr.length}');
-    }
-    return (dco_decode_i_64(arr[0]), dco_decode_String(arr[1]));
-  }
-
-  @protected
-  RrfConfig dco_decode_rrf_config(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 3)
-      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
-    return RrfConfig(
-      k: dco_decode_u_32(arr[0]),
-      vectorWeight: dco_decode_f_64(arr[1]),
-      bm25Weight: dco_decode_f_64(arr[2]),
-    );
-  }
-
-  @protected
-  SemanticChunk dco_decode_semantic_chunk(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 5)
-      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
-    return SemanticChunk(
-      index: dco_decode_i_32(arr[0]),
-      content: dco_decode_String(arr[1]),
-      startPos: dco_decode_i_32(arr[2]),
-      endPos: dco_decode_i_32(arr[3]),
-      chunkType: dco_decode_String(arr[4]),
-    );
-  }
-
-  @protected
-  SourceStats dco_decode_source_stats(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 2)
-      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
-    return SourceStats(
-      sourceCount: dco_decode_i_64(arr[0]),
-      chunkCount: dco_decode_i_64(arr[1]),
-    );
-  }
-
-  @protected
-  int dco_decode_u_32(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as int;
-  }
-
-  @protected
-  BigInt dco_decode_u_64(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return dcoDecodeU64(raw);
-  }
-
-  @protected
-  int dco_decode_u_8(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as int;
-  }
-
-  @protected
-  void dco_decode_unit(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return;
-  }
-
-  @protected
-  BigInt dco_decode_usize(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return dcoDecodeU64(raw);
-  }
-
-  @protected
-  AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var inner = sse_decode_String(deserializer);
-    return AnyhowException(inner);
-  }
-
-  @protected
-  String sse_decode_String(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var inner = sse_decode_list_prim_u_8_strict(deserializer);
-    return utf8.decoder.convert(inner);
-  }
-
-  @protected
-  AddDocumentResult sse_decode_add_document_result(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_success = sse_decode_bool(deserializer);
-    var var_isDuplicate = sse_decode_bool(deserializer);
-    var var_message = sse_decode_String(deserializer);
-    return AddDocumentResult(
-      success: var_success,
-      isDuplicate: var_isDuplicate,
-      message: var_message,
-    );
-  }
-
-  @protected
-  AddSourceResult sse_decode_add_source_result(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_sourceId = sse_decode_i_64(deserializer);
-    var var_isDuplicate = sse_decode_bool(deserializer);
-    var var_chunkCount = sse_decode_i_32(deserializer);
-    var var_message = sse_decode_String(deserializer);
-    return AddSourceResult(
-      sourceId: var_sourceId,
-      isDuplicate: var_isDuplicate,
-      chunkCount: var_chunkCount,
-      message: var_message,
-    );
-  }
-
-  @protected
-  Bm25SearchResult sse_decode_bm_25_search_result(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_docId = sse_decode_i_64(deserializer);
-    var var_score = sse_decode_f_64(deserializer);
-    return Bm25SearchResult(docId: var_docId, score: var_score);
-  }
-
-  @protected
-  bool sse_decode_bool(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getUint8() != 0;
-  }
-
-  @protected
-  CompressionOptions sse_decode_box_autoadd_compression_options(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return (sse_decode_compression_options(deserializer));
-  }
-
-  @protected
-  RrfConfig sse_decode_box_autoadd_rrf_config(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return (sse_decode_rrf_config(deserializer));
-  }
-
-  @protected
-  BufferStats sse_decode_buffer_stats(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_bufferSize = sse_decode_usize(deserializer);
-    var var_threshold = sse_decode_usize(deserializer);
-    var var_hnswLoaded = sse_decode_bool(deserializer);
-    return BufferStats(
-      bufferSize: var_bufferSize,
-      threshold: var_threshold,
-      hnswLoaded: var_hnswLoaded,
-    );
-  }
-
-  @protected
-  ChunkData sse_decode_chunk_data(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_content = sse_decode_String(deserializer);
-    var var_chunkIndex = sse_decode_i_32(deserializer);
-    var var_startPos = sse_decode_i_32(deserializer);
-    var var_endPos = sse_decode_i_32(deserializer);
-    var var_chunkType = sse_decode_String(deserializer);
-    var var_embedding = sse_decode_list_prim_f_32_strict(deserializer);
-    return ChunkData(
-      content: var_content,
-      chunkIndex: var_chunkIndex,
-      startPos: var_startPos,
-      endPos: var_endPos,
-      chunkType: var_chunkType,
-      embedding: var_embedding,
-    );
-  }
-
-  @protected
-  ChunkForReembedding sse_decode_chunk_for_reembedding(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_chunkId = sse_decode_i_64(deserializer);
-    var var_content = sse_decode_String(deserializer);
-    return ChunkForReembedding(chunkId: var_chunkId, content: var_content);
-  }
-
-  @protected
-  ChunkSearchResult sse_decode_chunk_search_result(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_chunkId = sse_decode_i_64(deserializer);
-    var var_sourceId = sse_decode_i_64(deserializer);
-    var var_chunkIndex = sse_decode_i_32(deserializer);
-    var var_content = sse_decode_String(deserializer);
-    var var_chunkType = sse_decode_String(deserializer);
-    var var_similarity = sse_decode_f_64(deserializer);
-    return ChunkSearchResult(
-      chunkId: var_chunkId,
-      sourceId: var_sourceId,
-      chunkIndex: var_chunkIndex,
-      content: var_content,
-      chunkType: var_chunkType,
-      similarity: var_similarity,
-    );
-  }
-
-  @protected
-  ChunkType sse_decode_chunk_type(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var inner = sse_decode_i_32(deserializer);
-    return ChunkType.values[inner];
-  }
-
-  @protected
-  CompressedText sse_decode_compressed_text(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_text = sse_decode_String(deserializer);
-    var var_originalChars = sse_decode_i_32(deserializer);
-    var var_compressedChars = sse_decode_i_32(deserializer);
-    var var_ratio = sse_decode_f_64(deserializer);
-    var var_sentencesRemoved = sse_decode_i_32(deserializer);
-    var var_charsSavedStopwords = sse_decode_i_32(deserializer);
-    var var_charsSavedTruncation = sse_decode_i_32(deserializer);
-    return CompressedText(
-      text: var_text,
-      originalChars: var_originalChars,
-      compressedChars: var_compressedChars,
-      ratio: var_ratio,
-      sentencesRemoved: var_sentencesRemoved,
-      charsSavedStopwords: var_charsSavedStopwords,
-      charsSavedTruncation: var_charsSavedTruncation,
-    );
-  }
-
-  @protected
-  CompressionOptions sse_decode_compression_options(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_removeStopwords = sse_decode_bool(deserializer);
-    var var_removeDuplicates = sse_decode_bool(deserializer);
-    var var_language = sse_decode_String(deserializer);
-    var var_level = sse_decode_i_32(deserializer);
-    return CompressionOptions(
-      removeStopwords: var_removeStopwords,
-      removeDuplicates: var_removeDuplicates,
-      language: var_language,
-      level: var_level,
-    );
-  }
-
-  @protected
-  EmbeddingPoint sse_decode_embedding_point(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_id = sse_decode_i_64(deserializer);
-    var var_embedding = sse_decode_list_prim_f_32_strict(deserializer);
-    var var_norm = sse_decode_f_32(deserializer);
-    return EmbeddingPoint(id: var_id, embedding: var_embedding, norm: var_norm);
-  }
-
-  @protected
-  double sse_decode_f_32(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getFloat32();
-  }
-
-  @protected
-  double sse_decode_f_64(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getFloat64();
-  }
-
-  @protected
-  HnswSearchResult sse_decode_hnsw_search_result(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_id = sse_decode_i_64(deserializer);
-    var var_distance = sse_decode_f_32(deserializer);
-    return HnswSearchResult(id: var_id, distance: var_distance);
-  }
-
-  @protected
-  HybridSearchResult sse_decode_hybrid_search_result(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_docId = sse_decode_i_64(deserializer);
-    var var_content = sse_decode_String(deserializer);
-    var var_score = sse_decode_f_64(deserializer);
-    var var_vectorRank = sse_decode_u_32(deserializer);
-    var var_bm25Rank = sse_decode_u_32(deserializer);
-    return HybridSearchResult(
-      docId: var_docId,
-      content: var_content,
-      score: var_score,
-      vectorRank: var_vectorRank,
-      bm25Rank: var_bm25Rank,
-    );
-  }
-
-  @protected
-  int sse_decode_i_32(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getInt32();
-  }
-
-  @protected
-  PlatformInt64 sse_decode_i_64(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getPlatformInt64();
-  }
-
-  @protected
-  IncrementalSearchResult sse_decode_incremental_search_result(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_docId = sse_decode_i_64(deserializer);
-    var var_distance = sse_decode_f_32(deserializer);
-    var var_source = sse_decode_String(deserializer);
-    return IncrementalSearchResult(
-      docId: var_docId,
-      distance: var_distance,
-      source: var_source,
-    );
-  }
-
-  @protected
-  List<String> sse_decode_list_String(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var len_ = sse_decode_i_32(deserializer);
-    var ans_ = <String>[];
-    for (var idx_ = 0; idx_ < len_; ++idx_) {
-      ans_.add(sse_decode_String(deserializer));
-    }
-    return ans_;
-  }
-
-  @protected
-  List<Bm25SearchResult> sse_decode_list_bm_25_search_result(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var len_ = sse_decode_i_32(deserializer);
-    var ans_ = <Bm25SearchResult>[];
-    for (var idx_ = 0; idx_ < len_; ++idx_) {
-      ans_.add(sse_decode_bm_25_search_result(deserializer));
-    }
-    return ans_;
-  }
-
-  @protected
-  List<ChunkData> sse_decode_list_chunk_data(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var len_ = sse_decode_i_32(deserializer);
-    var ans_ = <ChunkData>[];
-    for (var idx_ = 0; idx_ < len_; ++idx_) {
-      ans_.add(sse_decode_chunk_data(deserializer));
-    }
-    return ans_;
-  }
-
-  @protected
-  List<ChunkForReembedding> sse_decode_list_chunk_for_reembedding(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var len_ = sse_decode_i_32(deserializer);
-    var ans_ = <ChunkForReembedding>[];
-    for (var idx_ = 0; idx_ < len_; ++idx_) {
-      ans_.add(sse_decode_chunk_for_reembedding(deserializer));
-    }
-    return ans_;
-  }
-
-  @protected
-  List<ChunkSearchResult> sse_decode_list_chunk_search_result(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var len_ = sse_decode_i_32(deserializer);
-    var ans_ = <ChunkSearchResult>[];
-    for (var idx_ = 0; idx_ < len_; ++idx_) {
-      ans_.add(sse_decode_chunk_search_result(deserializer));
-    }
-    return ans_;
-  }
-
-  @protected
-  List<HnswSearchResult> sse_decode_list_hnsw_search_result(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var len_ = sse_decode_i_32(deserializer);
-    var ans_ = <HnswSearchResult>[];
-    for (var idx_ = 0; idx_ < len_; ++idx_) {
-      ans_.add(sse_decode_hnsw_search_result(deserializer));
-    }
-    return ans_;
-  }
-
-  @protected
-  List<HybridSearchResult> sse_decode_list_hybrid_search_result(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var len_ = sse_decode_i_32(deserializer);
-    var ans_ = <HybridSearchResult>[];
-    for (var idx_ = 0; idx_ < len_; ++idx_) {
-      ans_.add(sse_decode_hybrid_search_result(deserializer));
-    }
-    return ans_;
-  }
-
-  @protected
-  List<IncrementalSearchResult> sse_decode_list_incremental_search_result(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var len_ = sse_decode_i_32(deserializer);
-    var ans_ = <IncrementalSearchResult>[];
-    for (var idx_ = 0; idx_ < len_; ++idx_) {
-      ans_.add(sse_decode_incremental_search_result(deserializer));
-    }
-    return ans_;
-  }
-
-  @protected
-  List<double> sse_decode_list_prim_f_32_loose(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var len_ = sse_decode_i_32(deserializer);
-    return deserializer.buffer.getFloat32List(len_);
-  }
-
-  @protected
-  Float32List sse_decode_list_prim_f_32_strict(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var len_ = sse_decode_i_32(deserializer);
-    return deserializer.buffer.getFloat32List(len_);
-  }
-
-  @protected
-  List<int> sse_decode_list_prim_u_32_loose(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var len_ = sse_decode_i_32(deserializer);
-    return deserializer.buffer.getUint32List(len_);
-  }
-
-  @protected
-  Uint32List sse_decode_list_prim_u_32_strict(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var len_ = sse_decode_i_32(deserializer);
-    return deserializer.buffer.getUint32List(len_);
-  }
-
-  @protected
-  Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var len_ = sse_decode_i_32(deserializer);
-    return deserializer.buffer.getUint8List(len_);
-  }
-
-  @protected
-  List<(PlatformInt64, Float32List)>
-  sse_decode_list_record_i_64_list_prim_f_32_strict(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var len_ = sse_decode_i_32(deserializer);
-    var ans_ = <(PlatformInt64, Float32List)>[];
-    for (var idx_ = 0; idx_ < len_; ++idx_) {
-      ans_.add(sse_decode_record_i_64_list_prim_f_32_strict(deserializer));
-    }
-    return ans_;
-  }
-
-  @protected
-  List<(PlatformInt64, String)> sse_decode_list_record_i_64_string(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var len_ = sse_decode_i_32(deserializer);
-    var ans_ = <(PlatformInt64, String)>[];
-    for (var idx_ = 0; idx_ < len_; ++idx_) {
-      ans_.add(sse_decode_record_i_64_string(deserializer));
-    }
-    return ans_;
-  }
-
-  @protected
-  List<SemanticChunk> sse_decode_list_semantic_chunk(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var len_ = sse_decode_i_32(deserializer);
-    var ans_ = <SemanticChunk>[];
-    for (var idx_ = 0; idx_ < len_; ++idx_) {
-      ans_.add(sse_decode_semantic_chunk(deserializer));
-    }
-    return ans_;
-  }
-
-  @protected
-  String? sse_decode_opt_String(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    if (sse_decode_bool(deserializer)) {
-      return (sse_decode_String(deserializer));
-    } else {
-      return null;
-    }
-  }
-
-  @protected
-  RrfConfig? sse_decode_opt_box_autoadd_rrf_config(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    if (sse_decode_bool(deserializer)) {
-      return (sse_decode_box_autoadd_rrf_config(deserializer));
-    } else {
-      return null;
-    }
-  }
-
-  @protected
-  (PlatformInt64, Float32List) sse_decode_record_i_64_list_prim_f_32_strict(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_field0 = sse_decode_i_64(deserializer);
-    var var_field1 = sse_decode_list_prim_f_32_strict(deserializer);
-    return (var_field0, var_field1);
-  }
-
-  @protected
-  (PlatformInt64, String) sse_decode_record_i_64_string(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_field0 = sse_decode_i_64(deserializer);
-    var var_field1 = sse_decode_String(deserializer);
-    return (var_field0, var_field1);
-  }
-
-  @protected
-  RrfConfig sse_decode_rrf_config(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_k = sse_decode_u_32(deserializer);
-    var var_vectorWeight = sse_decode_f_64(deserializer);
-    var var_bm25Weight = sse_decode_f_64(deserializer);
-    return RrfConfig(
-      k: var_k,
-      vectorWeight: var_vectorWeight,
-      bm25Weight: var_bm25Weight,
-    );
-  }
-
-  @protected
-  SemanticChunk sse_decode_semantic_chunk(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_index = sse_decode_i_32(deserializer);
-    var var_content = sse_decode_String(deserializer);
-    var var_startPos = sse_decode_i_32(deserializer);
-    var var_endPos = sse_decode_i_32(deserializer);
-    var var_chunkType = sse_decode_String(deserializer);
-    return SemanticChunk(
-      index: var_index,
-      content: var_content,
-      startPos: var_startPos,
-      endPos: var_endPos,
-      chunkType: var_chunkType,
-    );
-  }
-
-  @protected
-  SourceStats sse_decode_source_stats(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_sourceCount = sse_decode_i_64(deserializer);
-    var var_chunkCount = sse_decode_i_64(deserializer);
-    return SourceStats(
-      sourceCount: var_sourceCount,
-      chunkCount: var_chunkCount,
-    );
-  }
-
-  @protected
-  int sse_decode_u_32(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getUint32();
-  }
-
-  @protected
-  BigInt sse_decode_u_64(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getBigUint64();
-  }
-
-  @protected
-  int sse_decode_u_8(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getUint8();
-  }
-
-  @protected
-  void sse_decode_unit(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-  }
-
-  @protected
-  BigInt sse_decode_usize(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getBigUint64();
-  }
-
-  @protected
-  void sse_encode_AnyhowException(
-    AnyhowException self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_String(self.message, serializer);
-  }
-
-  @protected
-  void sse_encode_String(String self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_list_prim_u_8_strict(utf8.encoder.convert(self), serializer);
-  }
-
-  @protected
-  void sse_encode_add_document_result(
-    AddDocumentResult self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_bool(self.success, serializer);
-    sse_encode_bool(self.isDuplicate, serializer);
-    sse_encode_String(self.message, serializer);
-  }
-
-  @protected
-  void sse_encode_add_source_result(
-    AddSourceResult self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_64(self.sourceId, serializer);
-    sse_encode_bool(self.isDuplicate, serializer);
-    sse_encode_i_32(self.chunkCount, serializer);
-    sse_encode_String(self.message, serializer);
-  }
-
-  @protected
-  void sse_encode_bm_25_search_result(
-    Bm25SearchResult self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_64(self.docId, serializer);
-    sse_encode_f_64(self.score, serializer);
-  }
-
-  @protected
-  void sse_encode_bool(bool self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putUint8(self ? 1 : 0);
-  }
-
-  @protected
-  void sse_encode_box_autoadd_compression_options(
-    CompressionOptions self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_compression_options(self, serializer);
-  }
-
-  @protected
-  void sse_encode_box_autoadd_rrf_config(
-    RrfConfig self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_rrf_config(self, serializer);
-  }
-
-  @protected
-  void sse_encode_buffer_stats(BufferStats self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_usize(self.bufferSize, serializer);
-    sse_encode_usize(self.threshold, serializer);
-    sse_encode_bool(self.hnswLoaded, serializer);
-  }
-
-  @protected
-  void sse_encode_chunk_data(ChunkData self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_String(self.content, serializer);
-    sse_encode_i_32(self.chunkIndex, serializer);
-    sse_encode_i_32(self.startPos, serializer);
-    sse_encode_i_32(self.endPos, serializer);
-    sse_encode_String(self.chunkType, serializer);
-    sse_encode_list_prim_f_32_strict(self.embedding, serializer);
-  }
-
-  @protected
-  void sse_encode_chunk_for_reembedding(
-    ChunkForReembedding self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_64(self.chunkId, serializer);
-    sse_encode_String(self.content, serializer);
-  }
-
-  @protected
-  void sse_encode_chunk_search_result(
-    ChunkSearchResult self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_64(self.chunkId, serializer);
-    sse_encode_i_64(self.sourceId, serializer);
-    sse_encode_i_32(self.chunkIndex, serializer);
-    sse_encode_String(self.content, serializer);
-    sse_encode_String(self.chunkType, serializer);
-    sse_encode_f_64(self.similarity, serializer);
-  }
-
-  @protected
-  void sse_encode_chunk_type(ChunkType self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.index, serializer);
-  }
-
-  @protected
-  void sse_encode_compressed_text(
-    CompressedText self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_String(self.text, serializer);
-    sse_encode_i_32(self.originalChars, serializer);
-    sse_encode_i_32(self.compressedChars, serializer);
-    sse_encode_f_64(self.ratio, serializer);
-    sse_encode_i_32(self.sentencesRemoved, serializer);
-    sse_encode_i_32(self.charsSavedStopwords, serializer);
-    sse_encode_i_32(self.charsSavedTruncation, serializer);
-  }
-
-  @protected
-  void sse_encode_compression_options(
-    CompressionOptions self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_bool(self.removeStopwords, serializer);
-    sse_encode_bool(self.removeDuplicates, serializer);
-    sse_encode_String(self.language, serializer);
-    sse_encode_i_32(self.level, serializer);
-  }
-
-  @protected
-  void sse_encode_embedding_point(
-    EmbeddingPoint self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_64(self.id, serializer);
-    sse_encode_list_prim_f_32_strict(self.embedding, serializer);
-    sse_encode_f_32(self.norm, serializer);
-  }
-
-  @protected
-  void sse_encode_f_32(double self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putFloat32(self);
-  }
-
-  @protected
-  void sse_encode_f_64(double self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putFloat64(self);
-  }
-
-  @protected
-  void sse_encode_hnsw_search_result(
-    HnswSearchResult self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_64(self.id, serializer);
-    sse_encode_f_32(self.distance, serializer);
-  }
-
-  @protected
-  void sse_encode_hybrid_search_result(
-    HybridSearchResult self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_64(self.docId, serializer);
-    sse_encode_String(self.content, serializer);
-    sse_encode_f_64(self.score, serializer);
-    sse_encode_u_32(self.vectorRank, serializer);
-    sse_encode_u_32(self.bm25Rank, serializer);
-  }
-
-  @protected
-  void sse_encode_i_32(int self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putInt32(self);
-  }
-
-  @protected
-  void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putPlatformInt64(self);
-  }
-
-  @protected
-  void sse_encode_incremental_search_result(
-    IncrementalSearchResult self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_64(self.docId, serializer);
-    sse_encode_f_32(self.distance, serializer);
-    sse_encode_String(self.source, serializer);
-  }
-
-  @protected
-  void sse_encode_list_String(List<String> self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    for (final item in self) {
-      sse_encode_String(item, serializer);
-    }
-  }
-
-  @protected
-  void sse_encode_list_bm_25_search_result(
-    List<Bm25SearchResult> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    for (final item in self) {
-      sse_encode_bm_25_search_result(item, serializer);
-    }
-  }
-
-  @protected
-  void sse_encode_list_chunk_data(
-    List<ChunkData> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    for (final item in self) {
-      sse_encode_chunk_data(item, serializer);
-    }
-  }
-
-  @protected
-  void sse_encode_list_chunk_for_reembedding(
-    List<ChunkForReembedding> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    for (final item in self) {
-      sse_encode_chunk_for_reembedding(item, serializer);
-    }
-  }
-
-  @protected
-  void sse_encode_list_chunk_search_result(
-    List<ChunkSearchResult> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    for (final item in self) {
-      sse_encode_chunk_search_result(item, serializer);
-    }
-  }
-
-  @protected
-  void sse_encode_list_hnsw_search_result(
-    List<HnswSearchResult> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    for (final item in self) {
-      sse_encode_hnsw_search_result(item, serializer);
-    }
-  }
-
-  @protected
-  void sse_encode_list_hybrid_search_result(
-    List<HybridSearchResult> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    for (final item in self) {
-      sse_encode_hybrid_search_result(item, serializer);
-    }
-  }
-
-  @protected
-  void sse_encode_list_incremental_search_result(
-    List<IncrementalSearchResult> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    for (final item in self) {
-      sse_encode_incremental_search_result(item, serializer);
-    }
-  }
-
-  @protected
-  void sse_encode_list_prim_f_32_loose(
-    List<double> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    serializer.buffer.putFloat32List(
-      self is Float32List ? self : Float32List.fromList(self),
-    );
-  }
-
-  @protected
-  void sse_encode_list_prim_f_32_strict(
-    Float32List self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    serializer.buffer.putFloat32List(self);
-  }
-
-  @protected
-  void sse_encode_list_prim_u_32_loose(
-    List<int> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    serializer.buffer.putUint32List(
-      self is Uint32List ? self : Uint32List.fromList(self),
-    );
-  }
-
-  @protected
-  void sse_encode_list_prim_u_32_strict(
-    Uint32List self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    serializer.buffer.putUint32List(self);
-  }
-
-  @protected
-  void sse_encode_list_prim_u_8_strict(
-    Uint8List self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    serializer.buffer.putUint8List(self);
-  }
-
-  @protected
-  void sse_encode_list_record_i_64_list_prim_f_32_strict(
-    List<(PlatformInt64, Float32List)> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    for (final item in self) {
-      sse_encode_record_i_64_list_prim_f_32_strict(item, serializer);
-    }
-  }
-
-  @protected
-  void sse_encode_list_record_i_64_string(
-    List<(PlatformInt64, String)> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    for (final item in self) {
-      sse_encode_record_i_64_string(item, serializer);
-    }
-  }
-
-  @protected
-  void sse_encode_list_semantic_chunk(
-    List<SemanticChunk> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    for (final item in self) {
-      sse_encode_semantic_chunk(item, serializer);
-    }
-  }
-
-  @protected
-  void sse_encode_opt_String(String? self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    sse_encode_bool(self != null, serializer);
-    if (self != null) {
-      sse_encode_String(self, serializer);
-    }
-  }
-
-  @protected
-  void sse_encode_opt_box_autoadd_rrf_config(
-    RrfConfig? self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    sse_encode_bool(self != null, serializer);
-    if (self != null) {
-      sse_encode_box_autoadd_rrf_config(self, serializer);
-    }
-  }
-
-  @protected
-  void sse_encode_record_i_64_list_prim_f_32_strict(
-    (PlatformInt64, Float32List) self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_64(self.$1, serializer);
-    sse_encode_list_prim_f_32_strict(self.$2, serializer);
-  }
-
-  @protected
-  void sse_encode_record_i_64_string(
-    (PlatformInt64, String) self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_64(self.$1, serializer);
-    sse_encode_String(self.$2, serializer);
-  }
-
-  @protected
-  void sse_encode_rrf_config(RrfConfig self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_u_32(self.k, serializer);
-    sse_encode_f_64(self.vectorWeight, serializer);
-    sse_encode_f_64(self.bm25Weight, serializer);
-  }
-
-  @protected
-  void sse_encode_semantic_chunk(SemanticChunk self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.index, serializer);
-    sse_encode_String(self.content, serializer);
-    sse_encode_i_32(self.startPos, serializer);
-    sse_encode_i_32(self.endPos, serializer);
-    sse_encode_String(self.chunkType, serializer);
-  }
-
-  @protected
-  void sse_encode_source_stats(SourceStats self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_64(self.sourceCount, serializer);
-    sse_encode_i_64(self.chunkCount, serializer);
-  }
-
-  @protected
-  void sse_encode_u_32(int self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putUint32(self);
-  }
-
-  @protected
-  void sse_encode_u_64(BigInt self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putBigUint64(self);
-  }
-
-  @protected
-  void sse_encode_u_8(int self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putUint8(self);
-  }
-
-  @protected
-  void sse_encode_unit(void self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-  }
-
-  @protected
-  void sse_encode_usize(BigInt self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putBigUint64(self);
-  }
-}
+        )
+        ,
+            constMeta: kCrateApiSourceRagUpdateChunkEmbeddingConstMeta,
+            argValues: [dbPath, chunkId, embedding],
+            apiImpl: this,
+        )); }
+
+
+        TaskConstMeta get kCrateApiSourceRagUpdateChunkEmbeddingConstMeta => const TaskConstMeta(
+            debugName: "update_chunk_embedding",
+            argNames: ["dbPath", "chunkId", "embedding"],
+        );
+        
+
+@override Future<void> crateApiUserIntentUserIntentGetQuery({required UserIntent that })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_box_autoadd_user_intent(that, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 67, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        )
+        ,
+            constMeta: kCrateApiUserIntentUserIntentGetQueryConstMeta,
+            argValues: [that],
+            apiImpl: this,
+        )); }
+
+
+        TaskConstMeta get kCrateApiUserIntentUserIntentGetQueryConstMeta => const TaskConstMeta(
+            debugName: "user_intent_get_query",
+            argNames: ["that"],
+        );
+        
+
+@override Future<void> crateApiUserIntentUserIntentIntentType({required UserIntent that })  { return handler.executeNormal(NormalTask(
+            callFfi: (port_) {
+              
+            final serializer = SseSerializer(generalizedFrbRustBinding);sse_encode_box_autoadd_user_intent(that, serializer);
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 68, port: port_);
+            
+            },
+            codec: 
+        SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        )
+        ,
+            constMeta: kCrateApiUserIntentUserIntentIntentTypeConstMeta,
+            argValues: [that],
+            apiImpl: this,
+        )); }
+
+
+        TaskConstMeta get kCrateApiUserIntentUserIntentIntentTypeConstMeta => const TaskConstMeta(
+            debugName: "user_intent_intent_type",
+            argNames: ["that"],
+        );
+        
+
+
+
+                  @protected AnyhowException dco_decode_AnyhowException(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return AnyhowException(raw as String); }
+
+@protected String dco_decode_String(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return raw as String; }
+
+@protected AddDocumentResult dco_decode_add_document_result(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 3) throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+                return AddDocumentResult(success: dco_decode_bool(arr[0]),
+isDuplicate: dco_decode_bool(arr[1]),
+message: dco_decode_String(arr[2]),); }
+
+@protected AddSourceResult dco_decode_add_source_result(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 4) throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+                return AddSourceResult(sourceId: dco_decode_i_64(arr[0]),
+isDuplicate: dco_decode_bool(arr[1]),
+chunkCount: dco_decode_i_32(arr[2]),
+message: dco_decode_String(arr[3]),); }
+
+@protected Bm25SearchResult dco_decode_bm_25_search_result(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 2) throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+                return Bm25SearchResult(docId: dco_decode_i_64(arr[0]),
+score: dco_decode_f_64(arr[1]),); }
+
+@protected bool dco_decode_bool(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return raw as bool; }
+
+@protected CompressionOptions dco_decode_box_autoadd_compression_options(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return dco_decode_compression_options(raw); }
+
+@protected RrfConfig dco_decode_box_autoadd_rrf_config(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return dco_decode_rrf_config(raw); }
+
+@protected UserIntent dco_decode_box_autoadd_user_intent(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return dco_decode_user_intent(raw); }
+
+@protected BufferStats dco_decode_buffer_stats(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 3) throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+                return BufferStats(bufferSize: dco_decode_usize(arr[0]),
+threshold: dco_decode_usize(arr[1]),
+hnswLoaded: dco_decode_bool(arr[2]),); }
+
+@protected ChunkData dco_decode_chunk_data(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 6) throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+                return ChunkData(content: dco_decode_String(arr[0]),
+chunkIndex: dco_decode_i_32(arr[1]),
+startPos: dco_decode_i_32(arr[2]),
+endPos: dco_decode_i_32(arr[3]),
+chunkType: dco_decode_String(arr[4]),
+embedding: dco_decode_list_prim_f_32_strict(arr[5]),); }
+
+@protected ChunkForReembedding dco_decode_chunk_for_reembedding(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 2) throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+                return ChunkForReembedding(chunkId: dco_decode_i_64(arr[0]),
+content: dco_decode_String(arr[1]),); }
+
+@protected ChunkSearchResult dco_decode_chunk_search_result(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 6) throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+                return ChunkSearchResult(chunkId: dco_decode_i_64(arr[0]),
+sourceId: dco_decode_i_64(arr[1]),
+chunkIndex: dco_decode_i_32(arr[2]),
+content: dco_decode_String(arr[3]),
+chunkType: dco_decode_String(arr[4]),
+similarity: dco_decode_f_64(arr[5]),); }
+
+@protected ChunkType dco_decode_chunk_type(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return ChunkType.values[raw as int]; }
+
+@protected CompressedText dco_decode_compressed_text(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 7) throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+                return CompressedText(text: dco_decode_String(arr[0]),
+originalChars: dco_decode_i_32(arr[1]),
+compressedChars: dco_decode_i_32(arr[2]),
+ratio: dco_decode_f_64(arr[3]),
+sentencesRemoved: dco_decode_i_32(arr[4]),
+charsSavedStopwords: dco_decode_i_32(arr[5]),
+charsSavedTruncation: dco_decode_i_32(arr[6]),); }
+
+@protected CompressionOptions dco_decode_compression_options(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 4) throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+                return CompressionOptions(removeStopwords: dco_decode_bool(arr[0]),
+removeDuplicates: dco_decode_bool(arr[1]),
+language: dco_decode_String(arr[2]),
+level: dco_decode_i_32(arr[3]),); }
+
+@protected EmbeddingPoint dco_decode_embedding_point(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 3) throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+                return EmbeddingPoint(id: dco_decode_i_64(arr[0]),
+embedding: dco_decode_list_prim_f_32_strict(arr[1]),
+norm: dco_decode_f_32(arr[2]),); }
+
+@protected double dco_decode_f_32(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return raw as double; }
+
+@protected double dco_decode_f_64(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return raw as double; }
+
+@protected HnswSearchResult dco_decode_hnsw_search_result(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 2) throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+                return HnswSearchResult(id: dco_decode_i_64(arr[0]),
+distance: dco_decode_f_32(arr[1]),); }
+
+@protected HybridSearchResult dco_decode_hybrid_search_result(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 5) throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+                return HybridSearchResult(docId: dco_decode_i_64(arr[0]),
+content: dco_decode_String(arr[1]),
+score: dco_decode_f_64(arr[2]),
+vectorRank: dco_decode_u_32(arr[3]),
+bm25Rank: dco_decode_u_32(arr[4]),); }
+
+@protected int dco_decode_i_32(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return raw as int; }
+
+@protected PlatformInt64 dco_decode_i_64(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return dcoDecodeI64(raw); }
+
+@protected IncrementalSearchResult dco_decode_incremental_search_result(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 3) throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+                return IncrementalSearchResult(docId: dco_decode_i_64(arr[0]),
+distance: dco_decode_f_32(arr[1]),
+source: dco_decode_String(arr[2]),); }
+
+@protected List<String> dco_decode_list_String(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return (raw as List<dynamic>).map(dco_decode_String).toList(); }
+
+@protected List<Bm25SearchResult> dco_decode_list_bm_25_search_result(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return (raw as List<dynamic>).map(dco_decode_bm_25_search_result).toList(); }
+
+@protected List<ChunkData> dco_decode_list_chunk_data(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return (raw as List<dynamic>).map(dco_decode_chunk_data).toList(); }
+
+@protected List<ChunkForReembedding> dco_decode_list_chunk_for_reembedding(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return (raw as List<dynamic>).map(dco_decode_chunk_for_reembedding).toList(); }
+
+@protected List<ChunkSearchResult> dco_decode_list_chunk_search_result(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return (raw as List<dynamic>).map(dco_decode_chunk_search_result).toList(); }
+
+@protected List<HnswSearchResult> dco_decode_list_hnsw_search_result(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return (raw as List<dynamic>).map(dco_decode_hnsw_search_result).toList(); }
+
+@protected List<HybridSearchResult> dco_decode_list_hybrid_search_result(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return (raw as List<dynamic>).map(dco_decode_hybrid_search_result).toList(); }
+
+@protected List<IncrementalSearchResult> dco_decode_list_incremental_search_result(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return (raw as List<dynamic>).map(dco_decode_incremental_search_result).toList(); }
+
+@protected List<double> dco_decode_list_prim_f_32_loose(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return raw as List<double>; }
+
+@protected Float32List dco_decode_list_prim_f_32_strict(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return raw as Float32List; }
+
+@protected List<int> dco_decode_list_prim_u_32_loose(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return raw as List<int>; }
+
+@protected Uint32List dco_decode_list_prim_u_32_strict(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return raw as Uint32List; }
+
+@protected Uint8List dco_decode_list_prim_u_8_strict(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return raw as Uint8List; }
+
+@protected List<(PlatformInt64,Float32List)> dco_decode_list_record_i_64_list_prim_f_32_strict(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return (raw as List<dynamic>).map(dco_decode_record_i_64_list_prim_f_32_strict).toList(); }
+
+@protected List<(PlatformInt64,String)> dco_decode_list_record_i_64_string(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return (raw as List<dynamic>).map(dco_decode_record_i_64_string).toList(); }
+
+@protected List<SemanticChunk> dco_decode_list_semantic_chunk(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return (raw as List<dynamic>).map(dco_decode_semantic_chunk).toList(); }
+
+@protected String? dco_decode_opt_String(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return raw == null ? null : dco_decode_String(raw); }
+
+@protected RrfConfig? dco_decode_opt_box_autoadd_rrf_config(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return raw == null ? null : dco_decode_box_autoadd_rrf_config(raw); }
+
+@protected ParsedIntent dco_decode_parsed_intent(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 4) throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+                return ParsedIntent(intentType: dco_decode_String(arr[0]),
+query: dco_decode_String(arr[1]),
+isValid: dco_decode_bool(arr[2]),
+errorMessage: dco_decode_opt_String(arr[3]),); }
+
+@protected (PlatformInt64,Float32List) dco_decode_record_i_64_list_prim_f_32_strict(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+            if (arr.length != 2) {
+                throw Exception('Expected 2 elements, got ${arr.length}');
+            }
+            return (dco_decode_i_64(arr[0]),dco_decode_list_prim_f_32_strict(arr[1]),); }
+
+@protected (PlatformInt64,String) dco_decode_record_i_64_string(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+            if (arr.length != 2) {
+                throw Exception('Expected 2 elements, got ${arr.length}');
+            }
+            return (dco_decode_i_64(arr[0]),dco_decode_String(arr[1]),); }
+
+@protected RrfConfig dco_decode_rrf_config(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 3) throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+                return RrfConfig(k: dco_decode_u_32(arr[0]),
+vectorWeight: dco_decode_f_64(arr[1]),
+bm25Weight: dco_decode_f_64(arr[2]),); }
+
+@protected SemanticChunk dco_decode_semantic_chunk(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 5) throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+                return SemanticChunk(index: dco_decode_i_32(arr[0]),
+content: dco_decode_String(arr[1]),
+startPos: dco_decode_i_32(arr[2]),
+endPos: dco_decode_i_32(arr[3]),
+chunkType: dco_decode_String(arr[4]),); }
+
+@protected SourceStats dco_decode_source_stats(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+final arr = raw as List<dynamic>;
+                if (arr.length != 2) throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+                return SourceStats(sourceCount: dco_decode_i_64(arr[0]),
+chunkCount: dco_decode_i_64(arr[1]),); }
+
+@protected int dco_decode_u_32(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return raw as int; }
+
+@protected BigInt dco_decode_u_64(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return dcoDecodeU64(raw); }
+
+@protected int dco_decode_u_8(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return raw as int; }
+
+@protected void dco_decode_unit(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return; }
+
+@protected UserIntent dco_decode_user_intent(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+switch (raw[0]) {
+                case 0: return UserIntent_Summary(query: dco_decode_String(raw[1]),);
+case 1: return UserIntent_Define(term: dco_decode_String(raw[1]),);
+case 2: return UserIntent_ExpandKnowledge(query: dco_decode_String(raw[1]),);
+case 3: return UserIntent_General(query: dco_decode_String(raw[1]),);
+case 4: return UserIntent_InvalidCommand(command: dco_decode_String(raw[1]),reason: dco_decode_String(raw[2]),);
+                default: throw Exception("unreachable");
+            } }
+
+@protected BigInt dco_decode_usize(dynamic raw){ // Codec=Dco (DartCObject based), see doc to use other codecs
+return dcoDecodeU64(raw); }
+
+@protected AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var inner = sse_decode_String(deserializer);
+        return AnyhowException(inner); }
+
+@protected String sse_decode_String(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var inner = sse_decode_list_prim_u_8_strict(deserializer);
+        return utf8.decoder.convert(inner); }
+
+@protected AddDocumentResult sse_decode_add_document_result(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_success = sse_decode_bool(deserializer);
+var var_isDuplicate = sse_decode_bool(deserializer);
+var var_message = sse_decode_String(deserializer);
+return AddDocumentResult(success: var_success, isDuplicate: var_isDuplicate, message: var_message); }
+
+@protected AddSourceResult sse_decode_add_source_result(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_sourceId = sse_decode_i_64(deserializer);
+var var_isDuplicate = sse_decode_bool(deserializer);
+var var_chunkCount = sse_decode_i_32(deserializer);
+var var_message = sse_decode_String(deserializer);
+return AddSourceResult(sourceId: var_sourceId, isDuplicate: var_isDuplicate, chunkCount: var_chunkCount, message: var_message); }
+
+@protected Bm25SearchResult sse_decode_bm_25_search_result(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_docId = sse_decode_i_64(deserializer);
+var var_score = sse_decode_f_64(deserializer);
+return Bm25SearchResult(docId: var_docId, score: var_score); }
+
+@protected bool sse_decode_bool(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+return deserializer.buffer.getUint8() != 0; }
+
+@protected CompressionOptions sse_decode_box_autoadd_compression_options(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+return (sse_decode_compression_options(deserializer)); }
+
+@protected RrfConfig sse_decode_box_autoadd_rrf_config(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+return (sse_decode_rrf_config(deserializer)); }
+
+@protected UserIntent sse_decode_box_autoadd_user_intent(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+return (sse_decode_user_intent(deserializer)); }
+
+@protected BufferStats sse_decode_buffer_stats(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_bufferSize = sse_decode_usize(deserializer);
+var var_threshold = sse_decode_usize(deserializer);
+var var_hnswLoaded = sse_decode_bool(deserializer);
+return BufferStats(bufferSize: var_bufferSize, threshold: var_threshold, hnswLoaded: var_hnswLoaded); }
+
+@protected ChunkData sse_decode_chunk_data(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_content = sse_decode_String(deserializer);
+var var_chunkIndex = sse_decode_i_32(deserializer);
+var var_startPos = sse_decode_i_32(deserializer);
+var var_endPos = sse_decode_i_32(deserializer);
+var var_chunkType = sse_decode_String(deserializer);
+var var_embedding = sse_decode_list_prim_f_32_strict(deserializer);
+return ChunkData(content: var_content, chunkIndex: var_chunkIndex, startPos: var_startPos, endPos: var_endPos, chunkType: var_chunkType, embedding: var_embedding); }
+
+@protected ChunkForReembedding sse_decode_chunk_for_reembedding(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_chunkId = sse_decode_i_64(deserializer);
+var var_content = sse_decode_String(deserializer);
+return ChunkForReembedding(chunkId: var_chunkId, content: var_content); }
+
+@protected ChunkSearchResult sse_decode_chunk_search_result(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_chunkId = sse_decode_i_64(deserializer);
+var var_sourceId = sse_decode_i_64(deserializer);
+var var_chunkIndex = sse_decode_i_32(deserializer);
+var var_content = sse_decode_String(deserializer);
+var var_chunkType = sse_decode_String(deserializer);
+var var_similarity = sse_decode_f_64(deserializer);
+return ChunkSearchResult(chunkId: var_chunkId, sourceId: var_sourceId, chunkIndex: var_chunkIndex, content: var_content, chunkType: var_chunkType, similarity: var_similarity); }
+
+@protected ChunkType sse_decode_chunk_type(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var inner = sse_decode_i_32(deserializer);
+        return ChunkType.values[inner]; }
+
+@protected CompressedText sse_decode_compressed_text(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_text = sse_decode_String(deserializer);
+var var_originalChars = sse_decode_i_32(deserializer);
+var var_compressedChars = sse_decode_i_32(deserializer);
+var var_ratio = sse_decode_f_64(deserializer);
+var var_sentencesRemoved = sse_decode_i_32(deserializer);
+var var_charsSavedStopwords = sse_decode_i_32(deserializer);
+var var_charsSavedTruncation = sse_decode_i_32(deserializer);
+return CompressedText(text: var_text, originalChars: var_originalChars, compressedChars: var_compressedChars, ratio: var_ratio, sentencesRemoved: var_sentencesRemoved, charsSavedStopwords: var_charsSavedStopwords, charsSavedTruncation: var_charsSavedTruncation); }
+
+@protected CompressionOptions sse_decode_compression_options(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_removeStopwords = sse_decode_bool(deserializer);
+var var_removeDuplicates = sse_decode_bool(deserializer);
+var var_language = sse_decode_String(deserializer);
+var var_level = sse_decode_i_32(deserializer);
+return CompressionOptions(removeStopwords: var_removeStopwords, removeDuplicates: var_removeDuplicates, language: var_language, level: var_level); }
+
+@protected EmbeddingPoint sse_decode_embedding_point(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_id = sse_decode_i_64(deserializer);
+var var_embedding = sse_decode_list_prim_f_32_strict(deserializer);
+var var_norm = sse_decode_f_32(deserializer);
+return EmbeddingPoint(id: var_id, embedding: var_embedding, norm: var_norm); }
+
+@protected double sse_decode_f_32(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+return deserializer.buffer.getFloat32(); }
+
+@protected double sse_decode_f_64(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+return deserializer.buffer.getFloat64(); }
+
+@protected HnswSearchResult sse_decode_hnsw_search_result(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_id = sse_decode_i_64(deserializer);
+var var_distance = sse_decode_f_32(deserializer);
+return HnswSearchResult(id: var_id, distance: var_distance); }
+
+@protected HybridSearchResult sse_decode_hybrid_search_result(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_docId = sse_decode_i_64(deserializer);
+var var_content = sse_decode_String(deserializer);
+var var_score = sse_decode_f_64(deserializer);
+var var_vectorRank = sse_decode_u_32(deserializer);
+var var_bm25Rank = sse_decode_u_32(deserializer);
+return HybridSearchResult(docId: var_docId, content: var_content, score: var_score, vectorRank: var_vectorRank, bm25Rank: var_bm25Rank); }
+
+@protected int sse_decode_i_32(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+return deserializer.buffer.getInt32(); }
+
+@protected PlatformInt64 sse_decode_i_64(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+return deserializer.buffer.getPlatformInt64(); }
+
+@protected IncrementalSearchResult sse_decode_incremental_search_result(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_docId = sse_decode_i_64(deserializer);
+var var_distance = sse_decode_f_32(deserializer);
+var var_source = sse_decode_String(deserializer);
+return IncrementalSearchResult(docId: var_docId, distance: var_distance, source: var_source); }
+
+@protected List<String> sse_decode_list_String(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+
+        var len_ = sse_decode_i_32(deserializer);
+        var ans_ = <String>[];
+        for (var idx_ = 0; idx_ < len_; ++idx_) { ans_.add(sse_decode_String(deserializer)); }
+        return ans_;
+         }
+
+@protected List<Bm25SearchResult> sse_decode_list_bm_25_search_result(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+
+        var len_ = sse_decode_i_32(deserializer);
+        var ans_ = <Bm25SearchResult>[];
+        for (var idx_ = 0; idx_ < len_; ++idx_) { ans_.add(sse_decode_bm_25_search_result(deserializer)); }
+        return ans_;
+         }
+
+@protected List<ChunkData> sse_decode_list_chunk_data(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+
+        var len_ = sse_decode_i_32(deserializer);
+        var ans_ = <ChunkData>[];
+        for (var idx_ = 0; idx_ < len_; ++idx_) { ans_.add(sse_decode_chunk_data(deserializer)); }
+        return ans_;
+         }
+
+@protected List<ChunkForReembedding> sse_decode_list_chunk_for_reembedding(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+
+        var len_ = sse_decode_i_32(deserializer);
+        var ans_ = <ChunkForReembedding>[];
+        for (var idx_ = 0; idx_ < len_; ++idx_) { ans_.add(sse_decode_chunk_for_reembedding(deserializer)); }
+        return ans_;
+         }
+
+@protected List<ChunkSearchResult> sse_decode_list_chunk_search_result(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+
+        var len_ = sse_decode_i_32(deserializer);
+        var ans_ = <ChunkSearchResult>[];
+        for (var idx_ = 0; idx_ < len_; ++idx_) { ans_.add(sse_decode_chunk_search_result(deserializer)); }
+        return ans_;
+         }
+
+@protected List<HnswSearchResult> sse_decode_list_hnsw_search_result(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+
+        var len_ = sse_decode_i_32(deserializer);
+        var ans_ = <HnswSearchResult>[];
+        for (var idx_ = 0; idx_ < len_; ++idx_) { ans_.add(sse_decode_hnsw_search_result(deserializer)); }
+        return ans_;
+         }
+
+@protected List<HybridSearchResult> sse_decode_list_hybrid_search_result(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+
+        var len_ = sse_decode_i_32(deserializer);
+        var ans_ = <HybridSearchResult>[];
+        for (var idx_ = 0; idx_ < len_; ++idx_) { ans_.add(sse_decode_hybrid_search_result(deserializer)); }
+        return ans_;
+         }
+
+@protected List<IncrementalSearchResult> sse_decode_list_incremental_search_result(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+
+        var len_ = sse_decode_i_32(deserializer);
+        var ans_ = <IncrementalSearchResult>[];
+        for (var idx_ = 0; idx_ < len_; ++idx_) { ans_.add(sse_decode_incremental_search_result(deserializer)); }
+        return ans_;
+         }
+
+@protected List<double> sse_decode_list_prim_f_32_loose(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var len_ = sse_decode_i_32(deserializer);
+                return deserializer.buffer.getFloat32List(len_); }
+
+@protected Float32List sse_decode_list_prim_f_32_strict(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var len_ = sse_decode_i_32(deserializer);
+                return deserializer.buffer.getFloat32List(len_); }
+
+@protected List<int> sse_decode_list_prim_u_32_loose(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var len_ = sse_decode_i_32(deserializer);
+                return deserializer.buffer.getUint32List(len_); }
+
+@protected Uint32List sse_decode_list_prim_u_32_strict(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var len_ = sse_decode_i_32(deserializer);
+                return deserializer.buffer.getUint32List(len_); }
+
+@protected Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var len_ = sse_decode_i_32(deserializer);
+                return deserializer.buffer.getUint8List(len_); }
+
+@protected List<(PlatformInt64,Float32List)> sse_decode_list_record_i_64_list_prim_f_32_strict(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+
+        var len_ = sse_decode_i_32(deserializer);
+        var ans_ = <(PlatformInt64,Float32List)>[];
+        for (var idx_ = 0; idx_ < len_; ++idx_) { ans_.add(sse_decode_record_i_64_list_prim_f_32_strict(deserializer)); }
+        return ans_;
+         }
+
+@protected List<(PlatformInt64,String)> sse_decode_list_record_i_64_string(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+
+        var len_ = sse_decode_i_32(deserializer);
+        var ans_ = <(PlatformInt64,String)>[];
+        for (var idx_ = 0; idx_ < len_; ++idx_) { ans_.add(sse_decode_record_i_64_string(deserializer)); }
+        return ans_;
+         }
+
+@protected List<SemanticChunk> sse_decode_list_semantic_chunk(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+
+        var len_ = sse_decode_i_32(deserializer);
+        var ans_ = <SemanticChunk>[];
+        for (var idx_ = 0; idx_ < len_; ++idx_) { ans_.add(sse_decode_semantic_chunk(deserializer)); }
+        return ans_;
+         }
+
+@protected String? sse_decode_opt_String(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+
+            if (sse_decode_bool(deserializer)) {
+                return (sse_decode_String(deserializer));
+            } else {
+                return null;
+            }
+             }
+
+@protected RrfConfig? sse_decode_opt_box_autoadd_rrf_config(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+
+            if (sse_decode_bool(deserializer)) {
+                return (sse_decode_box_autoadd_rrf_config(deserializer));
+            } else {
+                return null;
+            }
+             }
+
+@protected ParsedIntent sse_decode_parsed_intent(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_intentType = sse_decode_String(deserializer);
+var var_query = sse_decode_String(deserializer);
+var var_isValid = sse_decode_bool(deserializer);
+var var_errorMessage = sse_decode_opt_String(deserializer);
+return ParsedIntent(intentType: var_intentType, query: var_query, isValid: var_isValid, errorMessage: var_errorMessage); }
+
+@protected (PlatformInt64,Float32List) sse_decode_record_i_64_list_prim_f_32_strict(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_field0 = sse_decode_i_64(deserializer);
+var var_field1 = sse_decode_list_prim_f_32_strict(deserializer);
+return (var_field0, var_field1); }
+
+@protected (PlatformInt64,String) sse_decode_record_i_64_string(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_field0 = sse_decode_i_64(deserializer);
+var var_field1 = sse_decode_String(deserializer);
+return (var_field0, var_field1); }
+
+@protected RrfConfig sse_decode_rrf_config(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_k = sse_decode_u_32(deserializer);
+var var_vectorWeight = sse_decode_f_64(deserializer);
+var var_bm25Weight = sse_decode_f_64(deserializer);
+return RrfConfig(k: var_k, vectorWeight: var_vectorWeight, bm25Weight: var_bm25Weight); }
+
+@protected SemanticChunk sse_decode_semantic_chunk(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_index = sse_decode_i_32(deserializer);
+var var_content = sse_decode_String(deserializer);
+var var_startPos = sse_decode_i_32(deserializer);
+var var_endPos = sse_decode_i_32(deserializer);
+var var_chunkType = sse_decode_String(deserializer);
+return SemanticChunk(index: var_index, content: var_content, startPos: var_startPos, endPos: var_endPos, chunkType: var_chunkType); }
+
+@protected SourceStats sse_decode_source_stats(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+var var_sourceCount = sse_decode_i_64(deserializer);
+var var_chunkCount = sse_decode_i_64(deserializer);
+return SourceStats(sourceCount: var_sourceCount, chunkCount: var_chunkCount); }
+
+@protected int sse_decode_u_32(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+return deserializer.buffer.getUint32(); }
+
+@protected BigInt sse_decode_u_64(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+return deserializer.buffer.getBigUint64(); }
+
+@protected int sse_decode_u_8(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+return deserializer.buffer.getUint8(); }
+
+@protected void sse_decode_unit(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+ }
+
+@protected UserIntent sse_decode_user_intent(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+
+            var tag_ = sse_decode_i_32(deserializer);
+            switch (tag_) { case 0: var var_query = sse_decode_String(deserializer);
+return UserIntent_Summary(query: var_query);case 1: var var_term = sse_decode_String(deserializer);
+return UserIntent_Define(term: var_term);case 2: var var_query = sse_decode_String(deserializer);
+return UserIntent_ExpandKnowledge(query: var_query);case 3: var var_query = sse_decode_String(deserializer);
+return UserIntent_General(query: var_query);case 4: var var_command = sse_decode_String(deserializer);
+var var_reason = sse_decode_String(deserializer);
+return UserIntent_InvalidCommand(command: var_command, reason: var_reason); default: throw UnimplementedError(''); }
+             }
+
+@protected BigInt sse_decode_usize(SseDeserializer deserializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+return deserializer.buffer.getBigUint64(); }
+
+@protected void sse_encode_AnyhowException(AnyhowException self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_String(self.message, serializer); }
+
+@protected void sse_encode_String(String self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_list_prim_u_8_strict(utf8.encoder.convert(self), serializer); }
+
+@protected void sse_encode_add_document_result(AddDocumentResult self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_bool(self.success, serializer);
+sse_encode_bool(self.isDuplicate, serializer);
+sse_encode_String(self.message, serializer);
+ }
+
+@protected void sse_encode_add_source_result(AddSourceResult self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_64(self.sourceId, serializer);
+sse_encode_bool(self.isDuplicate, serializer);
+sse_encode_i_32(self.chunkCount, serializer);
+sse_encode_String(self.message, serializer);
+ }
+
+@protected void sse_encode_bm_25_search_result(Bm25SearchResult self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_64(self.docId, serializer);
+sse_encode_f_64(self.score, serializer);
+ }
+
+@protected void sse_encode_bool(bool self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+serializer.buffer.putUint8(self ? 1 : 0); }
+
+@protected void sse_encode_box_autoadd_compression_options(CompressionOptions self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_compression_options(self, serializer); }
+
+@protected void sse_encode_box_autoadd_rrf_config(RrfConfig self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_rrf_config(self, serializer); }
+
+@protected void sse_encode_box_autoadd_user_intent(UserIntent self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_user_intent(self, serializer); }
+
+@protected void sse_encode_buffer_stats(BufferStats self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_usize(self.bufferSize, serializer);
+sse_encode_usize(self.threshold, serializer);
+sse_encode_bool(self.hnswLoaded, serializer);
+ }
+
+@protected void sse_encode_chunk_data(ChunkData self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_String(self.content, serializer);
+sse_encode_i_32(self.chunkIndex, serializer);
+sse_encode_i_32(self.startPos, serializer);
+sse_encode_i_32(self.endPos, serializer);
+sse_encode_String(self.chunkType, serializer);
+sse_encode_list_prim_f_32_strict(self.embedding, serializer);
+ }
+
+@protected void sse_encode_chunk_for_reembedding(ChunkForReembedding self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_64(self.chunkId, serializer);
+sse_encode_String(self.content, serializer);
+ }
+
+@protected void sse_encode_chunk_search_result(ChunkSearchResult self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_64(self.chunkId, serializer);
+sse_encode_i_64(self.sourceId, serializer);
+sse_encode_i_32(self.chunkIndex, serializer);
+sse_encode_String(self.content, serializer);
+sse_encode_String(self.chunkType, serializer);
+sse_encode_f_64(self.similarity, serializer);
+ }
+
+@protected void sse_encode_chunk_type(ChunkType self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.index, serializer); }
+
+@protected void sse_encode_compressed_text(CompressedText self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_String(self.text, serializer);
+sse_encode_i_32(self.originalChars, serializer);
+sse_encode_i_32(self.compressedChars, serializer);
+sse_encode_f_64(self.ratio, serializer);
+sse_encode_i_32(self.sentencesRemoved, serializer);
+sse_encode_i_32(self.charsSavedStopwords, serializer);
+sse_encode_i_32(self.charsSavedTruncation, serializer);
+ }
+
+@protected void sse_encode_compression_options(CompressionOptions self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_bool(self.removeStopwords, serializer);
+sse_encode_bool(self.removeDuplicates, serializer);
+sse_encode_String(self.language, serializer);
+sse_encode_i_32(self.level, serializer);
+ }
+
+@protected void sse_encode_embedding_point(EmbeddingPoint self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_64(self.id, serializer);
+sse_encode_list_prim_f_32_strict(self.embedding, serializer);
+sse_encode_f_32(self.norm, serializer);
+ }
+
+@protected void sse_encode_f_32(double self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+serializer.buffer.putFloat32(self); }
+
+@protected void sse_encode_f_64(double self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+serializer.buffer.putFloat64(self); }
+
+@protected void sse_encode_hnsw_search_result(HnswSearchResult self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_64(self.id, serializer);
+sse_encode_f_32(self.distance, serializer);
+ }
+
+@protected void sse_encode_hybrid_search_result(HybridSearchResult self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_64(self.docId, serializer);
+sse_encode_String(self.content, serializer);
+sse_encode_f_64(self.score, serializer);
+sse_encode_u_32(self.vectorRank, serializer);
+sse_encode_u_32(self.bm25Rank, serializer);
+ }
+
+@protected void sse_encode_i_32(int self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+serializer.buffer.putInt32(self); }
+
+@protected void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+serializer.buffer.putPlatformInt64(self); }
+
+@protected void sse_encode_incremental_search_result(IncrementalSearchResult self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_64(self.docId, serializer);
+sse_encode_f_32(self.distance, serializer);
+sse_encode_String(self.source, serializer);
+ }
+
+@protected void sse_encode_list_String(List<String> self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.length, serializer);
+        for (final item in self) { sse_encode_String(item, serializer); } }
+
+@protected void sse_encode_list_bm_25_search_result(List<Bm25SearchResult> self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.length, serializer);
+        for (final item in self) { sse_encode_bm_25_search_result(item, serializer); } }
+
+@protected void sse_encode_list_chunk_data(List<ChunkData> self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.length, serializer);
+        for (final item in self) { sse_encode_chunk_data(item, serializer); } }
+
+@protected void sse_encode_list_chunk_for_reembedding(List<ChunkForReembedding> self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.length, serializer);
+        for (final item in self) { sse_encode_chunk_for_reembedding(item, serializer); } }
+
+@protected void sse_encode_list_chunk_search_result(List<ChunkSearchResult> self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.length, serializer);
+        for (final item in self) { sse_encode_chunk_search_result(item, serializer); } }
+
+@protected void sse_encode_list_hnsw_search_result(List<HnswSearchResult> self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.length, serializer);
+        for (final item in self) { sse_encode_hnsw_search_result(item, serializer); } }
+
+@protected void sse_encode_list_hybrid_search_result(List<HybridSearchResult> self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.length, serializer);
+        for (final item in self) { sse_encode_hybrid_search_result(item, serializer); } }
+
+@protected void sse_encode_list_incremental_search_result(List<IncrementalSearchResult> self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.length, serializer);
+        for (final item in self) { sse_encode_incremental_search_result(item, serializer); } }
+
+@protected void sse_encode_list_prim_f_32_loose(List<double> self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.length, serializer);
+                    serializer.buffer.putFloat32List(self is Float32List ? self : Float32List.fromList(self)); }
+
+@protected void sse_encode_list_prim_f_32_strict(Float32List self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.length, serializer);
+                    serializer.buffer.putFloat32List(self); }
+
+@protected void sse_encode_list_prim_u_32_loose(List<int> self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.length, serializer);
+                    serializer.buffer.putUint32List(self is Uint32List ? self : Uint32List.fromList(self)); }
+
+@protected void sse_encode_list_prim_u_32_strict(Uint32List self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.length, serializer);
+                    serializer.buffer.putUint32List(self); }
+
+@protected void sse_encode_list_prim_u_8_strict(Uint8List self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.length, serializer);
+                    serializer.buffer.putUint8List(self); }
+
+@protected void sse_encode_list_record_i_64_list_prim_f_32_strict(List<(PlatformInt64,Float32List)> self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.length, serializer);
+        for (final item in self) { sse_encode_record_i_64_list_prim_f_32_strict(item, serializer); } }
+
+@protected void sse_encode_list_record_i_64_string(List<(PlatformInt64,String)> self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.length, serializer);
+        for (final item in self) { sse_encode_record_i_64_string(item, serializer); } }
+
+@protected void sse_encode_list_semantic_chunk(List<SemanticChunk> self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.length, serializer);
+        for (final item in self) { sse_encode_semantic_chunk(item, serializer); } }
+
+@protected void sse_encode_opt_String(String? self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+
+                sse_encode_bool(self != null, serializer);
+                if (self != null) {
+                    sse_encode_String(self, serializer);
+                }
+                 }
+
+@protected void sse_encode_opt_box_autoadd_rrf_config(RrfConfig? self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+
+                sse_encode_bool(self != null, serializer);
+                if (self != null) {
+                    sse_encode_box_autoadd_rrf_config(self, serializer);
+                }
+                 }
+
+@protected void sse_encode_parsed_intent(ParsedIntent self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_String(self.intentType, serializer);
+sse_encode_String(self.query, serializer);
+sse_encode_bool(self.isValid, serializer);
+sse_encode_opt_String(self.errorMessage, serializer);
+ }
+
+@protected void sse_encode_record_i_64_list_prim_f_32_strict((PlatformInt64,Float32List) self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_64(self.$1, serializer);
+sse_encode_list_prim_f_32_strict(self.$2, serializer);
+ }
+
+@protected void sse_encode_record_i_64_string((PlatformInt64,String) self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_64(self.$1, serializer);
+sse_encode_String(self.$2, serializer);
+ }
+
+@protected void sse_encode_rrf_config(RrfConfig self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_u_32(self.k, serializer);
+sse_encode_f_64(self.vectorWeight, serializer);
+sse_encode_f_64(self.bm25Weight, serializer);
+ }
+
+@protected void sse_encode_semantic_chunk(SemanticChunk self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_32(self.index, serializer);
+sse_encode_String(self.content, serializer);
+sse_encode_i_32(self.startPos, serializer);
+sse_encode_i_32(self.endPos, serializer);
+sse_encode_String(self.chunkType, serializer);
+ }
+
+@protected void sse_encode_source_stats(SourceStats self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+sse_encode_i_64(self.sourceCount, serializer);
+sse_encode_i_64(self.chunkCount, serializer);
+ }
+
+@protected void sse_encode_u_32(int self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+serializer.buffer.putUint32(self); }
+
+@protected void sse_encode_u_64(BigInt self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+serializer.buffer.putBigUint64(self); }
+
+@protected void sse_encode_u_8(int self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+serializer.buffer.putUint8(self); }
+
+@protected void sse_encode_unit(void self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+ }
+
+@protected void sse_encode_user_intent(UserIntent self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+switch (self) { case UserIntent_Summary(query: final query): sse_encode_i_32(0, serializer); sse_encode_String(query, serializer);
+case UserIntent_Define(term: final term): sse_encode_i_32(1, serializer); sse_encode_String(term, serializer);
+case UserIntent_ExpandKnowledge(query: final query): sse_encode_i_32(2, serializer); sse_encode_String(query, serializer);
+case UserIntent_General(query: final query): sse_encode_i_32(3, serializer); sse_encode_String(query, serializer);
+case UserIntent_InvalidCommand(command: final command,reason: final reason): sse_encode_i_32(4, serializer); sse_encode_String(command, serializer);
+sse_encode_String(reason, serializer);
+  } }
+
+@protected void sse_encode_usize(BigInt self, SseSerializer serializer){ // Codec=Sse (Serialization based), see doc to use other codecs
+serializer.buffer.putBigUint64(self); }
+                }
+                

@@ -6,96 +6,88 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`, `fmt`
 
-/// Build HNSW index (Optimized)
-Future<void> buildHnswIndex({
-  required List<(PlatformInt64, Float32List)> points,
-}) => RustLib.instance.api.crateApiHnswIndexBuildHnswIndex(points: points);
+            // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`, `fmt`
+
+
+            /// Build HNSW index (Optimized)
+Future<void>  buildHnswIndex({required List<(PlatformInt64,Float32List)> points }) => RustLib.instance.api.crateApiHnswIndexBuildHnswIndex(points: points);
 
 /// Save HNSW index point data to disk (bincode serialization)
-///
+/// 
 /// Since hnsw_rs's native persistence has lifetime constraints,
 /// we save the point data and rebuild the index on load.
 /// This is fast enough for practical use (1000 points < 100ms rebuild).
-Future<void> saveHnswIndex({required String basePath}) =>
-    RustLib.instance.api.crateApiHnswIndexSaveHnswIndex(basePath: basePath);
+Future<void>  saveHnswIndex({required String basePath }) => RustLib.instance.api.crateApiHnswIndexSaveHnswIndex(basePath: basePath);
 
 /// Load HNSW index from disk
-///
+/// 
 /// Returns true if marker exists (index should be rebuilt from DB),
 /// false if no cached index exists.
-Future<bool> loadHnswIndex({required String basePath}) =>
-    RustLib.instance.api.crateApiHnswIndexLoadHnswIndex(basePath: basePath);
+Future<bool>  loadHnswIndex({required String basePath }) => RustLib.instance.api.crateApiHnswIndexLoadHnswIndex(basePath: basePath);
 
 /// Search in HNSW index
-Future<List<HnswSearchResult>> searchHnsw({
-  required List<double> queryEmbedding,
-  required BigInt topK,
-}) => RustLib.instance.api.crateApiHnswIndexSearchHnsw(
-  queryEmbedding: queryEmbedding,
-  topK: topK,
-);
+Future<List<HnswSearchResult>>  searchHnsw({required List<double> queryEmbedding , required BigInt topK }) => RustLib.instance.api.crateApiHnswIndexSearchHnsw(queryEmbedding: queryEmbedding, topK: topK);
 
 /// Check if HNSW index is loaded
-Future<bool> isHnswIndexLoaded() =>
-    RustLib.instance.api.crateApiHnswIndexIsHnswIndexLoaded();
+Future<bool>  isHnswIndexLoaded() => RustLib.instance.api.crateApiHnswIndexIsHnswIndexLoaded();
 
 /// Clear HNSW index
-Future<void> clearHnswIndex() =>
-    RustLib.instance.api.crateApiHnswIndexClearHnswIndex();
+Future<void>  clearHnswIndex() => RustLib.instance.api.crateApiHnswIndexClearHnswIndex();
 
-/// Custom point type: wrapper for FRB compatibility
+            /// Custom point type: wrapper for FRB compatibility
 /// This struct was used in previous FRB generation, so we keep it to avoid breaking changes.
 /// We don't use it in the index itself anymore (we use native vectors).
-class EmbeddingPoint {
-  final PlatformInt64 id;
-  final Float32List embedding;
-  final double norm;
+class EmbeddingPoint  {
+                final PlatformInt64 id;
+final Float32List embedding;
+final double norm;
 
-  const EmbeddingPoint({
-    required this.id,
-    required this.embedding,
-    required this.norm,
-  });
+                const EmbeddingPoint({required this.id ,required this.embedding ,required this.norm ,});
 
-  // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
-  static Future<EmbeddingPoint> newInstance({
-    required PlatformInt64 id,
-    required List<double> embedding,
-  }) => RustLib.instance.api.crateApiHnswIndexEmbeddingPointNew(
-    id: id,
-    embedding: embedding,
-  );
+                  // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
+static Future<EmbeddingPoint>  newInstance({required PlatformInt64 id , required List<double> embedding })=>RustLib.instance.api.crateApiHnswIndexEmbeddingPointNew(id: id, embedding: embedding);
 
-  @override
-  int get hashCode => id.hashCode ^ embedding.hashCode ^ norm.hashCode;
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is EmbeddingPoint &&
-          runtimeType == other.runtimeType &&
-          id == other.id &&
-          embedding == other.embedding &&
-          norm == other.norm;
-}
+                
+
+                
+        @override
+        int get hashCode => id.hashCode^embedding.hashCode^norm.hashCode;
+        
+
+                
+        @override
+        bool operator ==(Object other) =>
+            identical(this, other) ||
+            other is EmbeddingPoint &&
+                runtimeType == other.runtimeType
+                && id == other.id&& embedding == other.embedding&& norm == other.norm;
+        
+            }
 
 /// HNSW search result
-class HnswSearchResult {
-  final PlatformInt64 id;
-  final double distance;
+class HnswSearchResult  {
+                final PlatformInt64 id;
+final double distance;
 
-  const HnswSearchResult({required this.id, required this.distance});
+                const HnswSearchResult({required this.id ,required this.distance ,});
 
-  @override
-  int get hashCode => id.hashCode ^ distance.hashCode;
+                
+                
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is HnswSearchResult &&
-          runtimeType == other.runtimeType &&
-          id == other.id &&
-          distance == other.distance;
-}
+                
+        @override
+        int get hashCode => id.hashCode^distance.hashCode;
+        
+
+                
+        @override
+        bool operator ==(Object other) =>
+            identical(this, other) ||
+            other is HnswSearchResult &&
+                runtimeType == other.runtimeType
+                && id == other.id&& distance == other.distance;
+        
+            }
+            

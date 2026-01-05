@@ -52,6 +52,20 @@ pub fn init_source_db(db_path: String) -> anyhow::Result<()> {
         [],
     )?;
     
+    // Migration: Add chunk_type column if it doesn't exist (for existing DBs)
+    // SQLite doesn't support "ADD COLUMN IF NOT EXISTS", so we check manually
+    let has_chunk_type: bool = conn
+        .prepare("SELECT chunk_type FROM chunks LIMIT 1")
+        .is_ok();
+    
+    if !has_chunk_type {
+        info!("[init_source_db] Migrating: adding chunk_type column");
+        conn.execute(
+            "ALTER TABLE chunks ADD COLUMN chunk_type TEXT DEFAULT 'general'",
+            [],
+        )?;
+    }
+    
     // Index for fast source lookup
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_chunks_source_id ON chunks(source_id)",

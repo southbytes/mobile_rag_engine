@@ -80,8 +80,21 @@ class OllamaResponseService {
       // Save raw query to history (not the huge context prompt)
       onHistoryUpdate?.call(Message(role: MessageRole.user, content: query));
 
+      // Debug: Log prompt structure
+      debugPrint('📨 === Prompt to LLM ===');
+      debugPrint('📨 System: ${messages[0].content}');
+      debugPrint('📨 History: ${chatHistory.length} messages');
+      debugPrint('📨 User Query: $query');
+      debugPrint('📨 Context Length: ${contextText.length} chars');
+      debugPrint('📨 Mode: ${mode.name}');
+
       // Stream response from Ollama
       final responseBuffer = StringBuffer();
+      final thinkingBuffer = StringBuffer();
+      bool isInThinking = false;
+      int chunkCount = 0;
+
+      debugPrint('📝 === LLM Streaming Start ===');
 
       final stream = ollamaClient.generateChatCompletionStream(
         request: GenerateChatCompletionRequest(
@@ -91,7 +104,42 @@ class OllamaResponseService {
       );
 
       await for (final chunk in stream) {
-        responseBuffer.write(chunk.message.content);
+        final content = chunk.message.content;
+        responseBuffer.write(content);
+        chunkCount++;
+
+        // Detect thinking/reasoning sections (some models use <think> tags)
+        if (content.contains('<think>')) {
+          isInThinking = true;
+          debugPrint('🧠 [THINKING START]');
+        }
+        if (content.contains('</think>')) {
+          isInThinking = false;
+          debugPrint('🧠 [THINKING END]');
+        }
+
+        // Log chunk content
+        if (isInThinking) {
+          thinkingBuffer.write(content);
+          // Print thinking chunks with special prefix
+          final cleanContent = content.replaceAll('\n', '↵');
+          debugPrint('🧠 $cleanContent');
+        } else {
+          // Print response chunks
+          final cleanContent = content.replaceAll('\n', '↵');
+          if (cleanContent.isNotEmpty) {
+            // debugPrint('💬 $cleanContent');
+          }
+        }
+      }
+
+      debugPrint('📝 === LLM Streaming End ($chunkCount chunks) ===');
+
+      // Log thinking summary if any
+      if (thinkingBuffer.isNotEmpty) {
+        debugPrint('🧠 === Thinking Summary ===');
+        debugPrint(thinkingBuffer.toString());
+        debugPrint('🧠 === End Thinking ===');
       }
 
       final response = responseBuffer.toString().trim();

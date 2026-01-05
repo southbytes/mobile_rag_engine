@@ -55,6 +55,9 @@ class ChatMessage {
   final double? compressionRatio; // 0.0-1.0, lower = more compressed
   final int? originalTokens; // Before compression
 
+  // Processing metadata for UI display
+  final String? queryType; // explanation, definition, factual, etc.
+
   // Timing metrics for debug
   final Duration? ragSearchTime;
   final Duration? llmGenerationTime;
@@ -68,6 +71,7 @@ class ChatMessage {
     this.tokensUsed,
     this.compressionRatio,
     this.originalTokens,
+    this.queryType,
     this.ragSearchTime,
     this.llmGenerationTime,
     this.totalTime,

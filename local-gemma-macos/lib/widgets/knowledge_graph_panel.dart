@@ -63,6 +63,10 @@ class KnowledgeGraphPanel extends StatefulWidget {
   final void Function(ChunkSearchResult chunk)? onChunkSelected;
   final ChunkSearchResult? selectedChunk;
 
+  /// Current user intent: 'summary', 'define', 'more', or null (general)
+  /// Used to highlight relevant chunk types in the graph
+  final String? userIntent;
+
   const KnowledgeGraphPanel({
     super.key,
     this.query,
@@ -70,6 +74,7 @@ class KnowledgeGraphPanel extends StatefulWidget {
     this.similarityThreshold = 0.35,
     this.onChunkSelected,
     this.selectedChunk,
+    this.userIntent,
   });
 
   @override
@@ -260,7 +265,24 @@ class _KnowledgeGraphPanelState extends State<KnowledgeGraphPanel>
     super.dispose();
   }
 
-  Color _getNodeColor(GraphNodeType type) {
+  Color _getNodeColor(GraphNodeType type, {String? chunkType}) {
+    // If there's a user intent, highlight matching chunk types
+    if (widget.userIntent != null && chunkType != null) {
+      final isRelevant = _isChunkTypeRelevantForIntent(
+        chunkType,
+        widget.userIntent!,
+      );
+      if (isRelevant && type == GraphNodeType.selected) {
+        // Highlight with intent-specific color
+        return switch (widget.userIntent) {
+          'summary' => Colors.blue,
+          'define' => Colors.teal,
+          'more' => Colors.deepPurple,
+          _ => Colors.green,
+        };
+      }
+    }
+
     switch (type) {
       case GraphNodeType.query:
         return Colors.purple;
@@ -273,17 +295,36 @@ class _KnowledgeGraphPanelState extends State<KnowledgeGraphPanel>
     }
   }
 
-  double _getNodeSize(GraphNodeType type, double? similarity) {
-    switch (type) {
-      case GraphNodeType.query:
-        return 32;
-      case GraphNodeType.selected:
-        return 16 + (similarity ?? 0.5) * 10;
-      case GraphNodeType.candidate:
-        return 14;
-      case GraphNodeType.adjacent:
-        return 10;
+  /// Check if chunk type is relevant for the current intent
+  bool _isChunkTypeRelevantForIntent(String chunkType, String intent) {
+    return switch (intent) {
+      'summary' => ['list', 'definition', 'procedure'].contains(chunkType),
+      'define' => ['definition', 'example'].contains(chunkType),
+      'more' => true, // All types are relevant for expansion
+      _ => false,
+    };
+  }
+
+  double _getNodeSize(
+    GraphNodeType type,
+    double? similarity, {
+    String? chunkType,
+  }) {
+    // Boost size for relevant chunk types based on intent
+    double baseSize = switch (type) {
+      GraphNodeType.query => 32,
+      GraphNodeType.selected => 16 + (similarity ?? 0.5) * 10,
+      GraphNodeType.candidate => 14,
+      GraphNodeType.adjacent => 10,
+    };
+
+    if (widget.userIntent != null && chunkType != null) {
+      if (_isChunkTypeRelevantForIntent(chunkType, widget.userIntent!)) {
+        baseSize *= 1.2; // 20% larger for relevant types
+      }
     }
+
+    return baseSize;
   }
 
   @override
@@ -391,9 +432,11 @@ class _KnowledgeGraphPanelState extends State<KnowledgeGraphPanel>
                           child: Stack(
                             children: _nodes.map((node) {
                               final pos = (node.position + _offset) * _scale;
+                              final chunkType = node.chunk?.chunkType;
                               final size = _getNodeSize(
                                 node.type,
                                 node.similarity,
+                                chunkType: chunkType,
                               );
                               final isSelected =
                                   widget.selectedChunk != null &&
@@ -420,7 +463,10 @@ class _KnowledgeGraphPanelState extends State<KnowledgeGraphPanel>
                                       height: size,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: _getNodeColor(node.type),
+                                        color: _getNodeColor(
+                                          node.type,
+                                          chunkType: chunkType,
+                                        ),
                                         border: isSelected
                                             ? Border.all(
                                                 color: Colors.white,
@@ -431,6 +477,7 @@ class _KnowledgeGraphPanelState extends State<KnowledgeGraphPanel>
                                           BoxShadow(
                                             color: _getNodeColor(
                                               node.type,
+                                              chunkType: chunkType,
                                             ).withValues(alpha: 0.5),
                                             blurRadius: isSelected ? 12 : 6,
                                           ),

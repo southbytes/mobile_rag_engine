@@ -6,94 +6,62 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `calculate_content_hash`, `rebuild_bm25_index_internal`, `rebuild_hnsw_index_internal`, `search_with_hnsw`, `search_with_linear_scan`, `truncate_str`
+
+            // These functions are ignored because they are not marked as `pub`: `calculate_content_hash`, `rebuild_bm25_index_internal`, `rebuild_hnsw_index_internal`, `search_with_hnsw`, `search_with_linear_scan`, `truncate_str`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`
 
-/// Calculate cosine similarity between two vectors
-double calculateCosineSimilarity({
-  required List<double> vecA,
-  required List<double> vecB,
-}) => RustLib.instance.api.crateApiSimpleRagCalculateCosineSimilarity(
-  vecA: vecA,
-  vecB: vecB,
-);
+
+            /// Calculate cosine similarity between two vectors
+double  calculateCosineSimilarity({required List<double> vecA , required List<double> vecB }) => RustLib.instance.api.crateApiSimpleRagCalculateCosineSimilarity(vecA: vecA, vecB: vecB);
 
 /// Initialize database: create docs table with content_hash for deduplication
-Future<void> initDb({required String dbPath}) =>
-    RustLib.instance.api.crateApiSimpleRagInitDb(dbPath: dbPath);
+Future<void>  initDb({required String dbPath }) => RustLib.instance.api.crateApiSimpleRagInitDb(dbPath: dbPath);
 
 /// Rebuild HNSW index (public API)
-Future<void> rebuildHnswIndex({required String dbPath}) =>
-    RustLib.instance.api.crateApiSimpleRagRebuildHnswIndex(dbPath: dbPath);
+Future<void>  rebuildHnswIndex({required String dbPath }) => RustLib.instance.api.crateApiSimpleRagRebuildHnswIndex(dbPath: dbPath);
 
 /// Rebuild BM25 index (public API)
-Future<void> rebuildBm25Index({required String dbPath}) =>
-    RustLib.instance.api.crateApiSimpleRagRebuildBm25Index(dbPath: dbPath);
+Future<void>  rebuildBm25Index({required String dbPath }) => RustLib.instance.api.crateApiSimpleRagRebuildBm25Index(dbPath: dbPath);
 
 /// Add document with embedding vector (with deduplication)
 /// Returns whether document was saved or skipped due to duplicate
-Future<AddDocumentResult> addDocument({
-  required String dbPath,
-  required String content,
-  required List<double> embedding,
-}) => RustLib.instance.api.crateApiSimpleRagAddDocument(
-  dbPath: dbPath,
-  content: content,
-  embedding: embedding,
-);
+Future<AddDocumentResult>  addDocument({required String dbPath , required String content , required List<double> embedding }) => RustLib.instance.api.crateApiSimpleRagAddDocument(dbPath: dbPath, content: content, embedding: embedding);
 
 /// Legacy add_document for backward compatibility (ignores result details)
-Future<void> addDocumentSimple({
-  required String dbPath,
-  required String content,
-  required List<double> embedding,
-}) => RustLib.instance.api.crateApiSimpleRagAddDocumentSimple(
-  dbPath: dbPath,
-  content: content,
-  embedding: embedding,
-);
+Future<void>  addDocumentSimple({required String dbPath , required String content , required List<double> embedding }) => RustLib.instance.api.crateApiSimpleRagAddDocumentSimple(dbPath: dbPath, content: content, embedding: embedding);
 
 /// Similarity-based search (uses HNSW)
-Future<List<String>> searchSimilar({
-  required String dbPath,
-  required List<double> queryEmbedding,
-  required int topK,
-}) => RustLib.instance.api.crateApiSimpleRagSearchSimilar(
-  dbPath: dbPath,
-  queryEmbedding: queryEmbedding,
-  topK: topK,
-);
+Future<List<String>>  searchSimilar({required String dbPath , required List<double> queryEmbedding , required int topK }) => RustLib.instance.api.crateApiSimpleRagSearchSimilar(dbPath: dbPath, queryEmbedding: queryEmbedding, topK: topK);
 
 /// Get document count in database
-Future<PlatformInt64> getDocumentCount({required String dbPath}) =>
-    RustLib.instance.api.crateApiSimpleRagGetDocumentCount(dbPath: dbPath);
+Future<PlatformInt64>  getDocumentCount({required String dbPath }) => RustLib.instance.api.crateApiSimpleRagGetDocumentCount(dbPath: dbPath);
 
 /// Clear all documents (for testing)
-Future<void> clearAllDocuments({required String dbPath}) =>
-    RustLib.instance.api.crateApiSimpleRagClearAllDocuments(dbPath: dbPath);
+Future<void>  clearAllDocuments({required String dbPath }) => RustLib.instance.api.crateApiSimpleRagClearAllDocuments(dbPath: dbPath);
 
-/// Add document result
-class AddDocumentResult {
-  final bool success;
-  final bool isDuplicate;
-  final String message;
+            /// Add document result
+class AddDocumentResult  {
+                final bool success;
+final bool isDuplicate;
+final String message;
 
-  const AddDocumentResult({
-    required this.success,
-    required this.isDuplicate,
-    required this.message,
-  });
+                const AddDocumentResult({required this.success ,required this.isDuplicate ,required this.message ,});
 
-  @override
-  int get hashCode =>
-      success.hashCode ^ isDuplicate.hashCode ^ message.hashCode;
+                
+                
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is AddDocumentResult &&
-          runtimeType == other.runtimeType &&
-          success == other.success &&
-          isDuplicate == other.isDuplicate &&
-          message == other.message;
-}
+                
+        @override
+        int get hashCode => success.hashCode^isDuplicate.hashCode^message.hashCode;
+        
+
+                
+        @override
+        bool operator ==(Object other) =>
+            identical(this, other) ||
+            other is AddDocumentResult &&
+                runtimeType == other.runtimeType
+                && success == other.success&& isDuplicate == other.isDuplicate&& message == other.message;
+        
+            }
+            

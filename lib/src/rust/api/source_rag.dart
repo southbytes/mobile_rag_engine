@@ -6,259 +6,180 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `hash_content`, `search_chunks_linear`
+
+            // These functions are ignored because they are not marked as `pub`: `hash_content`, `search_chunks_linear`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
 
-/// Initialize extended database with sources and chunks tables.
-Future<void> initSourceDb({required String dbPath}) =>
-    RustLib.instance.api.crateApiSourceRagInitSourceDb(dbPath: dbPath);
+
+            /// Initialize extended database with sources and chunks tables.
+Future<void>  initSourceDb({required String dbPath }) => RustLib.instance.api.crateApiSourceRagInitSourceDb(dbPath: dbPath);
 
 /// Add a source document (without chunks - chunks added separately).
-Future<AddSourceResult> addSource({
-  required String dbPath,
-  required String content,
-  String? metadata,
-}) => RustLib.instance.api.crateApiSourceRagAddSource(
-  dbPath: dbPath,
-  content: content,
-  metadata: metadata,
-);
+Future<AddSourceResult>  addSource({required String dbPath , required String content , String? metadata }) => RustLib.instance.api.crateApiSourceRagAddSource(dbPath: dbPath, content: content, metadata: metadata);
 
 /// Add chunks for a source document.
 /// Uses transaction for atomicity - all chunks are saved or none.
-Future<int> addChunks({
-  required String dbPath,
-  required PlatformInt64 sourceId,
-  required List<ChunkData> chunks,
-}) => RustLib.instance.api.crateApiSourceRagAddChunks(
-  dbPath: dbPath,
-  sourceId: sourceId,
-  chunks: chunks,
-);
+Future<int>  addChunks({required String dbPath , required PlatformInt64 sourceId , required List<ChunkData> chunks }) => RustLib.instance.api.crateApiSourceRagAddChunks(dbPath: dbPath, sourceId: sourceId, chunks: chunks);
 
 /// Rebuild HNSW index from chunks table and save to disk.
-Future<void> rebuildChunkHnswIndex({required String dbPath}) =>
-    RustLib.instance.api.crateApiSourceRagRebuildChunkHnswIndex(dbPath: dbPath);
+Future<void>  rebuildChunkHnswIndex({required String dbPath }) => RustLib.instance.api.crateApiSourceRagRebuildChunkHnswIndex(dbPath: dbPath);
 
 /// Search chunks by embedding similarity.
-Future<List<ChunkSearchResult>> searchChunks({
-  required String dbPath,
-  required List<double> queryEmbedding,
-  required int topK,
-}) => RustLib.instance.api.crateApiSourceRagSearchChunks(
-  dbPath: dbPath,
-  queryEmbedding: queryEmbedding,
-  topK: topK,
-);
+Future<List<ChunkSearchResult>>  searchChunks({required String dbPath , required List<double> queryEmbedding , required int topK }) => RustLib.instance.api.crateApiSourceRagSearchChunks(dbPath: dbPath, queryEmbedding: queryEmbedding, topK: topK);
 
 /// Get source document by ID.
-Future<String?> getSource({
-  required String dbPath,
-  required PlatformInt64 sourceId,
-}) => RustLib.instance.api.crateApiSourceRagGetSource(
-  dbPath: dbPath,
-  sourceId: sourceId,
-);
+Future<String?>  getSource({required String dbPath , required PlatformInt64 sourceId }) => RustLib.instance.api.crateApiSourceRagGetSource(dbPath: dbPath, sourceId: sourceId);
 
 /// Get all chunks for a source.
-Future<List<String>> getSourceChunks({
-  required String dbPath,
-  required PlatformInt64 sourceId,
-}) => RustLib.instance.api.crateApiSourceRagGetSourceChunks(
-  dbPath: dbPath,
-  sourceId: sourceId,
-);
+Future<List<String>>  getSourceChunks({required String dbPath , required PlatformInt64 sourceId }) => RustLib.instance.api.crateApiSourceRagGetSourceChunks(dbPath: dbPath, sourceId: sourceId);
 
 /// Get adjacent chunks by source_id and chunk_index range.
 /// Returns chunks where chunk_index is between min_index and max_index (inclusive).
-Future<List<ChunkSearchResult>> getAdjacentChunks({
-  required String dbPath,
-  required PlatformInt64 sourceId,
-  required int minIndex,
-  required int maxIndex,
-}) => RustLib.instance.api.crateApiSourceRagGetAdjacentChunks(
-  dbPath: dbPath,
-  sourceId: sourceId,
-  minIndex: minIndex,
-  maxIndex: maxIndex,
-);
+Future<List<ChunkSearchResult>>  getAdjacentChunks({required String dbPath , required PlatformInt64 sourceId , required int minIndex , required int maxIndex }) => RustLib.instance.api.crateApiSourceRagGetAdjacentChunks(dbPath: dbPath, sourceId: sourceId, minIndex: minIndex, maxIndex: maxIndex);
 
 /// Delete a source and all its chunks.
-Future<void> deleteSource({
-  required String dbPath,
-  required PlatformInt64 sourceId,
-}) => RustLib.instance.api.crateApiSourceRagDeleteSource(
-  dbPath: dbPath,
-  sourceId: sourceId,
-);
+Future<void>  deleteSource({required String dbPath , required PlatformInt64 sourceId }) => RustLib.instance.api.crateApiSourceRagDeleteSource(dbPath: dbPath, sourceId: sourceId);
 
-Future<SourceStats> getSourceStats({required String dbPath}) =>
-    RustLib.instance.api.crateApiSourceRagGetSourceStats(dbPath: dbPath);
+Future<SourceStats>  getSourceStats({required String dbPath }) => RustLib.instance.api.crateApiSourceRagGetSourceStats(dbPath: dbPath);
 
 /// Get all chunk IDs and contents for re-embedding.
-Future<List<ChunkForReembedding>> getAllChunkIdsAndContents({
-  required String dbPath,
-}) => RustLib.instance.api.crateApiSourceRagGetAllChunkIdsAndContents(
-  dbPath: dbPath,
-);
+Future<List<ChunkForReembedding>>  getAllChunkIdsAndContents({required String dbPath }) => RustLib.instance.api.crateApiSourceRagGetAllChunkIdsAndContents(dbPath: dbPath);
 
 /// Update embedding for a single chunk.
-Future<void> updateChunkEmbedding({
-  required String dbPath,
-  required PlatformInt64 chunkId,
-  required List<double> embedding,
-}) => RustLib.instance.api.crateApiSourceRagUpdateChunkEmbedding(
-  dbPath: dbPath,
-  chunkId: chunkId,
-  embedding: embedding,
-);
+Future<void>  updateChunkEmbedding({required String dbPath , required PlatformInt64 chunkId , required List<double> embedding }) => RustLib.instance.api.crateApiSourceRagUpdateChunkEmbedding(dbPath: dbPath, chunkId: chunkId, embedding: embedding);
 
-/// Result of adding a source document.
-class AddSourceResult {
-  final PlatformInt64 sourceId;
-  final bool isDuplicate;
-  final int chunkCount;
-  final String message;
+            /// Result of adding a source document.
+class AddSourceResult  {
+                final PlatformInt64 sourceId;
+final bool isDuplicate;
+final int chunkCount;
+final String message;
 
-  const AddSourceResult({
-    required this.sourceId,
-    required this.isDuplicate,
-    required this.chunkCount,
-    required this.message,
-  });
+                const AddSourceResult({required this.sourceId ,required this.isDuplicate ,required this.chunkCount ,required this.message ,});
 
-  @override
-  int get hashCode =>
-      sourceId.hashCode ^
-      isDuplicate.hashCode ^
-      chunkCount.hashCode ^
-      message.hashCode;
+                
+                
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is AddSourceResult &&
-          runtimeType == other.runtimeType &&
-          sourceId == other.sourceId &&
-          isDuplicate == other.isDuplicate &&
-          chunkCount == other.chunkCount &&
-          message == other.message;
-}
+                
+        @override
+        int get hashCode => sourceId.hashCode^isDuplicate.hashCode^chunkCount.hashCode^message.hashCode;
+        
+
+                
+        @override
+        bool operator ==(Object other) =>
+            identical(this, other) ||
+            other is AddSourceResult &&
+                runtimeType == other.runtimeType
+                && sourceId == other.sourceId&& isDuplicate == other.isDuplicate&& chunkCount == other.chunkCount&& message == other.message;
+        
+            }
 
 /// Chunk data for batch insertion.
-class ChunkData {
-  final String content;
-  final int chunkIndex;
-  final int startPos;
-  final int endPos;
-  final String chunkType;
-  final Float32List embedding;
+class ChunkData  {
+                final String content;
+final int chunkIndex;
+final int startPos;
+final int endPos;
+final String chunkType;
+final Float32List embedding;
 
-  const ChunkData({
-    required this.content,
-    required this.chunkIndex,
-    required this.startPos,
-    required this.endPos,
-    required this.chunkType,
-    required this.embedding,
-  });
+                const ChunkData({required this.content ,required this.chunkIndex ,required this.startPos ,required this.endPos ,required this.chunkType ,required this.embedding ,});
 
-  @override
-  int get hashCode =>
-      content.hashCode ^
-      chunkIndex.hashCode ^
-      startPos.hashCode ^
-      endPos.hashCode ^
-      chunkType.hashCode ^
-      embedding.hashCode;
+                
+                
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ChunkData &&
-          runtimeType == other.runtimeType &&
-          content == other.content &&
-          chunkIndex == other.chunkIndex &&
-          startPos == other.startPos &&
-          endPos == other.endPos &&
-          chunkType == other.chunkType &&
-          embedding == other.embedding;
-}
+                
+        @override
+        int get hashCode => content.hashCode^chunkIndex.hashCode^startPos.hashCode^endPos.hashCode^chunkType.hashCode^embedding.hashCode;
+        
+
+                
+        @override
+        bool operator ==(Object other) =>
+            identical(this, other) ||
+            other is ChunkData &&
+                runtimeType == other.runtimeType
+                && content == other.content&& chunkIndex == other.chunkIndex&& startPos == other.startPos&& endPos == other.endPos&& chunkType == other.chunkType&& embedding == other.embedding;
+        
+            }
 
 /// Chunk info for re-embedding (id and content only).
-class ChunkForReembedding {
-  final PlatformInt64 chunkId;
-  final String content;
+class ChunkForReembedding  {
+                final PlatformInt64 chunkId;
+final String content;
 
-  const ChunkForReembedding({required this.chunkId, required this.content});
+                const ChunkForReembedding({required this.chunkId ,required this.content ,});
 
-  @override
-  int get hashCode => chunkId.hashCode ^ content.hashCode;
+                
+                
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ChunkForReembedding &&
-          runtimeType == other.runtimeType &&
-          chunkId == other.chunkId &&
-          content == other.content;
-}
+                
+        @override
+        int get hashCode => chunkId.hashCode^content.hashCode;
+        
+
+                
+        @override
+        bool operator ==(Object other) =>
+            identical(this, other) ||
+            other is ChunkForReembedding &&
+                runtimeType == other.runtimeType
+                && chunkId == other.chunkId&& content == other.content;
+        
+            }
 
 /// Search result with chunk and source info.
-class ChunkSearchResult {
-  final PlatformInt64 chunkId;
-  final PlatformInt64 sourceId;
-  final int chunkIndex;
-  final String content;
-  final String chunkType;
-  final double similarity;
+class ChunkSearchResult  {
+                final PlatformInt64 chunkId;
+final PlatformInt64 sourceId;
+final int chunkIndex;
+final String content;
+final String chunkType;
+final double similarity;
 
-  const ChunkSearchResult({
-    required this.chunkId,
-    required this.sourceId,
-    required this.chunkIndex,
-    required this.content,
-    required this.chunkType,
-    required this.similarity,
-  });
+                const ChunkSearchResult({required this.chunkId ,required this.sourceId ,required this.chunkIndex ,required this.content ,required this.chunkType ,required this.similarity ,});
 
-  @override
-  int get hashCode =>
-      chunkId.hashCode ^
-      sourceId.hashCode ^
-      chunkIndex.hashCode ^
-      content.hashCode ^
-      chunkType.hashCode ^
-      similarity.hashCode;
+                
+                
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ChunkSearchResult &&
-          runtimeType == other.runtimeType &&
-          chunkId == other.chunkId &&
-          sourceId == other.sourceId &&
-          chunkIndex == other.chunkIndex &&
-          content == other.content &&
-          chunkType == other.chunkType &&
-          similarity == other.similarity;
-}
+                
+        @override
+        int get hashCode => chunkId.hashCode^sourceId.hashCode^chunkIndex.hashCode^content.hashCode^chunkType.hashCode^similarity.hashCode;
+        
+
+                
+        @override
+        bool operator ==(Object other) =>
+            identical(this, other) ||
+            other is ChunkSearchResult &&
+                runtimeType == other.runtimeType
+                && chunkId == other.chunkId&& sourceId == other.sourceId&& chunkIndex == other.chunkIndex&& content == other.content&& chunkType == other.chunkType&& similarity == other.similarity;
+        
+            }
 
 /// Get count of sources and chunks.
-class SourceStats {
-  final PlatformInt64 sourceCount;
-  final PlatformInt64 chunkCount;
+class SourceStats  {
+                final PlatformInt64 sourceCount;
+final PlatformInt64 chunkCount;
 
-  const SourceStats({required this.sourceCount, required this.chunkCount});
+                const SourceStats({required this.sourceCount ,required this.chunkCount ,});
 
-  @override
-  int get hashCode => sourceCount.hashCode ^ chunkCount.hashCode;
+                
+                
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is SourceStats &&
-          runtimeType == other.runtimeType &&
-          sourceCount == other.sourceCount &&
-          chunkCount == other.chunkCount;
-}
+                
+        @override
+        int get hashCode => sourceCount.hashCode^chunkCount.hashCode;
+        
+
+                
+        @override
+        bool operator ==(Object other) =>
+            identical(this, other) ||
+            other is SourceStats &&
+                runtimeType == other.runtimeType
+                && sourceCount == other.sourceCount&& chunkCount == other.chunkCount;
+        
+            }
+            

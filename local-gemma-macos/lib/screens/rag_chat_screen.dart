@@ -19,7 +19,10 @@ import 'package:local_gemma_macos/widgets/knowledge_graph_panel.dart';
 import 'package:local_gemma_macos/widgets/chunk_detail_sidebar.dart';
 import 'package:local_gemma_macos/widgets/suggestion_chips.dart';
 import 'package:local_gemma_macos/widgets/chat_input_area.dart';
+import 'package:local_gemma_macos/widgets/slash_command_overlay.dart';
 import 'package:local_gemma_macos/widgets/document_style_response.dart';
+import 'package:local_gemma_macos/services/query_intent_handler.dart';
+import 'package:mobile_rag_engine/src/rust/api/user_intent.dart' as intent;
 
 // Models are now in models/chat_models.dart
 
@@ -81,6 +84,13 @@ class _RagChatScreenState extends State<RagChatScreen> {
   String? _lastQuery; // Last query for graph display
   List<ChunkSearchResult> _lastChunks = []; // Last chunks for graph display
   int? _activeGraphMessageIndex; // Track which message's chunks are in graph
+
+  // Slash command popup state
+  bool _showSlashPopup = false;
+  String _slashFilter = '';
+  String? _currentIntentType; // 'summary', 'define', 'more', null
+  SlashCommand? _selectedSlashCommand; // Currently selected slash command
+  int _slashSelectedIndex = 0; // Currently highlighted item in popup
 
   @override
   void initState() {
@@ -225,20 +235,94 @@ class _RagChatScreenState extends State<RagChatScreen> {
     _messageController.clear();
     _focusNode.unfocus();
 
+    // === Stage 0: Determine intent ===
+    intent.ParsedIntent parsedIntent;
+    String effectiveQuery;
+    String displayText; // What the user sees in chat
+
+    if (_selectedSlashCommand != null) {
+      // Intent from selected chip - query is the text user typed
+      final cmd = _selectedSlashCommand!;
+      effectiveQuery = text;
+      displayText = '${cmd.command} $text';
+
+      // Map command to intent type
+      String intentType;
+      switch (cmd.command) {
+        case '/summary':
+          intentType = 'summary';
+          break;
+        case '/define':
+          intentType = 'define';
+          break;
+        case '/more':
+          intentType = 'more';
+          break;
+        default:
+          intentType = 'general';
+      }
+
+      parsedIntent = intent.ParsedIntent(
+        intentType: intentType,
+        query: effectiveQuery,
+        isValid: true,
+        errorMessage: null,
+      );
+
+      // Clear the selected command after use
+      setState(() {
+        _selectedSlashCommand = null;
+      });
+    } else {
+      // Parse from text input (for typed slash commands like "/summary query")
+      parsedIntent = intent.parseIntent(input: text);
+      effectiveQuery = parsedIntent.query.isEmpty ? text : parsedIntent.query;
+      displayText = text;
+    }
+
+    // Handle invalid slash commands
+    if (!parsedIntent.isValid && text.startsWith('/')) {
+      setState(() {
+        _messages.insert(0, ChatMessage(content: displayText, isUser: true));
+        _messages.insert(
+          0,
+          ChatMessage(
+            content: '❌ ${parsedIntent.errorMessage ?? "알 수 없는 명령어입니다."}',
+            isUser: false,
+          ),
+        );
+      });
+      return;
+    }
+
+    // Get intent-specific configuration
+    final intentConfig = QueryIntentHandler.getConfig(parsedIntent);
+    debugPrint(
+      '🎯 Intent: ${parsedIntent.intentType}, Query: "$effectiveQuery"',
+    );
+    debugPrint(
+      '   Config: topK=${intentConfig.topK}, budget=${intentConfig.tokenBudget}',
+    );
+    debugPrint('   Preferred types: ${intentConfig.preferredChunkTypes}');
+
     // Add user message
     setState(() {
-      _messages.insert(0, ChatMessage(content: text, isUser: true));
+      _messages.insert(0, ChatMessage(content: displayText, isUser: true));
       _isGenerating = true;
+      _currentIntentType = parsedIntent.intentType == 'general'
+          ? null
+          : parsedIntent.intentType;
     });
 
     try {
       final totalStopwatch = Stopwatch()..start();
 
-      // === Stage 1: Query Understanding (NEW) ===
-      final understanding = await _queryService!.analyze(text);
+      // === Stage 1: Query Understanding (for general queries) ===
+      // Use effective query for analysis (stripped of slash command)
+      final understanding = await _queryService!.analyze(effectiveQuery);
 
-      // 🚫 Reject invalid queries
-      if (!understanding.isValid) {
+      // 🚫 Reject invalid queries (only for general queries without slash command)
+      if (!understanding.isValid && parsedIntent.intentType == 'general') {
         setState(() {
           _messages.insert(
             0,
@@ -256,16 +340,28 @@ class _RagChatScreenState extends State<RagChatScreen> {
       debugPrint('   Normalized: "${understanding.normalizedQuery}"');
       debugPrint('   Keywords: ${understanding.keywords}');
 
-      // === Stage 2: Map QueryType to RAG parameters ===
-      final (adjacentChunks, tokenBudget, topK) = switch (understanding.type) {
-        QueryType.definition => (1, 1000, 5),
-        QueryType.explanation => (2, 2500, 10),
-        QueryType.factual => (1, 1500, 5),
-        QueryType.comparison => (2, 3000, 12),
-        QueryType.listing => (3, 4000, 15),
-        QueryType.summary => (1, 1500, 5),
-        _ => (2, 2000, 10),
-      };
+      // === Stage 2: Map to RAG parameters (use intent config for slash commands) ===
+      final int adjacentChunks;
+      final int tokenBudget;
+      final int topK;
+
+      if (parsedIntent.intentType != 'general') {
+        // Use slash command intent config
+        adjacentChunks = intentConfig.adjacentChunks;
+        tokenBudget = intentConfig.tokenBudget;
+        topK = intentConfig.topK;
+      } else {
+        // Use query type-based config for general queries
+        (adjacentChunks, tokenBudget, topK) = switch (understanding.type) {
+          QueryType.definition => (1, 1000, 5),
+          QueryType.explanation => (2, 2500, 10),
+          QueryType.factual => (1, 1500, 5),
+          QueryType.comparison => (2, 3000, 12),
+          QueryType.listing => (3, 4000, 15),
+          QueryType.summary => (1, 1500, 5),
+          _ => (2, 2000, 10),
+        };
+      }
 
       // === Stage 3: RAG Search ===
       final ragStopwatch = Stopwatch()..start();
@@ -352,6 +448,7 @@ class _RagChatScreenState extends State<RagChatScreen> {
             isUser: false,
             retrievedChunks: ragResult.chunks,
             tokensUsed: estimatedTokens,
+            queryType: understanding.type.name,
             ragSearchTime: ragSearchTime,
             llmGenerationTime: llmGenerationTime,
             totalTime: totalStopwatch.elapsed,
@@ -448,6 +545,102 @@ class _RagChatScreenState extends State<RagChatScreen> {
         );
       }
     });
+  }
+
+  /// Handle slash command selection
+  void _onSlashCommandSelected(SlashCommand command) {
+    setState(() {
+      _showSlashPopup = false;
+      _slashFilter = '';
+      _selectedSlashCommand = command; // Set selected command
+    });
+
+    // Clear the input and show the chip instead
+    _messageController.clear();
+    _focusNode.requestFocus();
+  }
+
+  /// Clear selected slash command
+  void _clearSlashCommand() {
+    setState(() {
+      _selectedSlashCommand = null;
+      _currentIntentType = null;
+    });
+  }
+
+  /// Get filtered commands based on current filter
+  List<SlashCommand> get _filteredSlashCommands {
+    if (_slashFilter.isEmpty || _slashFilter == '/') {
+      return kSlashCommands;
+    }
+    final filterLower = _slashFilter.toLowerCase();
+    return kSlashCommands.where((cmd) {
+      return cmd.command.toLowerCase().startsWith(filterLower) ||
+          cmd.label.toLowerCase().contains(filterLower.replaceFirst('/', ''));
+    }).toList();
+  }
+
+  /// Handle arrow key navigation in popup
+  void _onSlashArrowKey(bool isUp) {
+    final commands = _filteredSlashCommands;
+    if (commands.isEmpty) return;
+
+    setState(() {
+      if (isUp) {
+        _slashSelectedIndex =
+            (_slashSelectedIndex - 1 + commands.length) % commands.length;
+      } else {
+        _slashSelectedIndex = (_slashSelectedIndex + 1) % commands.length;
+      }
+    });
+  }
+
+  /// Confirm slash command selection via Enter key
+  void _confirmSlashSelection() {
+    final commands = _filteredSlashCommands;
+    if (commands.isEmpty) return;
+
+    final index = _slashSelectedIndex.clamp(0, commands.length - 1);
+    _onSlashCommandSelected(commands[index]);
+  }
+
+  /// Build just the input area without overlay
+  Widget _buildInputArea() {
+    return ChatInputArea(
+      controller: _messageController,
+      focusNode: _focusNode,
+      isEnabled: _isInitialized,
+      isGenerating: _isGenerating,
+      onSend: _sendMessage,
+      onAttach: _showAddDocumentDialog,
+      selectedCommand: _selectedSlashCommand,
+      onClearCommand: _clearSlashCommand,
+      isSlashPopupVisible: _showSlashPopup,
+      onConfirmSlashSelection: _confirmSlashSelection,
+      onArrowKey: _onSlashArrowKey,
+      onSlashInput: (showPopup, filter) {
+        setState(() {
+          _showSlashPopup = showPopup;
+          _slashFilter = filter;
+          if (showPopup) {
+            _slashSelectedIndex = 0; // Reset selection on new filter
+          }
+        });
+      },
+    );
+  }
+
+  /// Build the slash command overlay (to be positioned at Stack level)
+  Widget? _buildSlashOverlay() {
+    if (!_showSlashPopup) return null;
+    return SlashCommandOverlay(
+      filter: _slashFilter,
+      selectedIndex: _slashSelectedIndex,
+      onSelect: _onSlashCommandSelected,
+      onDismiss: () {
+        setState(() => _showSlashPopup = false);
+      },
+    );
   }
 
   @override
@@ -574,80 +767,92 @@ class _RagChatScreenState extends State<RagChatScreen> {
             flex: 5,
             child: Container(
               color: const Color(0xFF121212),
-              child: Column(
+              child: Stack(
                 children: [
-                  // Status bar
-                  if (_showDebugInfo)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      color: const Color(0xFF1A1A1A),
-                      child: Row(
-                        children: [
-                          if (_isLoading)
-                            const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          else
-                            Icon(
-                              _isInitialized ? Icons.check_circle : Icons.error,
-                              size: 16,
-                              color: _isInitialized ? Colors.green : Colors.red,
-                            ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _status,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.white70,
+                  // Main Column content
+                  Column(
+                    children: [
+                      // Status bar
+                      if (_showDebugInfo)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          color: const Color(0xFF1A1A1A),
+                          child: Row(
+                            children: [
+                              if (_isLoading)
+                                const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              else
+                                Icon(
+                                  _isInitialized
+                                      ? Icons.check_circle
+                                      : Icons.error,
+                                  size: 16,
+                                  color: _isInitialized
+                                      ? Colors.green
+                                      : Colors.red,
+                                ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _status,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white70,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                              Text(
+                                '📄$_totalSources 📦$_totalChunks',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            '📄$_totalSources 📦$_totalChunks',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
+                        ),
+
+                      // Suggestion chips
+                      SuggestionChipsPanel(
+                        suggestions: _suggestedQuestions,
+                        isLoading: _isLoadingSuggestions,
+                        isExpanded: _isSuggestionsExpanded,
+                        isDisabled: _isGenerating,
+                        onToggleExpanded: () => setState(
+                          () =>
+                              _isSuggestionsExpanded = !_isSuggestionsExpanded,
+                        ),
+                        onRefresh: () {
+                          _topicService.invalidateCache();
+                          _generateTopicSuggestions();
+                        },
+                        onQuestionSelected: _sendSuggestedQuestion,
                       ),
-                    ),
 
-                  // Suggestion chips
-                  SuggestionChipsPanel(
-                    suggestions: _suggestedQuestions,
-                    isLoading: _isLoadingSuggestions,
-                    isExpanded: _isSuggestionsExpanded,
-                    isDisabled: _isGenerating,
-                    onToggleExpanded: () => setState(
-                      () => _isSuggestionsExpanded = !_isSuggestionsExpanded,
-                    ),
-                    onRefresh: () {
-                      _topicService.invalidateCache();
-                      _generateTopicSuggestions();
-                    },
-                    onQuestionSelected: _sendSuggestedQuestion,
+                      // Messages
+                      Expanded(child: _buildMessageList()),
+
+                      // Input area (without overlay)
+                      _buildInputArea(),
+                    ],
                   ),
-
-                  // Messages
-                  Expanded(child: _buildMessageList()),
-
-                  // Input area
-                  ChatInputArea(
-                    controller: _messageController,
-                    focusNode: _focusNode,
-                    isEnabled: _isInitialized,
-                    isGenerating: _isGenerating,
-                    onSend: _sendMessage,
-                    onAttach: _showAddDocumentDialog,
-                  ),
+                  // Slash command overlay (on top, positioned above input)
+                  if (_showSlashPopup)
+                    Positioned(
+                      left: 60,
+                      bottom: 80, // Above input area
+                      child: _buildSlashOverlay()!,
+                    ),
                 ],
               ),
             ),
@@ -665,6 +870,7 @@ class _RagChatScreenState extends State<RagChatScreen> {
                 chunks: _lastChunks,
                 similarityThreshold: _minSimilarityThreshold,
                 selectedChunk: _selectedChunk,
+                userIntent: _currentIntentType,
                 onChunkSelected: (chunk) {
                   setState(() => _selectedChunk = chunk);
                 },
@@ -727,6 +933,8 @@ class _RagChatScreenState extends State<RagChatScreen> {
             message: message,
             showDebugInfo: _showDebugInfo,
             isGraphActive: _showGraphPanel && _activeGraphMessageIndex == index,
+            shouldAnimate:
+                index == 0 && _isGenerating == false, // Animate newest message
             onViewGraph:
                 message.retrievedChunks != null &&
                     message.retrievedChunks!.isNotEmpty
