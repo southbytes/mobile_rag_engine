@@ -45,6 +45,7 @@ pub fn init_source_db(db_path: String) -> anyhow::Result<()> {
             content TEXT NOT NULL,
             start_pos INTEGER NOT NULL,
             end_pos INTEGER NOT NULL,
+            chunk_type TEXT DEFAULT 'general',
             embedding BLOB NOT NULL,
             FOREIGN KEY (source_id) REFERENCES sources(id) ON DELETE CASCADE
         )",
@@ -124,6 +125,7 @@ pub struct ChunkData {
     pub chunk_index: i32,
     pub start_pos: i32,
     pub end_pos: i32,
+    pub chunk_type: String,
     pub embedding: Vec<f32>,
 }
 
@@ -149,14 +151,15 @@ pub fn add_chunks(
         }
         
         tx.execute(
-            "INSERT INTO chunks (source_id, chunk_index, content, start_pos, end_pos, embedding)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT INTO chunks (source_id, chunk_index, content, start_pos, end_pos, chunk_type, embedding)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             params![
                 source_id,
                 chunk.chunk_index,
                 chunk.content,
                 chunk.start_pos,
                 chunk.end_pos,
+                chunk.chunk_type,
                 embedding_bytes
             ],
         )?;
@@ -213,6 +216,7 @@ pub struct ChunkSearchResult {
     pub source_id: i64,
     pub chunk_index: i32,
     pub content: String,
+    pub chunk_type: String,
     pub similarity: f64,
 }
 
@@ -253,20 +257,21 @@ pub fn search_chunks(
     
     let mut results = Vec::new();
     for result in hnsw_results {
-        let row: Option<(i64, i32, String)> = conn
+        let row: Option<(i64, i32, String, String)> = conn
             .query_row(
-                "SELECT source_id, chunk_index, content FROM chunks WHERE id = ?1",
+                "SELECT source_id, chunk_index, content, COALESCE(chunk_type, 'general') FROM chunks WHERE id = ?1",
                 params![result.id],
-                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
             )
             .ok();
         
-        if let Some((source_id, chunk_index, content)) = row {
+        if let Some((source_id, chunk_index, content, chunk_type)) = row {
             results.push(ChunkSearchResult {
                 chunk_id: result.id,
                 source_id,
                 chunk_index,
                 content,
+                chunk_type,
                 similarity: 1.0 - result.distance as f64,
             });
         }
@@ -283,24 +288,25 @@ fn search_chunks_linear(
     top_k: u32,
 ) -> anyhow::Result<Vec<ChunkSearchResult>> {
     let conn = Connection::open(db_path)?;
-    let mut stmt = conn.prepare("SELECT id, source_id, chunk_index, content, embedding FROM chunks")?;
+    let mut stmt = conn.prepare("SELECT id, source_id, chunk_index, content, COALESCE(chunk_type, 'general'), embedding FROM chunks")?;
     
     let query_vec = Array1::from(query_embedding.clone());
     let query_norm = query_vec.mapv(|x| x * x).sum().sqrt();
     
-    let mut candidates: Vec<(f64, i64, i64, i32, String)> = Vec::new();
+    let mut candidates: Vec<(f64, i64, i64, i32, String, String)> = Vec::new();
     
     let rows = stmt.query_map([], |row| {
         let id: i64 = row.get(0)?;
         let source_id: i64 = row.get(1)?;
         let chunk_index: i32 = row.get(2)?;
         let content: String = row.get(3)?;
-        let embedding_blob: Vec<u8> = row.get(4)?;
-        Ok((id, source_id, chunk_index, content, embedding_blob))
+        let chunk_type: String = row.get(4)?;
+        let embedding_blob: Vec<u8> = row.get(5)?;
+        Ok((id, source_id, chunk_index, content, chunk_type, embedding_blob))
     })?;
     
     for row in rows {
-        let (id, source_id, chunk_index, content, embedding_blob) = row?;
+        let (id, source_id, chunk_index, content, chunk_type, embedding_blob) = row?;
         
         let embedding: Vec<f32> = embedding_blob
             .chunks(4)
@@ -321,7 +327,7 @@ fn search_chunks_linear(
             (dot_product / (query_norm * target_norm)) as f64
         };
         
-        candidates.push((similarity, id, source_id, chunk_index, content));
+        candidates.push((similarity, id, source_id, chunk_index, content, chunk_type));
     }
     
     candidates.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
@@ -329,11 +335,12 @@ fn search_chunks_linear(
     let results: Vec<ChunkSearchResult> = candidates
         .into_iter()
         .take(top_k as usize)
-        .map(|(sim, id, source_id, chunk_index, content)| ChunkSearchResult {
+        .map(|(sim, id, source_id, chunk_index, content, chunk_type)| ChunkSearchResult {
             chunk_id: id,
             source_id,
             chunk_index,
             content,
+            chunk_type,
             similarity: sim,
         })
         .collect();
@@ -383,7 +390,7 @@ pub fn get_adjacent_chunks(
     let conn = Connection::open(&db_path)?;
     
     let mut stmt = conn.prepare(
-        "SELECT id, source_id, chunk_index, content FROM chunks 
+        "SELECT id, source_id, chunk_index, content, COALESCE(chunk_type, 'general') FROM chunks 
          WHERE source_id = ?1 AND chunk_index >= ?2 AND chunk_index <= ?3 
          ORDER BY chunk_index"
     )?;
@@ -395,6 +402,7 @@ pub fn get_adjacent_chunks(
                 source_id: row.get(1)?,
                 chunk_index: row.get(2)?,
                 content: row.get(3)?,
+                chunk_type: row.get(4)?,
                 similarity: 0.0, // Adjacent chunks don't have similarity score
             })
         })?

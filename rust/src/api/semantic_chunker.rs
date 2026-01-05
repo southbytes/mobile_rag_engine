@@ -5,6 +5,143 @@
 
 use text_splitter::TextSplitter;
 
+/// Type classification for a chunk based on content analysis.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ChunkType {
+    /// Definition or overview content
+    Definition,
+    /// Example or illustration
+    Example,
+    /// Bulleted or numbered list
+    List,
+    /// Procedure or step-by-step instructions
+    Procedure,
+    /// Comparison between items
+    Comparison,
+    /// General content (default)
+    General,
+}
+
+impl ChunkType {
+    /// Convert to string for database storage.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ChunkType::Definition => "definition",
+            ChunkType::Example => "example",
+            ChunkType::List => "list",
+            ChunkType::Procedure => "procedure",
+            ChunkType::Comparison => "comparison",
+            ChunkType::General => "general",
+        }
+    }
+    
+    /// Parse from string (database retrieval).
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "definition" => ChunkType::Definition,
+            "example" => ChunkType::Example,
+            "list" => ChunkType::List,
+            "procedure" => ChunkType::Procedure,
+            "comparison" => ChunkType::Comparison,
+            _ => ChunkType::General,
+        }
+    }
+}
+
+/// Classify a chunk based on its content using rule-based patterns.
+/// 
+/// Strategy (in order of priority):
+/// 1. List patterns (bullet points, numbered items)
+/// 2. Definition patterns (formal definitions)
+/// 3. Example patterns
+/// 4. Procedure patterns (step-by-step)
+/// 5. Comparison patterns
+/// 6. Default to General
+#[flutter_rust_bridge::frb(sync)]
+pub fn classify_chunk(text: &str) -> ChunkType {
+    let text_lower = text.to_lowercase();
+    
+    // 1. List detection: count bullet/numbered items
+    let bullet_count = text.lines()
+        .filter(|l| {
+            let trimmed = l.trim();
+            trimmed.starts_with("•") 
+                || trimmed.starts_with("●")
+                || trimmed.starts_with("-") 
+                || trimmed.starts_with("*")
+                || trimmed.starts_with("①") || trimmed.starts_with("②")
+                || trimmed.starts_with("③") || trimmed.starts_with("④")
+                || (trimmed.len() > 2 && trimmed.chars().next().map_or(false, |c| c.is_numeric()) 
+                    && (trimmed.chars().nth(1) == Some('.') || trimmed.chars().nth(1) == Some(')')))
+        })
+        .count();
+    if bullet_count >= 3 {
+        return ChunkType::List;
+    }
+    
+    // 2. Definition patterns (Korean & English)
+    let definition_patterns = [
+        // Korean
+        "이란", "이라 함은", "을 말한다", "를 말한다",
+        "를 의미한다", "을 의미한다", "으로 정의된다", "로 정의된다",
+        "이다.", "(은)는 ", "(이)란",
+        // English
+        "is defined as", "refers to", "means that", "is a type of",
+        "can be defined as", "is known as",
+    ];
+    for pattern in definition_patterns {
+        if text.contains(pattern) || text_lower.contains(pattern) {
+            return ChunkType::Definition;
+        }
+    }
+    
+    // 3. Example patterns
+    let example_patterns = [
+        // Korean
+        "예를 들어", "예시:", "예:", "예를 들면", "사례:", "사례로",
+        // English
+        "for example", "e.g.", "for instance", "such as", "example:",
+    ];
+    for pattern in example_patterns {
+        if text.contains(pattern) || text_lower.contains(pattern) {
+            return ChunkType::Example;
+        }
+    }
+    
+    // 4. Procedure patterns
+    let procedure_patterns = [
+        // Korean
+        "방법", "단계", "먼저", "그 다음", "그다음", "마지막으로",
+        "첫째", "둘째", "셋째", "1단계", "2단계", "절차",
+        // English
+        "step 1", "step 2", "first,", "then,", "finally,",
+        "how to", "procedure", "instructions",
+    ];
+    let procedure_matches = procedure_patterns.iter()
+        .filter(|p| text.contains(*p) || text_lower.contains(*p))
+        .count();
+    if procedure_matches >= 2 {
+        return ChunkType::Procedure;
+    }
+    
+    // 5. Comparison patterns
+    let comparison_patterns = [
+        // Korean
+        "반면", "차이점", "비교하면", "대비", "와 달리", "과 달리",
+        "보다 더", "에 비해", "비교 분석",
+        // English
+        "vs", "versus", "compared to", "in contrast", "on the other hand",
+        "differs from", "difference between",
+    ];
+    for pattern in comparison_patterns {
+        if text.contains(pattern) || text_lower.contains(pattern) {
+            return ChunkType::Comparison;
+        }
+    }
+    
+    ChunkType::General
+}
+
 /// Result of semantic chunking operation.
 #[derive(Debug, Clone)]
 pub struct SemanticChunk {
@@ -16,6 +153,8 @@ pub struct SemanticChunk {
     pub start_pos: i32,
     /// Approximate character position where this chunk ends.
     pub end_pos: i32,
+    /// Classification type of this chunk.
+    pub chunk_type: String,
 }
 
 /// Split text into semantic chunks using paragraph boundaries first.
@@ -65,11 +204,13 @@ pub fn semantic_chunk(text: String, max_chars: i32) -> Vec<SemanticChunk> {
             
             if sub_para.len() <= max_chars_usize {
                 // Chunk fits
+                let chunk_type = classify_chunk(&sub_para);
                 chunks.push(SemanticChunk {
                     index: chunk_index,
                     content: sub_para.clone(),
                     start_pos: current_pos,
                     end_pos: current_pos + sub_para.len() as i32,
+                    chunk_type: chunk_type.as_str().to_string(),
                 });
                 chunk_index += 1;
                 current_pos += sub_para.len() as i32 + 1;
@@ -103,11 +244,13 @@ pub fn semantic_chunk(text: String, max_chars: i32) -> Vec<SemanticChunk> {
                     } else {
                         // Flush buffer if not empty
                         if !line_buffer.is_empty() {
+                            let chunk_type = classify_chunk(&line_buffer);
                             chunks.push(SemanticChunk {
                                 index: chunk_index,
                                 content: line_buffer.clone(),
                                 start_pos: current_pos,
                                 end_pos: current_pos + line_buffer.len() as i32,
+                                chunk_type: chunk_type.as_str().to_string(),
                             });
                             chunk_index += 1;
                             current_pos += line_buffer.len() as i32 + 1;
@@ -123,11 +266,13 @@ pub fn semantic_chunk(text: String, max_chars: i32) -> Vec<SemanticChunk> {
                             for sub_chunk in splitter.chunks(line_trimmed) {
                                 let sub_chunk_trimmed = sub_chunk.trim();
                                 if !sub_chunk_trimmed.is_empty() {
+                                    let chunk_type = classify_chunk(sub_chunk_trimmed);
                                     chunks.push(SemanticChunk {
                                         index: chunk_index,
                                         content: sub_chunk_trimmed.to_string(),
                                         start_pos: current_pos,
                                         end_pos: current_pos + sub_chunk_trimmed.len() as i32,
+                                        chunk_type: chunk_type.as_str().to_string(),
                                     });
                                     chunk_index += 1;
                                     current_pos += sub_chunk_trimmed.len() as i32;
@@ -139,11 +284,13 @@ pub fn semantic_chunk(text: String, max_chars: i32) -> Vec<SemanticChunk> {
                 
                 // Flush remaining buffer
                 if !line_buffer.is_empty() {
+                    let chunk_type = classify_chunk(&line_buffer);
                     chunks.push(SemanticChunk {
                         index: chunk_index,
                         content: line_buffer.clone(),
                         start_pos: current_pos,
                         end_pos: current_pos + line_buffer.len() as i32,
+                        chunk_type: chunk_type.as_str().to_string(),
                     });
                     chunk_index += 1;
                     current_pos += line_buffer.len() as i32 + 2;
@@ -246,5 +393,57 @@ mod tests {
     fn test_empty_text() {
         let chunks = semantic_chunk("".to_string(), 100);
         assert!(chunks.is_empty());
+    }
+    
+    #[test]
+    fn test_classify_chunk_definition() {
+        // Korean definition patterns
+        assert_eq!(classify_chunk("비트코인이란 분산형 디지털 화폐이다."), ChunkType::Definition);
+        assert_eq!(classify_chunk("이 용어를 말한다."), ChunkType::Definition);
+        assert_eq!(classify_chunk("프로토콜을 의미한다."), ChunkType::Definition);
+        
+        // English definition patterns
+        assert_eq!(classify_chunk("A blockchain is defined as a distributed ledger."), ChunkType::Definition);
+        assert_eq!(classify_chunk("This term refers to a specific concept."), ChunkType::Definition);
+    }
+    
+    #[test]
+    fn test_classify_chunk_list() {
+        let list_text = "다음은 주요 특징입니다:\n• 분산화\n• 투명성\n• 불변성";
+        assert_eq!(classify_chunk(list_text), ChunkType::List);
+        
+        let numbered_list = "Steps:\n1. First step\n2. Second step\n3. Third step";
+        assert_eq!(classify_chunk(numbered_list), ChunkType::List);
+    }
+    
+    #[test]
+    fn test_classify_chunk_example() {
+        assert_eq!(classify_chunk("예를 들어, 비트코인의 경우..."), ChunkType::Example);
+        assert_eq!(classify_chunk("For example, consider the following case."), ChunkType::Example);
+    }
+    
+    #[test]
+    fn test_classify_chunk_procedure() {
+        let procedure = "먼저 계정을 생성하세요. 그 다음 지갑을 연결합니다.";
+        assert_eq!(classify_chunk(procedure), ChunkType::Procedure);
+    }
+    
+    #[test]
+    fn test_classify_chunk_comparison() {
+        assert_eq!(classify_chunk("비트코인과 이더리움의 차이점은..."), ChunkType::Comparison);
+        assert_eq!(classify_chunk("In contrast to traditional systems..."), ChunkType::Comparison);
+    }
+    
+    #[test]
+    fn test_classify_chunk_general() {
+        assert_eq!(classify_chunk("오늘 시장이 활발하게 움직였다."), ChunkType::General);
+        assert_eq!(classify_chunk("The market showed strong activity today."), ChunkType::General);
+    }
+    
+    #[test]
+    fn test_chunk_type_string_conversion() {
+        assert_eq!(ChunkType::Definition.as_str(), "definition");
+        assert_eq!(ChunkType::from_str("definition"), ChunkType::Definition);
+        assert_eq!(ChunkType::from_str("unknown"), ChunkType::General);
     }
 }

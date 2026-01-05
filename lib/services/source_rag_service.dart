@@ -150,6 +150,7 @@ class SourceRagService {
           chunkIndex: chunk.index,
           startPos: chunk.startPos,
           endPos: chunk.endPos,
+          chunkType: chunk.chunkType,
           embedding: Float32List.fromList(embedding),
         ),
       );
@@ -480,6 +481,7 @@ class SourceRagService {
             sourceId: r.docId, // Same as chunk ID for simple docs
             content: r.content,
             chunkIndex: 0,
+            chunkType: 'general', // Hybrid search doesn't return chunk type
             similarity: r.score, // RRF score as similarity
           ),
         )

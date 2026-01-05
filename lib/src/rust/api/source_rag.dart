@@ -151,6 +151,7 @@ class ChunkData {
   final int chunkIndex;
   final int startPos;
   final int endPos;
+  final String chunkType;
   final Float32List embedding;
 
   const ChunkData({
@@ -158,6 +159,7 @@ class ChunkData {
     required this.chunkIndex,
     required this.startPos,
     required this.endPos,
+    required this.chunkType,
     required this.embedding,
   });
 
@@ -167,6 +169,7 @@ class ChunkData {
       chunkIndex.hashCode ^
       startPos.hashCode ^
       endPos.hashCode ^
+      chunkType.hashCode ^
       embedding.hashCode;
 
   @override
@@ -178,6 +181,7 @@ class ChunkData {
           chunkIndex == other.chunkIndex &&
           startPos == other.startPos &&
           endPos == other.endPos &&
+          chunkType == other.chunkType &&
           embedding == other.embedding;
 }
 
@@ -206,6 +210,7 @@ class ChunkSearchResult {
   final PlatformInt64 sourceId;
   final int chunkIndex;
   final String content;
+  final String chunkType;
   final double similarity;
 
   const ChunkSearchResult({
@@ -213,6 +218,7 @@ class ChunkSearchResult {
     required this.sourceId,
     required this.chunkIndex,
     required this.content,
+    required this.chunkType,
     required this.similarity,
   });
 
@@ -222,6 +228,7 @@ class ChunkSearchResult {
       sourceId.hashCode ^
       chunkIndex.hashCode ^
       content.hashCode ^
+      chunkType.hashCode ^
       similarity.hashCode;
 
   @override
@@ -233,6 +240,7 @@ class ChunkSearchResult {
           sourceId == other.sourceId &&
           chunkIndex == other.chunkIndex &&
           content == other.content &&
+          chunkType == other.chunkType &&
           similarity == other.similarity;
 }
 

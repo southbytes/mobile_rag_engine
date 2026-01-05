@@ -66,6 +66,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ChunkSearchResult dco_decode_chunk_search_result(dynamic raw);
 
   @protected
+  ChunkType dco_decode_chunk_type(dynamic raw);
+
+  @protected
   CompressedText dco_decode_compressed_text(dynamic raw);
 
   @protected
@@ -227,6 +230,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ChunkSearchResult sse_decode_chunk_search_result(
     SseDeserializer deserializer,
   );
+
+  @protected
+  ChunkType sse_decode_chunk_type(SseDeserializer deserializer);
 
   @protected
   CompressedText sse_decode_compressed_text(SseDeserializer deserializer);
@@ -432,6 +438,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     ChunkSearchResult self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_chunk_type(ChunkType self, SseSerializer serializer);
 
   @protected
   void sse_encode_compressed_text(

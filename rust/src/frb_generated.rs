@@ -37,7 +37,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.11.1";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1252011781;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -203478054;
 
 // Section: executor
 
@@ -482,6 +482,107 @@ fn wire__crate__api__simple_rag__calculate_cosine_similarity_impl(
                 let output_ok = Result::<_, ()>::Ok(
                     crate::api::simple_rag::calculate_cosine_similarity(api_vec_a, api_vec_b),
                 )?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__semantic_chunker__chunk_type_as_str_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "chunk_type_as_str",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <crate::api::semantic_chunker::ChunkType>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok({
+                        crate::api::semantic_chunker::ChunkType::as_str(&api_that);
+                    })?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__semantic_chunker__chunk_type_from_str_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "chunk_type_from_str",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_s = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::semantic_chunker::ChunkType::from_str(&api_s),
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__semantic_chunker__classify_chunk_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "classify_chunk",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_text = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok =
+                    Result::<_, ()>::Ok(crate::api::semantic_chunker::classify_chunk(&api_text))?;
                 Ok(output_ok)
             })())
         },
@@ -2345,12 +2446,14 @@ impl SseDecode for crate::api::source_rag::ChunkData {
         let mut var_chunkIndex = <i32>::sse_decode(deserializer);
         let mut var_startPos = <i32>::sse_decode(deserializer);
         let mut var_endPos = <i32>::sse_decode(deserializer);
+        let mut var_chunkType = <String>::sse_decode(deserializer);
         let mut var_embedding = <Vec<f32>>::sse_decode(deserializer);
         return crate::api::source_rag::ChunkData {
             content: var_content,
             chunk_index: var_chunkIndex,
             start_pos: var_startPos,
             end_pos: var_endPos,
+            chunk_type: var_chunkType,
             embedding: var_embedding,
         };
     }
@@ -2375,13 +2478,31 @@ impl SseDecode for crate::api::source_rag::ChunkSearchResult {
         let mut var_sourceId = <i64>::sse_decode(deserializer);
         let mut var_chunkIndex = <i32>::sse_decode(deserializer);
         let mut var_content = <String>::sse_decode(deserializer);
+        let mut var_chunkType = <String>::sse_decode(deserializer);
         let mut var_similarity = <f64>::sse_decode(deserializer);
         return crate::api::source_rag::ChunkSearchResult {
             chunk_id: var_chunkId,
             source_id: var_sourceId,
             chunk_index: var_chunkIndex,
             content: var_content,
+            chunk_type: var_chunkType,
             similarity: var_similarity,
+        };
+    }
+}
+
+impl SseDecode for crate::api::semantic_chunker::ChunkType {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::semantic_chunker::ChunkType::Definition,
+            1 => crate::api::semantic_chunker::ChunkType::Example,
+            2 => crate::api::semantic_chunker::ChunkType::List,
+            3 => crate::api::semantic_chunker::ChunkType::Procedure,
+            4 => crate::api::semantic_chunker::ChunkType::Comparison,
+            5 => crate::api::semantic_chunker::ChunkType::General,
+            _ => unreachable!("Invalid variant for ChunkType: {}", inner),
         };
     }
 }
@@ -2757,11 +2878,13 @@ impl SseDecode for crate::api::semantic_chunker::SemanticChunk {
         let mut var_content = <String>::sse_decode(deserializer);
         let mut var_startPos = <i32>::sse_decode(deserializer);
         let mut var_endPos = <i32>::sse_decode(deserializer);
+        let mut var_chunkType = <String>::sse_decode(deserializer);
         return crate::api::semantic_chunker::SemanticChunk {
             index: var_index,
             content: var_content,
             start_pos: var_startPos,
             end_pos: var_endPos,
+            chunk_type: var_chunkType,
         };
     }
 }
@@ -2857,180 +2980,192 @@ fn pde_ffi_dispatcher_primary_impl(
         11 => {
             wire__crate__api__hnsw_index__build_hnsw_index_impl(port, ptr, rust_vec_len, data_len)
         }
-        13 => wire__crate__api__simple_rag__clear_all_documents_impl(
+        13 => wire__crate__api__semantic_chunker__chunk_type_as_str_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        14 => wire__crate__api__incremental_index__clear_buffer_impl(
+        14 => wire__crate__api__semantic_chunker__chunk_type_from_str_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        15 => {
+        16 => wire__crate__api__simple_rag__clear_all_documents_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        17 => wire__crate__api__incremental_index__clear_buffer_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        18 => {
             wire__crate__api__hnsw_index__clear_hnsw_index_impl(port, ptr, rust_vec_len, data_len)
         }
-        16 => wire__crate__api__compression_utils__compress_text_impl(
+        19 => wire__crate__api__compression_utils__compress_text_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        17 => wire__crate__api__compression_utils__compress_text_simple_impl(
+        20 => wire__crate__api__compression_utils__compress_text_simple_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        18 => wire__crate__api__compression_utils__compression_options_default_impl(
+        21 => wire__crate__api__compression_utils__compression_options_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        20 => wire__crate__api__source_rag__delete_source_impl(port, ptr, rust_vec_len, data_len),
-        21 => wire__crate__api__hnsw_index__embedding_point_new_impl(
+        23 => wire__crate__api__source_rag__delete_source_impl(port, ptr, rust_vec_len, data_len),
+        24 => wire__crate__api__hnsw_index__embedding_point_new_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        22 => wire__crate__api__source_rag__get_adjacent_chunks_impl(
+        25 => wire__crate__api__source_rag__get_adjacent_chunks_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        23 => wire__crate__api__source_rag__get_all_chunk_ids_and_contents_impl(
+        26 => wire__crate__api__source_rag__get_all_chunk_ids_and_contents_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        24 => wire__crate__api__incremental_index__get_buffer_for_merge_impl(
+        27 => wire__crate__api__incremental_index__get_buffer_for_merge_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        25 => wire__crate__api__incremental_index__get_buffer_stats_impl(
+        28 => wire__crate__api__incremental_index__get_buffer_stats_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        26 => {
+        29 => {
             wire__crate__api__simple_rag__get_document_count_impl(port, ptr, rust_vec_len, data_len)
         }
-        27 => wire__crate__api__source_rag__get_source_impl(port, ptr, rust_vec_len, data_len),
-        28 => {
+        30 => wire__crate__api__source_rag__get_source_impl(port, ptr, rust_vec_len, data_len),
+        31 => {
             wire__crate__api__source_rag__get_source_chunks_impl(port, ptr, rust_vec_len, data_len)
         }
-        29 => {
+        32 => {
             wire__crate__api__source_rag__get_source_stats_impl(port, ptr, rust_vec_len, data_len)
         }
-        32 => wire__crate__api__incremental_index__incremental_add_impl(
+        35 => wire__crate__api__incremental_index__incremental_add_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        33 => wire__crate__api__incremental_index__incremental_add_batch_impl(
+        36 => wire__crate__api__incremental_index__incremental_add_batch_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        34 => wire__crate__api__incremental_index__incremental_remove_impl(
+        37 => wire__crate__api__incremental_index__incremental_remove_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        35 => wire__crate__api__incremental_index__incremental_search_impl(
+        38 => wire__crate__api__incremental_index__incremental_search_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        36 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
-        37 => wire__crate__api__simple_rag__init_db_impl(port, ptr, rust_vec_len, data_len),
-        38 => wire__crate__api__source_rag__init_source_db_impl(port, ptr, rust_vec_len, data_len),
-        39 => wire__crate__api__tokenizer__init_tokenizer_impl(port, ptr, rust_vec_len, data_len),
-        40 => wire__crate__api__bm25_search__is_bm25_index_loaded_impl(
+        39 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
+        40 => wire__crate__api__simple_rag__init_db_impl(port, ptr, rust_vec_len, data_len),
+        41 => wire__crate__api__source_rag__init_source_db_impl(port, ptr, rust_vec_len, data_len),
+        42 => wire__crate__api__tokenizer__init_tokenizer_impl(port, ptr, rust_vec_len, data_len),
+        43 => wire__crate__api__bm25_search__is_bm25_index_loaded_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        41 => wire__crate__api__hnsw_index__is_hnsw_index_loaded_impl(
+        44 => wire__crate__api__hnsw_index__is_hnsw_index_loaded_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        42 => wire__crate__api__hnsw_index__load_hnsw_index_impl(port, ptr, rust_vec_len, data_len),
-        43 => {
+        45 => wire__crate__api__hnsw_index__load_hnsw_index_impl(port, ptr, rust_vec_len, data_len),
+        46 => {
             wire__crate__api__incremental_index__needs_merge_impl(port, ptr, rust_vec_len, data_len)
         }
-        44 => {
+        47 => {
             wire__crate__api__simple_rag__rebuild_bm25_index_impl(port, ptr, rust_vec_len, data_len)
         }
-        45 => wire__crate__api__source_rag__rebuild_chunk_hnsw_index_impl(
+        48 => wire__crate__api__source_rag__rebuild_chunk_hnsw_index_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        46 => {
+        49 => {
             wire__crate__api__simple_rag__rebuild_hnsw_index_impl(port, ptr, rust_vec_len, data_len)
         }
-        47 => wire__crate__api__hybrid_search__rrf_config_default_impl(
+        50 => wire__crate__api__hybrid_search__rrf_config_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        48 => wire__crate__api__hnsw_index__save_hnsw_index_impl(port, ptr, rust_vec_len, data_len),
-        49 => wire__crate__api__source_rag__search_chunks_impl(port, ptr, rust_vec_len, data_len),
-        50 => wire__crate__api__hnsw_index__search_hnsw_impl(port, ptr, rust_vec_len, data_len),
-        51 => {
+        51 => wire__crate__api__hnsw_index__save_hnsw_index_impl(port, ptr, rust_vec_len, data_len),
+        52 => wire__crate__api__source_rag__search_chunks_impl(port, ptr, rust_vec_len, data_len),
+        53 => wire__crate__api__hnsw_index__search_hnsw_impl(port, ptr, rust_vec_len, data_len),
+        54 => {
             wire__crate__api__hybrid_search__search_hybrid_impl(port, ptr, rust_vec_len, data_len)
         }
-        52 => wire__crate__api__hybrid_search__search_hybrid_simple_impl(
+        55 => wire__crate__api__hybrid_search__search_hybrid_simple_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        53 => wire__crate__api__hybrid_search__search_hybrid_weighted_impl(
+        56 => wire__crate__api__hybrid_search__search_hybrid_weighted_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        54 => wire__crate__api__simple_rag__search_similar_impl(port, ptr, rust_vec_len, data_len),
-        57 => wire__crate__api__compression_utils__sentence_hash_impl(
+        57 => wire__crate__api__simple_rag__search_similar_impl(port, ptr, rust_vec_len, data_len),
+        60 => wire__crate__api__compression_utils__sentence_hash_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        58 => wire__crate__api__compression_utils__should_compress_impl(
+        61 => wire__crate__api__compression_utils__should_compress_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        59 => wire__crate__api__compression_utils__split_sentences_impl(
+        62 => wire__crate__api__compression_utils__split_sentences_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        61 => wire__crate__api__source_rag__update_chunk_embedding_impl(
+        64 => wire__crate__api__source_rag__update_chunk_embedding_impl(
             port,
             ptr,
             rust_vec_len,
@@ -3053,16 +3188,17 @@ fn pde_ffi_dispatcher_sync_impl(
             rust_vec_len,
             data_len,
         ),
-        19 => wire__crate__api__tokenizer__decode_tokens_impl(ptr, rust_vec_len, data_len),
-        30 => wire__crate__api__tokenizer__get_vocab_size_impl(ptr, rust_vec_len, data_len),
-        31 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
-        55 => wire__crate__api__semantic_chunker__semantic_chunk_impl(ptr, rust_vec_len, data_len),
-        56 => wire__crate__api__semantic_chunker__semantic_chunk_with_overlap_impl(
+        15 => wire__crate__api__semantic_chunker__classify_chunk_impl(ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__tokenizer__decode_tokens_impl(ptr, rust_vec_len, data_len),
+        33 => wire__crate__api__tokenizer__get_vocab_size_impl(ptr, rust_vec_len, data_len),
+        34 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
+        58 => wire__crate__api__semantic_chunker__semantic_chunk_impl(ptr, rust_vec_len, data_len),
+        59 => wire__crate__api__semantic_chunker__semantic_chunk_with_overlap_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        60 => wire__crate__api__tokenizer__tokenize_impl(ptr, rust_vec_len, data_len),
+        63 => wire__crate__api__tokenizer__tokenize_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -3165,6 +3301,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::source_rag::ChunkData {
             self.chunk_index.into_into_dart().into_dart(),
             self.start_pos.into_into_dart().into_dart(),
             self.end_pos.into_into_dart().into_dart(),
+            self.chunk_type.into_into_dart().into_dart(),
             self.embedding.into_into_dart().into_dart(),
         ]
         .into_dart()
@@ -3210,6 +3347,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::source_rag::ChunkSearchResult
             self.source_id.into_into_dart().into_dart(),
             self.chunk_index.into_into_dart().into_dart(),
             self.content.into_into_dart().into_dart(),
+            self.chunk_type.into_into_dart().into_dart(),
             self.similarity.into_into_dart().into_dart(),
         ]
         .into_dart()
@@ -3223,6 +3361,31 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::source_rag::ChunkSearchResult
     for crate::api::source_rag::ChunkSearchResult
 {
     fn into_into_dart(self) -> crate::api::source_rag::ChunkSearchResult {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::semantic_chunker::ChunkType {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Definition => 0.into_dart(),
+            Self::Example => 1.into_dart(),
+            Self::List => 2.into_dart(),
+            Self::Procedure => 3.into_dart(),
+            Self::Comparison => 4.into_dart(),
+            Self::General => 5.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::semantic_chunker::ChunkType
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::semantic_chunker::ChunkType>
+    for crate::api::semantic_chunker::ChunkType
+{
+    fn into_into_dart(self) -> crate::api::semantic_chunker::ChunkType {
         self
     }
 }
@@ -3394,6 +3557,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::semantic_chunker::SemanticChu
             self.content.into_into_dart().into_dart(),
             self.start_pos.into_into_dart().into_dart(),
             self.end_pos.into_into_dart().into_dart(),
+            self.chunk_type.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -3495,6 +3659,7 @@ impl SseEncode for crate::api::source_rag::ChunkData {
         <i32>::sse_encode(self.chunk_index, serializer);
         <i32>::sse_encode(self.start_pos, serializer);
         <i32>::sse_encode(self.end_pos, serializer);
+        <String>::sse_encode(self.chunk_type, serializer);
         <Vec<f32>>::sse_encode(self.embedding, serializer);
     }
 }
@@ -3514,7 +3679,28 @@ impl SseEncode for crate::api::source_rag::ChunkSearchResult {
         <i64>::sse_encode(self.source_id, serializer);
         <i32>::sse_encode(self.chunk_index, serializer);
         <String>::sse_encode(self.content, serializer);
+        <String>::sse_encode(self.chunk_type, serializer);
         <f64>::sse_encode(self.similarity, serializer);
+    }
+}
+
+impl SseEncode for crate::api::semantic_chunker::ChunkType {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::semantic_chunker::ChunkType::Definition => 0,
+                crate::api::semantic_chunker::ChunkType::Example => 1,
+                crate::api::semantic_chunker::ChunkType::List => 2,
+                crate::api::semantic_chunker::ChunkType::Procedure => 3,
+                crate::api::semantic_chunker::ChunkType::Comparison => 4,
+                crate::api::semantic_chunker::ChunkType::General => 5,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
     }
 }
 
@@ -3798,6 +3984,7 @@ impl SseEncode for crate::api::semantic_chunker::SemanticChunk {
         <String>::sse_encode(self.content, serializer);
         <i32>::sse_encode(self.start_pos, serializer);
         <i32>::sse_encode(self.end_pos, serializer);
+        <String>::sse_encode(self.chunk_type, serializer);
     }
 }
 

@@ -7,7 +7,19 @@ import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `is_article_title`, `split_by_article_titles`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `eq`, `fmt`, `fmt`
+
+/// Classify a chunk based on its content using rule-based patterns.
+///
+/// Strategy (in order of priority):
+/// 1. List patterns (bullet points, numbered items)
+/// 2. Definition patterns (formal definitions)
+/// 3. Example patterns
+/// 4. Procedure patterns (step-by-step)
+/// 5. Comparison patterns
+/// 6. Default to General
+ChunkType classifyChunk({required String text}) =>
+    RustLib.instance.api.crateApiSemanticChunkerClassifyChunk(text: text);
 
 /// Split text into semantic chunks using paragraph boundaries first.
 ///
@@ -52,6 +64,35 @@ List<SemanticChunk> semanticChunkWithOverlap({
   overlapChars: overlapChars,
 );
 
+/// Type classification for a chunk based on content analysis.
+enum ChunkType {
+  /// Definition or overview content
+  definition,
+
+  /// Example or illustration
+  example,
+
+  /// Bulleted or numbered list
+  list,
+
+  /// Procedure or step-by-step instructions
+  procedure,
+
+  /// Comparison between items
+  comparison,
+
+  /// General content (default)
+  general;
+
+  /// Convert to string for database storage.
+  Future<void> asStr() =>
+      RustLib.instance.api.crateApiSemanticChunkerChunkTypeAsStr(that: this);
+
+  /// Parse from string (database retrieval).
+  static Future<ChunkType> fromStr({required String s}) =>
+      RustLib.instance.api.crateApiSemanticChunkerChunkTypeFromStr(s: s);
+}
+
 /// Result of semantic chunking operation.
 class SemanticChunk {
   /// Index of this chunk (0-based).
@@ -66,16 +107,24 @@ class SemanticChunk {
   /// Approximate character position where this chunk ends.
   final int endPos;
 
+  /// Classification type of this chunk.
+  final String chunkType;
+
   const SemanticChunk({
     required this.index,
     required this.content,
     required this.startPos,
     required this.endPos,
+    required this.chunkType,
   });
 
   @override
   int get hashCode =>
-      index.hashCode ^ content.hashCode ^ startPos.hashCode ^ endPos.hashCode;
+      index.hashCode ^
+      content.hashCode ^
+      startPos.hashCode ^
+      endPos.hashCode ^
+      chunkType.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -85,5 +134,6 @@ class SemanticChunk {
           index == other.index &&
           content == other.content &&
           startPos == other.startPos &&
-          endPos == other.endPos;
+          endPos == other.endPos &&
+          chunkType == other.chunkType;
 }
