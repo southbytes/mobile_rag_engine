@@ -1,16 +1,131 @@
-# local_gemma_macos
+# Local Gemma macOS
 
-A new Flutter project.
+로컬 환경에서 실행되는 RAG(Retrieval-Augmented Generation) + Ollama LLM 통합 애플리케이션입니다.
 
-## Getting Started
+## 📋 필수 요구사항
 
-This project is a starting point for a Flutter application.
+- **macOS** (Apple Silicon 또는 Intel)
+- **Flutter** 3.9.0 이상
+- **Dart SDK** 3.9.2 이상
+- **Ollama** (로컬 LLM 실행용)
 
-A few resources to get you started if this is your first Flutter project:
+## 🚀 설치 방법
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### 1. Ollama 설치
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Ollama는 로컬에서 LLM을 실행하기 위해 필요합니다.
+
+> ✅ Ollama는 **완전히 로컬에서 실행**되며, API 키나 계정이 필요하지 않습니다.
+
+```bash
+# Homebrew를 사용하여 설치
+brew install ollama
+
+# 또는 공식 웹사이트에서 직접 다운로드
+# https://ollama.ai/download
+```
+
+Ollama 설치 후, 서비스를 시작합니다:
+
+```bash
+ollama serve
+```
+
+### 2. LLM 모델 다운로드
+
+앱 내에서 **Model Setup** 화면을 통해 모델을 직접 다운로드할 수 있습니다.
+
+또는 터미널에서 미리 다운로드할 수도 있습니다:
+
+```bash
+# Gemma 3 모델 (권장)
+ollama pull gemma3
+
+# 또는 다른 모델 선택
+ollama pull llama3.2
+ollama pull mistral
+```
+
+### 3. 애플리케이션 실행
+
+Ollama가 실행 중인 상태에서 앱을 실행합니다:
+
+```bash
+# 빌드된 앱을 실행하거나, 개발 환경에서:
+flutter run -d macos
+```
+
+---
+
+## 🛠️ 개발자용 설치
+
+소스 코드에서 직접 빌드하는 경우 다음 단계를 추가로 진행합니다.
+
+### 1. 임베딩 모델 다운로드
+
+> ℹ️ **참고**: 임베딩 모델은 빌드된 앱에 번들되어 있어, 일반 사용자는 별도 다운로드가 필요 없습니다.
+
+```bash
+# 프로젝트 디렉토리에서 실행
+chmod +x download_models.sh
+./download_models.sh
+```
+
+> ⚠️ 모델 파일 크기가 약 560MB 정도이므로 다운로드에 시간이 소요될 수 있습니다.
+
+### 2. Flutter 의존성 설치
+
+```bash
+flutter pub get
+```
+
+### 3. 애플리케이션 빌드 및 실행
+
+```bash
+flutter run -d macos
+```
+
+## 📁 프로젝트 구조
+
+```
+local-gemma-macos/
+├── lib/                    # Dart 소스 코드
+├── assets/                 # 임베딩 모델 파일
+│   ├── bge-m3-int8.onnx   # BGE-m3 ONNX 모델
+│   └── bge-m3-tokenizer.json
+├── macos/                  # macOS 플랫폼 설정
+└── download_models.sh      # 모델 다운로드 스크립트
+```
+
+## 🔧 문제 해결
+
+### Ollama 연결 오류
+
+Ollama 서비스가 실행 중인지 확인합니다:
+
+```bash
+# Ollama 상태 확인
+ollama list
+
+# 서비스 재시작
+ollama serve
+```
+
+### 모델 파일 누락
+
+`download_models.sh` 스크립트를 다시 실행하여 모델 파일을 다운로드합니다.
+
+### Flutter 빌드 오류
+
+```bash
+# 클린 빌드
+flutter clean
+flutter pub get
+flutter run -d macos
+```
+
+## 📖 참고 자료
+
+- [Flutter 공식 문서](https://docs.flutter.dev/)
+- [Ollama 공식 문서](https://ollama.ai/)
+- [BGE-m3 모델 정보](https://huggingface.co/BAAI/bge-m3)
