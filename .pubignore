@@ -1,6 +1,7 @@
 # 별도 프로젝트/앱 (패키지에 포함 안됨)
 test_app/
 local-gemma-macos/
+example/
 
 # 개발용 파일
 docs/
@@ -20,8 +21,9 @@ platform-build/
 rust/target/
 
 # 대용량 모델 파일 (사용자가 직접 다운로드)
-assets/bge-m3-int8.onnx
-assets/bge-m3-tokenizer.json
+assets/
+*.onnx
+*.bin
 
 # IDE 및 기타
 .idea/
@@ -29,6 +31,7 @@ assets/bge-m3-tokenizer.json
 .DS_Store
 .dart_tool/
 .flutter-plugins-dependencies
+.vscode/
 
 # 개발 문서
 refrag-develop.md
@@ -36,3 +39,11 @@ refrag-develop.md
 # 테스트 드라이버
 test_driver/
 integration_test/
+
+# 플랫폼별 디렉토리 (rust_builder에서 제공)
+android/
+ios/
+linux/
+macos/
+windows/
+web/

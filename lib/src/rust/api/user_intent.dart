@@ -14,7 +14,7 @@ part 'user_intent.freezed.dart';
 ///
 /// Supported commands:
 /// - /summary [query] - Summarize the query results
-/// - /define <term> - Define a specific term
+/// - /define `<term>` - Define a specific term
 /// - /more [query] - Expand knowledge beyond RAG
 /// - Any other text - General query
 UserIntent parseUserIntent({required String input}) =>
@@ -64,7 +64,7 @@ sealed class UserIntent with _$UserIntent {
   const factory UserIntent.summary({required String query}) =
       UserIntent_Summary;
 
-  /// /define <term> - Define a term
+  /// /define `<term>` - Define a term
   const factory UserIntent.define({required String term}) = UserIntent_Define;
 
   /// /more - Expand knowledge using LLM beyond RAG

@@ -50,9 +50,7 @@ class _QualityTestScreenState extends State<QualityTestScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('🎯 Search Quality Test'),
-      ),
+      appBar: AppBar(title: const Text('🎯 Search Quality Test')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -90,7 +88,9 @@ class _QualityTestScreenState extends State<QualityTestScreen> {
             // Summary
             if (_summary != null) ...[
               Card(
-                color: _getScoreColor(_summary!.passRate).withOpacity(0.1),
+                color: _getScoreColor(
+                  _summary!.passRate,
+                ).withValues(alpha: 0.1),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -104,7 +104,9 @@ class _QualityTestScreenState extends State<QualityTestScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text('${_summary!.passed}/${_summary!.total} tests passed'),
+                      Text(
+                        '${_summary!.passed}/${_summary!.total} tests passed',
+                      ),
                       const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -172,21 +174,34 @@ class _QualityTestScreenState extends State<QualityTestScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Expected docs:', style: TextStyle(fontWeight: FontWeight.bold)),
+                                const Text(
+                                  'Expected docs:',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                                 Text(r.expected.join(', ')),
                                 const SizedBox(height: 8),
-                                const Text('Actual results:', style: TextStyle(fontWeight: FontWeight.bold)),
-                                ...r.actual.asMap().entries.map((e) => Text(
-                                  '${e.key + 1}. ${e.value}',
-                                  style: TextStyle(
-                                    color: QualityTestService.testCases
-                                        .firstWhere((tc) => tc.query == r.query)
-                                        .relevantDocs
-                                        .any((doc) => e.value.contains(doc))
-                                        ? Colors.green
-                                        : Colors.grey,
+                                const Text(
+                                  'Actual results:',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                ...r.actual.asMap().entries.map(
+                                  (e) => Text(
+                                    '${e.key + 1}. ${e.value}',
+                                    style: TextStyle(
+                                      color:
+                                          QualityTestService.testCases
+                                              .firstWhere(
+                                                (tc) => tc.query == r.query,
+                                              )
+                                              .relevantDocs
+                                              .any(
+                                                (doc) => e.value.contains(doc),
+                                              )
+                                          ? Colors.green
+                                          : Colors.grey,
+                                    ),
                                   ),
-                                )),
+                                ),
                               ],
                             ),
                           ),
