@@ -20,362 +20,655 @@ import 'dart:ffi' as ffi;
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_io.dart';
 
+abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
+  RustLibApiImplPlatform({
+    required super.handler,
+    required super.wire,
+    required super.generalizedFrbRustBinding,
+    required super.portManager,
+  });
 
+  @protected
+  AnyhowException dco_decode_AnyhowException(dynamic raw);
 
+  @protected
+  String dco_decode_String(dynamic raw);
 
-                abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
-                  RustLibApiImplPlatform({
-                    required super.handler,
-                    required super.wire,
-                    required super.generalizedFrbRustBinding,
-                    required super.portManager,
-                  });
+  @protected
+  AddDocumentResult dco_decode_add_document_result(dynamic raw);
 
-                  
+  @protected
+  AddSourceResult dco_decode_add_source_result(dynamic raw);
 
-                  @protected AnyhowException dco_decode_AnyhowException(dynamic raw);
+  @protected
+  Bm25SearchResult dco_decode_bm_25_search_result(dynamic raw);
 
-@protected String dco_decode_String(dynamic raw);
+  @protected
+  bool dco_decode_bool(dynamic raw);
 
-@protected AddDocumentResult dco_decode_add_document_result(dynamic raw);
+  @protected
+  CompressionOptions dco_decode_box_autoadd_compression_options(dynamic raw);
 
-@protected AddSourceResult dco_decode_add_source_result(dynamic raw);
+  @protected
+  RrfConfig dco_decode_box_autoadd_rrf_config(dynamic raw);
 
-@protected Bm25SearchResult dco_decode_bm_25_search_result(dynamic raw);
+  @protected
+  UserIntent dco_decode_box_autoadd_user_intent(dynamic raw);
 
-@protected bool dco_decode_bool(dynamic raw);
+  @protected
+  BufferStats dco_decode_buffer_stats(dynamic raw);
 
-@protected CompressionOptions dco_decode_box_autoadd_compression_options(dynamic raw);
+  @protected
+  ChunkData dco_decode_chunk_data(dynamic raw);
 
-@protected RrfConfig dco_decode_box_autoadd_rrf_config(dynamic raw);
+  @protected
+  ChunkForReembedding dco_decode_chunk_for_reembedding(dynamic raw);
 
-@protected UserIntent dco_decode_box_autoadd_user_intent(dynamic raw);
+  @protected
+  ChunkSearchResult dco_decode_chunk_search_result(dynamic raw);
 
-@protected BufferStats dco_decode_buffer_stats(dynamic raw);
+  @protected
+  ChunkType dco_decode_chunk_type(dynamic raw);
 
-@protected ChunkData dco_decode_chunk_data(dynamic raw);
+  @protected
+  CompressedText dco_decode_compressed_text(dynamic raw);
 
-@protected ChunkForReembedding dco_decode_chunk_for_reembedding(dynamic raw);
+  @protected
+  CompressionOptions dco_decode_compression_options(dynamic raw);
 
-@protected ChunkSearchResult dco_decode_chunk_search_result(dynamic raw);
+  @protected
+  EmbeddingPoint dco_decode_embedding_point(dynamic raw);
 
-@protected ChunkType dco_decode_chunk_type(dynamic raw);
+  @protected
+  double dco_decode_f_32(dynamic raw);
 
-@protected CompressedText dco_decode_compressed_text(dynamic raw);
+  @protected
+  double dco_decode_f_64(dynamic raw);
 
-@protected CompressionOptions dco_decode_compression_options(dynamic raw);
+  @protected
+  HnswSearchResult dco_decode_hnsw_search_result(dynamic raw);
 
-@protected EmbeddingPoint dco_decode_embedding_point(dynamic raw);
+  @protected
+  HybridSearchResult dco_decode_hybrid_search_result(dynamic raw);
 
-@protected double dco_decode_f_32(dynamic raw);
+  @protected
+  int dco_decode_i_32(dynamic raw);
 
-@protected double dco_decode_f_64(dynamic raw);
+  @protected
+  PlatformInt64 dco_decode_i_64(dynamic raw);
 
-@protected HnswSearchResult dco_decode_hnsw_search_result(dynamic raw);
+  @protected
+  IncrementalSearchResult dco_decode_incremental_search_result(dynamic raw);
 
-@protected HybridSearchResult dco_decode_hybrid_search_result(dynamic raw);
+  @protected
+  List<String> dco_decode_list_String(dynamic raw);
 
-@protected int dco_decode_i_32(dynamic raw);
+  @protected
+  List<Bm25SearchResult> dco_decode_list_bm_25_search_result(dynamic raw);
 
-@protected PlatformInt64 dco_decode_i_64(dynamic raw);
+  @protected
+  List<ChunkData> dco_decode_list_chunk_data(dynamic raw);
 
-@protected IncrementalSearchResult dco_decode_incremental_search_result(dynamic raw);
+  @protected
+  List<ChunkForReembedding> dco_decode_list_chunk_for_reembedding(dynamic raw);
 
-@protected List<String> dco_decode_list_String(dynamic raw);
+  @protected
+  List<ChunkSearchResult> dco_decode_list_chunk_search_result(dynamic raw);
 
-@protected List<Bm25SearchResult> dco_decode_list_bm_25_search_result(dynamic raw);
+  @protected
+  List<HnswSearchResult> dco_decode_list_hnsw_search_result(dynamic raw);
 
-@protected List<ChunkData> dco_decode_list_chunk_data(dynamic raw);
+  @protected
+  List<HybridSearchResult> dco_decode_list_hybrid_search_result(dynamic raw);
 
-@protected List<ChunkForReembedding> dco_decode_list_chunk_for_reembedding(dynamic raw);
+  @protected
+  List<IncrementalSearchResult> dco_decode_list_incremental_search_result(
+    dynamic raw,
+  );
 
-@protected List<ChunkSearchResult> dco_decode_list_chunk_search_result(dynamic raw);
+  @protected
+  List<double> dco_decode_list_prim_f_32_loose(dynamic raw);
 
-@protected List<HnswSearchResult> dco_decode_list_hnsw_search_result(dynamic raw);
+  @protected
+  Float32List dco_decode_list_prim_f_32_strict(dynamic raw);
 
-@protected List<HybridSearchResult> dco_decode_list_hybrid_search_result(dynamic raw);
+  @protected
+  List<int> dco_decode_list_prim_u_32_loose(dynamic raw);
 
-@protected List<IncrementalSearchResult> dco_decode_list_incremental_search_result(dynamic raw);
+  @protected
+  Uint32List dco_decode_list_prim_u_32_strict(dynamic raw);
 
-@protected List<double> dco_decode_list_prim_f_32_loose(dynamic raw);
+  @protected
+  Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
-@protected Float32List dco_decode_list_prim_f_32_strict(dynamic raw);
+  @protected
+  List<(PlatformInt64, Float32List)>
+  dco_decode_list_record_i_64_list_prim_f_32_strict(dynamic raw);
 
-@protected List<int> dco_decode_list_prim_u_32_loose(dynamic raw);
+  @protected
+  List<(PlatformInt64, String)> dco_decode_list_record_i_64_string(dynamic raw);
 
-@protected Uint32List dco_decode_list_prim_u_32_strict(dynamic raw);
+  @protected
+  List<SemanticChunk> dco_decode_list_semantic_chunk(dynamic raw);
 
-@protected Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
+  @protected
+  String? dco_decode_opt_String(dynamic raw);
 
-@protected List<(PlatformInt64,Float32List)> dco_decode_list_record_i_64_list_prim_f_32_strict(dynamic raw);
+  @protected
+  RrfConfig? dco_decode_opt_box_autoadd_rrf_config(dynamic raw);
 
-@protected List<(PlatformInt64,String)> dco_decode_list_record_i_64_string(dynamic raw);
+  @protected
+  ParsedIntent dco_decode_parsed_intent(dynamic raw);
 
-@protected List<SemanticChunk> dco_decode_list_semantic_chunk(dynamic raw);
+  @protected
+  (PlatformInt64, Float32List) dco_decode_record_i_64_list_prim_f_32_strict(
+    dynamic raw,
+  );
 
-@protected String? dco_decode_opt_String(dynamic raw);
+  @protected
+  (PlatformInt64, String) dco_decode_record_i_64_string(dynamic raw);
 
-@protected RrfConfig? dco_decode_opt_box_autoadd_rrf_config(dynamic raw);
+  @protected
+  RrfConfig dco_decode_rrf_config(dynamic raw);
 
-@protected ParsedIntent dco_decode_parsed_intent(dynamic raw);
+  @protected
+  SemanticChunk dco_decode_semantic_chunk(dynamic raw);
 
-@protected (PlatformInt64,Float32List) dco_decode_record_i_64_list_prim_f_32_strict(dynamic raw);
+  @protected
+  SourceStats dco_decode_source_stats(dynamic raw);
 
-@protected (PlatformInt64,String) dco_decode_record_i_64_string(dynamic raw);
+  @protected
+  int dco_decode_u_32(dynamic raw);
 
-@protected RrfConfig dco_decode_rrf_config(dynamic raw);
+  @protected
+  BigInt dco_decode_u_64(dynamic raw);
 
-@protected SemanticChunk dco_decode_semantic_chunk(dynamic raw);
+  @protected
+  int dco_decode_u_8(dynamic raw);
 
-@protected SourceStats dco_decode_source_stats(dynamic raw);
+  @protected
+  void dco_decode_unit(dynamic raw);
 
-@protected int dco_decode_u_32(dynamic raw);
+  @protected
+  UserIntent dco_decode_user_intent(dynamic raw);
 
-@protected BigInt dco_decode_u_64(dynamic raw);
+  @protected
+  BigInt dco_decode_usize(dynamic raw);
 
-@protected int dco_decode_u_8(dynamic raw);
+  @protected
+  AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer);
 
-@protected void dco_decode_unit(dynamic raw);
+  @protected
+  String sse_decode_String(SseDeserializer deserializer);
 
-@protected UserIntent dco_decode_user_intent(dynamic raw);
+  @protected
+  AddDocumentResult sse_decode_add_document_result(
+    SseDeserializer deserializer,
+  );
 
-@protected BigInt dco_decode_usize(dynamic raw);
+  @protected
+  AddSourceResult sse_decode_add_source_result(SseDeserializer deserializer);
 
-@protected AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer);
+  @protected
+  Bm25SearchResult sse_decode_bm_25_search_result(SseDeserializer deserializer);
 
-@protected String sse_decode_String(SseDeserializer deserializer);
+  @protected
+  bool sse_decode_bool(SseDeserializer deserializer);
 
-@protected AddDocumentResult sse_decode_add_document_result(SseDeserializer deserializer);
+  @protected
+  CompressionOptions sse_decode_box_autoadd_compression_options(
+    SseDeserializer deserializer,
+  );
 
-@protected AddSourceResult sse_decode_add_source_result(SseDeserializer deserializer);
+  @protected
+  RrfConfig sse_decode_box_autoadd_rrf_config(SseDeserializer deserializer);
 
-@protected Bm25SearchResult sse_decode_bm_25_search_result(SseDeserializer deserializer);
+  @protected
+  UserIntent sse_decode_box_autoadd_user_intent(SseDeserializer deserializer);
 
-@protected bool sse_decode_bool(SseDeserializer deserializer);
+  @protected
+  BufferStats sse_decode_buffer_stats(SseDeserializer deserializer);
 
-@protected CompressionOptions sse_decode_box_autoadd_compression_options(SseDeserializer deserializer);
+  @protected
+  ChunkData sse_decode_chunk_data(SseDeserializer deserializer);
 
-@protected RrfConfig sse_decode_box_autoadd_rrf_config(SseDeserializer deserializer);
+  @protected
+  ChunkForReembedding sse_decode_chunk_for_reembedding(
+    SseDeserializer deserializer,
+  );
 
-@protected UserIntent sse_decode_box_autoadd_user_intent(SseDeserializer deserializer);
+  @protected
+  ChunkSearchResult sse_decode_chunk_search_result(
+    SseDeserializer deserializer,
+  );
 
-@protected BufferStats sse_decode_buffer_stats(SseDeserializer deserializer);
+  @protected
+  ChunkType sse_decode_chunk_type(SseDeserializer deserializer);
 
-@protected ChunkData sse_decode_chunk_data(SseDeserializer deserializer);
+  @protected
+  CompressedText sse_decode_compressed_text(SseDeserializer deserializer);
 
-@protected ChunkForReembedding sse_decode_chunk_for_reembedding(SseDeserializer deserializer);
+  @protected
+  CompressionOptions sse_decode_compression_options(
+    SseDeserializer deserializer,
+  );
 
-@protected ChunkSearchResult sse_decode_chunk_search_result(SseDeserializer deserializer);
+  @protected
+  EmbeddingPoint sse_decode_embedding_point(SseDeserializer deserializer);
 
-@protected ChunkType sse_decode_chunk_type(SseDeserializer deserializer);
+  @protected
+  double sse_decode_f_32(SseDeserializer deserializer);
 
-@protected CompressedText sse_decode_compressed_text(SseDeserializer deserializer);
+  @protected
+  double sse_decode_f_64(SseDeserializer deserializer);
 
-@protected CompressionOptions sse_decode_compression_options(SseDeserializer deserializer);
+  @protected
+  HnswSearchResult sse_decode_hnsw_search_result(SseDeserializer deserializer);
 
-@protected EmbeddingPoint sse_decode_embedding_point(SseDeserializer deserializer);
+  @protected
+  HybridSearchResult sse_decode_hybrid_search_result(
+    SseDeserializer deserializer,
+  );
 
-@protected double sse_decode_f_32(SseDeserializer deserializer);
+  @protected
+  int sse_decode_i_32(SseDeserializer deserializer);
 
-@protected double sse_decode_f_64(SseDeserializer deserializer);
+  @protected
+  PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
 
-@protected HnswSearchResult sse_decode_hnsw_search_result(SseDeserializer deserializer);
+  @protected
+  IncrementalSearchResult sse_decode_incremental_search_result(
+    SseDeserializer deserializer,
+  );
 
-@protected HybridSearchResult sse_decode_hybrid_search_result(SseDeserializer deserializer);
+  @protected
+  List<String> sse_decode_list_String(SseDeserializer deserializer);
 
-@protected int sse_decode_i_32(SseDeserializer deserializer);
+  @protected
+  List<Bm25SearchResult> sse_decode_list_bm_25_search_result(
+    SseDeserializer deserializer,
+  );
 
-@protected PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
+  @protected
+  List<ChunkData> sse_decode_list_chunk_data(SseDeserializer deserializer);
 
-@protected IncrementalSearchResult sse_decode_incremental_search_result(SseDeserializer deserializer);
+  @protected
+  List<ChunkForReembedding> sse_decode_list_chunk_for_reembedding(
+    SseDeserializer deserializer,
+  );
 
-@protected List<String> sse_decode_list_String(SseDeserializer deserializer);
+  @protected
+  List<ChunkSearchResult> sse_decode_list_chunk_search_result(
+    SseDeserializer deserializer,
+  );
 
-@protected List<Bm25SearchResult> sse_decode_list_bm_25_search_result(SseDeserializer deserializer);
+  @protected
+  List<HnswSearchResult> sse_decode_list_hnsw_search_result(
+    SseDeserializer deserializer,
+  );
 
-@protected List<ChunkData> sse_decode_list_chunk_data(SseDeserializer deserializer);
+  @protected
+  List<HybridSearchResult> sse_decode_list_hybrid_search_result(
+    SseDeserializer deserializer,
+  );
 
-@protected List<ChunkForReembedding> sse_decode_list_chunk_for_reembedding(SseDeserializer deserializer);
+  @protected
+  List<IncrementalSearchResult> sse_decode_list_incremental_search_result(
+    SseDeserializer deserializer,
+  );
 
-@protected List<ChunkSearchResult> sse_decode_list_chunk_search_result(SseDeserializer deserializer);
+  @protected
+  List<double> sse_decode_list_prim_f_32_loose(SseDeserializer deserializer);
 
-@protected List<HnswSearchResult> sse_decode_list_hnsw_search_result(SseDeserializer deserializer);
+  @protected
+  Float32List sse_decode_list_prim_f_32_strict(SseDeserializer deserializer);
 
-@protected List<HybridSearchResult> sse_decode_list_hybrid_search_result(SseDeserializer deserializer);
+  @protected
+  List<int> sse_decode_list_prim_u_32_loose(SseDeserializer deserializer);
 
-@protected List<IncrementalSearchResult> sse_decode_list_incremental_search_result(SseDeserializer deserializer);
+  @protected
+  Uint32List sse_decode_list_prim_u_32_strict(SseDeserializer deserializer);
 
-@protected List<double> sse_decode_list_prim_f_32_loose(SseDeserializer deserializer);
+  @protected
+  Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
-@protected Float32List sse_decode_list_prim_f_32_strict(SseDeserializer deserializer);
+  @protected
+  List<(PlatformInt64, Float32List)>
+  sse_decode_list_record_i_64_list_prim_f_32_strict(
+    SseDeserializer deserializer,
+  );
 
-@protected List<int> sse_decode_list_prim_u_32_loose(SseDeserializer deserializer);
+  @protected
+  List<(PlatformInt64, String)> sse_decode_list_record_i_64_string(
+    SseDeserializer deserializer,
+  );
 
-@protected Uint32List sse_decode_list_prim_u_32_strict(SseDeserializer deserializer);
+  @protected
+  List<SemanticChunk> sse_decode_list_semantic_chunk(
+    SseDeserializer deserializer,
+  );
 
-@protected Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
+  @protected
+  String? sse_decode_opt_String(SseDeserializer deserializer);
 
-@protected List<(PlatformInt64,Float32List)> sse_decode_list_record_i_64_list_prim_f_32_strict(SseDeserializer deserializer);
+  @protected
+  RrfConfig? sse_decode_opt_box_autoadd_rrf_config(
+    SseDeserializer deserializer,
+  );
 
-@protected List<(PlatformInt64,String)> sse_decode_list_record_i_64_string(SseDeserializer deserializer);
+  @protected
+  ParsedIntent sse_decode_parsed_intent(SseDeserializer deserializer);
 
-@protected List<SemanticChunk> sse_decode_list_semantic_chunk(SseDeserializer deserializer);
+  @protected
+  (PlatformInt64, Float32List) sse_decode_record_i_64_list_prim_f_32_strict(
+    SseDeserializer deserializer,
+  );
 
-@protected String? sse_decode_opt_String(SseDeserializer deserializer);
+  @protected
+  (PlatformInt64, String) sse_decode_record_i_64_string(
+    SseDeserializer deserializer,
+  );
 
-@protected RrfConfig? sse_decode_opt_box_autoadd_rrf_config(SseDeserializer deserializer);
+  @protected
+  RrfConfig sse_decode_rrf_config(SseDeserializer deserializer);
 
-@protected ParsedIntent sse_decode_parsed_intent(SseDeserializer deserializer);
+  @protected
+  SemanticChunk sse_decode_semantic_chunk(SseDeserializer deserializer);
 
-@protected (PlatformInt64,Float32List) sse_decode_record_i_64_list_prim_f_32_strict(SseDeserializer deserializer);
+  @protected
+  SourceStats sse_decode_source_stats(SseDeserializer deserializer);
 
-@protected (PlatformInt64,String) sse_decode_record_i_64_string(SseDeserializer deserializer);
+  @protected
+  int sse_decode_u_32(SseDeserializer deserializer);
 
-@protected RrfConfig sse_decode_rrf_config(SseDeserializer deserializer);
+  @protected
+  BigInt sse_decode_u_64(SseDeserializer deserializer);
 
-@protected SemanticChunk sse_decode_semantic_chunk(SseDeserializer deserializer);
+  @protected
+  int sse_decode_u_8(SseDeserializer deserializer);
 
-@protected SourceStats sse_decode_source_stats(SseDeserializer deserializer);
+  @protected
+  void sse_decode_unit(SseDeserializer deserializer);
 
-@protected int sse_decode_u_32(SseDeserializer deserializer);
+  @protected
+  UserIntent sse_decode_user_intent(SseDeserializer deserializer);
 
-@protected BigInt sse_decode_u_64(SseDeserializer deserializer);
+  @protected
+  BigInt sse_decode_usize(SseDeserializer deserializer);
 
-@protected int sse_decode_u_8(SseDeserializer deserializer);
+  @protected
+  void sse_encode_AnyhowException(
+    AnyhowException self,
+    SseSerializer serializer,
+  );
 
-@protected void sse_decode_unit(SseDeserializer deserializer);
+  @protected
+  void sse_encode_String(String self, SseSerializer serializer);
 
-@protected UserIntent sse_decode_user_intent(SseDeserializer deserializer);
+  @protected
+  void sse_encode_add_document_result(
+    AddDocumentResult self,
+    SseSerializer serializer,
+  );
 
-@protected BigInt sse_decode_usize(SseDeserializer deserializer);
+  @protected
+  void sse_encode_add_source_result(
+    AddSourceResult self,
+    SseSerializer serializer,
+  );
 
-@protected void sse_encode_AnyhowException(AnyhowException self, SseSerializer serializer);
+  @protected
+  void sse_encode_bm_25_search_result(
+    Bm25SearchResult self,
+    SseSerializer serializer,
+  );
 
-@protected void sse_encode_String(String self, SseSerializer serializer);
+  @protected
+  void sse_encode_bool(bool self, SseSerializer serializer);
 
-@protected void sse_encode_add_document_result(AddDocumentResult self, SseSerializer serializer);
+  @protected
+  void sse_encode_box_autoadd_compression_options(
+    CompressionOptions self,
+    SseSerializer serializer,
+  );
 
-@protected void sse_encode_add_source_result(AddSourceResult self, SseSerializer serializer);
+  @protected
+  void sse_encode_box_autoadd_rrf_config(
+    RrfConfig self,
+    SseSerializer serializer,
+  );
 
-@protected void sse_encode_bm_25_search_result(Bm25SearchResult self, SseSerializer serializer);
+  @protected
+  void sse_encode_box_autoadd_user_intent(
+    UserIntent self,
+    SseSerializer serializer,
+  );
 
-@protected void sse_encode_bool(bool self, SseSerializer serializer);
+  @protected
+  void sse_encode_buffer_stats(BufferStats self, SseSerializer serializer);
 
-@protected void sse_encode_box_autoadd_compression_options(CompressionOptions self, SseSerializer serializer);
+  @protected
+  void sse_encode_chunk_data(ChunkData self, SseSerializer serializer);
 
-@protected void sse_encode_box_autoadd_rrf_config(RrfConfig self, SseSerializer serializer);
+  @protected
+  void sse_encode_chunk_for_reembedding(
+    ChunkForReembedding self,
+    SseSerializer serializer,
+  );
 
-@protected void sse_encode_box_autoadd_user_intent(UserIntent self, SseSerializer serializer);
+  @protected
+  void sse_encode_chunk_search_result(
+    ChunkSearchResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_chunk_type(ChunkType self, SseSerializer serializer);
 
-@protected void sse_encode_buffer_stats(BufferStats self, SseSerializer serializer);
-
-@protected void sse_encode_chunk_data(ChunkData self, SseSerializer serializer);
-
-@protected void sse_encode_chunk_for_reembedding(ChunkForReembedding self, SseSerializer serializer);
-
-@protected void sse_encode_chunk_search_result(ChunkSearchResult self, SseSerializer serializer);
-
-@protected void sse_encode_chunk_type(ChunkType self, SseSerializer serializer);
-
-@protected void sse_encode_compressed_text(CompressedText self, SseSerializer serializer);
-
-@protected void sse_encode_compression_options(CompressionOptions self, SseSerializer serializer);
-
-@protected void sse_encode_embedding_point(EmbeddingPoint self, SseSerializer serializer);
-
-@protected void sse_encode_f_32(double self, SseSerializer serializer);
-
-@protected void sse_encode_f_64(double self, SseSerializer serializer);
-
-@protected void sse_encode_hnsw_search_result(HnswSearchResult self, SseSerializer serializer);
-
-@protected void sse_encode_hybrid_search_result(HybridSearchResult self, SseSerializer serializer);
-
-@protected void sse_encode_i_32(int self, SseSerializer serializer);
-
-@protected void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
-
-@protected void sse_encode_incremental_search_result(IncrementalSearchResult self, SseSerializer serializer);
-
-@protected void sse_encode_list_String(List<String> self, SseSerializer serializer);
-
-@protected void sse_encode_list_bm_25_search_result(List<Bm25SearchResult> self, SseSerializer serializer);
-
-@protected void sse_encode_list_chunk_data(List<ChunkData> self, SseSerializer serializer);
-
-@protected void sse_encode_list_chunk_for_reembedding(List<ChunkForReembedding> self, SseSerializer serializer);
-
-@protected void sse_encode_list_chunk_search_result(List<ChunkSearchResult> self, SseSerializer serializer);
-
-@protected void sse_encode_list_hnsw_search_result(List<HnswSearchResult> self, SseSerializer serializer);
-
-@protected void sse_encode_list_hybrid_search_result(List<HybridSearchResult> self, SseSerializer serializer);
-
-@protected void sse_encode_list_incremental_search_result(List<IncrementalSearchResult> self, SseSerializer serializer);
-
-@protected void sse_encode_list_prim_f_32_loose(List<double> self, SseSerializer serializer);
-
-@protected void sse_encode_list_prim_f_32_strict(Float32List self, SseSerializer serializer);
-
-@protected void sse_encode_list_prim_u_32_loose(List<int> self, SseSerializer serializer);
-
-@protected void sse_encode_list_prim_u_32_strict(Uint32List self, SseSerializer serializer);
-
-@protected void sse_encode_list_prim_u_8_strict(Uint8List self, SseSerializer serializer);
-
-@protected void sse_encode_list_record_i_64_list_prim_f_32_strict(List<(PlatformInt64,Float32List)> self, SseSerializer serializer);
-
-@protected void sse_encode_list_record_i_64_string(List<(PlatformInt64,String)> self, SseSerializer serializer);
-
-@protected void sse_encode_list_semantic_chunk(List<SemanticChunk> self, SseSerializer serializer);
-
-@protected void sse_encode_opt_String(String? self, SseSerializer serializer);
-
-@protected void sse_encode_opt_box_autoadd_rrf_config(RrfConfig? self, SseSerializer serializer);
-
-@protected void sse_encode_parsed_intent(ParsedIntent self, SseSerializer serializer);
-
-@protected void sse_encode_record_i_64_list_prim_f_32_strict((PlatformInt64,Float32List) self, SseSerializer serializer);
-
-@protected void sse_encode_record_i_64_string((PlatformInt64,String) self, SseSerializer serializer);
-
-@protected void sse_encode_rrf_config(RrfConfig self, SseSerializer serializer);
-
-@protected void sse_encode_semantic_chunk(SemanticChunk self, SseSerializer serializer);
-
-@protected void sse_encode_source_stats(SourceStats self, SseSerializer serializer);
-
-@protected void sse_encode_u_32(int self, SseSerializer serializer);
-
-@protected void sse_encode_u_64(BigInt self, SseSerializer serializer);
-
-@protected void sse_encode_u_8(int self, SseSerializer serializer);
-
-@protected void sse_encode_unit(void self, SseSerializer serializer);
-
-@protected void sse_encode_user_intent(UserIntent self, SseSerializer serializer);
-
-@protected void sse_encode_usize(BigInt self, SseSerializer serializer);
-                }
-                
-
+  @protected
+  void sse_encode_compressed_text(
+    CompressedText self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_compression_options(
+    CompressionOptions self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_embedding_point(
+    EmbeddingPoint self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_f_32(double self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_f_64(double self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_hnsw_search_result(
+    HnswSearchResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_hybrid_search_result(
+    HybridSearchResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_i_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_incremental_search_result(
+    IncrementalSearchResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_String(List<String> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_bm_25_search_result(
+    List<Bm25SearchResult> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_chunk_data(
+    List<ChunkData> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_chunk_for_reembedding(
+    List<ChunkForReembedding> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_chunk_search_result(
+    List<ChunkSearchResult> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_hnsw_search_result(
+    List<HnswSearchResult> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_hybrid_search_result(
+    List<HybridSearchResult> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_incremental_search_result(
+    List<IncrementalSearchResult> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_prim_f_32_loose(
+    List<double> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_prim_f_32_strict(
+    Float32List self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_prim_u_32_loose(
+    List<int> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_prim_u_32_strict(
+    Uint32List self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_prim_u_8_strict(
+    Uint8List self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_record_i_64_list_prim_f_32_strict(
+    List<(PlatformInt64, Float32List)> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_record_i_64_string(
+    List<(PlatformInt64, String)> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_semantic_chunk(
+    List<SemanticChunk> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_String(String? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_rrf_config(
+    RrfConfig? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_parsed_intent(ParsedIntent self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_record_i_64_list_prim_f_32_strict(
+    (PlatformInt64, Float32List) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_record_i_64_string(
+    (PlatformInt64, String) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_rrf_config(RrfConfig self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_semantic_chunk(SemanticChunk self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_source_stats(SourceStats self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_u_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_u_64(BigInt self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_u_8(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_unit(void self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_user_intent(UserIntent self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_usize(BigInt self, SseSerializer serializer);
+}
 
 // Section: wire_class
 
+class RustLibWire implements BaseWire {
+  factory RustLibWire.fromExternalLibrary(ExternalLibrary lib) =>
+      RustLibWire(lib.ffiDynamicLibrary);
 
-        class RustLibWire implements BaseWire {
+  /// Holds the symbol lookup function.
+  final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
+  _lookup;
 
-            factory RustLibWire.fromExternalLibrary(ExternalLibrary lib) =>
-              RustLibWire(lib.ffiDynamicLibrary);
-        
-            /// Holds the symbol lookup function.
-            final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
-                _lookup;
-  
-            /// The symbols are looked up in [dynamicLibrary].
-            RustLibWire(ffi.DynamicLibrary dynamicLibrary)
-                : _lookup = dynamicLibrary.lookup;
-
-            
-        }
-        
+  /// The symbols are looked up in [dynamicLibrary].
+  RustLibWire(ffi.DynamicLibrary dynamicLibrary)
+    : _lookup = dynamicLibrary.lookup;
+}

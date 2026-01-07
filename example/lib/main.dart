@@ -1,5 +1,5 @@
 // example/lib/main.dart
-// 
+//
 // Simple example demonstrating Mobile RAG Engine usage
 //
 import 'dart:io';
@@ -26,10 +26,7 @@ class ExampleApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Mobile RAG Engine Example',
-      theme: ThemeData(
-        colorSchemeSeed: Colors.blue,
-        useMaterial3: true,
-      ),
+      theme: ThemeData(colorSchemeSeed: Colors.blue, useMaterial3: true),
       home: const RagExampleScreen(),
     );
   }
@@ -47,7 +44,7 @@ class _RagExampleScreenState extends State<RagExampleScreen> {
   String _dbPath = '';
   bool _isReady = false;
   bool _isLoading = false;
-  
+
   final _queryController = TextEditingController();
   List<String> _results = [];
 
@@ -66,23 +63,23 @@ class _RagExampleScreenState extends State<RagExampleScreen> {
     try {
       final dir = await getApplicationDocumentsDirectory();
       _dbPath = '${dir.path}/example_rag.db';
-      
+
       // 1. Copy and initialize tokenizer
       final tokenizerPath = '${dir.path}/tokenizer.json';
       await _copyAsset('assets/tokenizer.json', tokenizerPath);
       await initTokenizer(tokenizerPath: tokenizerPath);
-      
+
       // 2. Load ONNX model
       setState(() => _status = 'Loading ONNX model...');
       final modelBytes = await rootBundle.load('assets/model.onnx');
       await EmbeddingService.init(modelBytes.buffer.asUint8List());
-      
+
       // 3. Initialize database
       await initDb(dbPath: _dbPath);
-      
+
       // 4. Add sample documents
       await _addSampleDocuments();
-      
+
       setState(() {
         _isReady = true;
         _isLoading = false;
@@ -98,10 +95,9 @@ class _RagExampleScreenState extends State<RagExampleScreen> {
 
   Future<void> _copyAsset(String assetPath, String targetPath) async {
     final file = File(targetPath);
-    if (!await file.exists()) {
-      final data = await rootBundle.load(assetPath);
-      await file.writeAsBytes(data.buffer.asUint8List());
-    }
+    // Always overwrite to ensure latest assets are used
+    final data = await rootBundle.load(assetPath);
+    await file.writeAsBytes(data.buffer.asUint8List());
   }
 
   Future<void> _addSampleDocuments() async {
@@ -118,7 +114,7 @@ class _RagExampleScreenState extends State<RagExampleScreen> {
       final embedding = await EmbeddingService.embed(doc);
       await addDocument(dbPath: _dbPath, content: doc, embedding: embedding);
     }
-    
+
     // Rebuild HNSW index after bulk insert
     await rebuildHnswIndex(dbPath: _dbPath);
   }
@@ -188,9 +184,9 @@ class _RagExampleScreenState extends State<RagExampleScreen> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Search input
             TextField(
               controller: _queryController,
@@ -202,23 +198,20 @@ class _RagExampleScreenState extends State<RagExampleScreen> {
               enabled: _isReady,
               onSubmitted: (_) => _search(),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             ElevatedButton.icon(
               onPressed: _isReady && !_isLoading ? _search : null,
               icon: const Icon(Icons.search),
               label: const Text('Search'),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Results
             if (_results.isNotEmpty) ...[
-              Text(
-                'Results:',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+              Text('Results:', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               Expanded(
                 child: ListView.builder(

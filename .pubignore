@@ -1,0 +1,38 @@
+# 별도 프로젝트/앱 (패키지에 포함 안됨)
+test_app/
+local-gemma-macos/
+
+# 개발용 파일
+docs/
+fix/
+patch_notes/
+scripts/
+bge-m3-temp/
+
+# 환경 파일
+.venv/
+*.env
+.env
+
+# 빌드 산출물
+build/
+platform-build/
+rust/target/
+
+# 대용량 모델 파일 (사용자가 직접 다운로드)
+assets/bge-m3-int8.onnx
+assets/bge-m3-tokenizer.json
+
+# IDE 및 기타
+.idea/
+*.iml
+.DS_Store
+.dart_tool/
+.flutter-plugins-dependencies
+
+# 개발 문서
+refrag-develop.md
+
+# 테스트 드라이버
+test_driver/
+integration_test/
