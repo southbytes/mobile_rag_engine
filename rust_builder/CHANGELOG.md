@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0
+
+- **Fix package structure**: Include rust/ directory in package for correct pub.dev distribution
+- Update platform build configs (iOS, macOS, Android, Linux, Windows) to reference internal rust/ path
+
 ## 0.1.0
 
 - Initial release
