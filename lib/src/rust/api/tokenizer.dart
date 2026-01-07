@@ -6,21 +6,20 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-
-            
-
-            /// Initialize tokenizer with tokenizer.json file path
-Future<void>  initTokenizer({required String tokenizerPath }) => RustLib.instance.api.crateApiTokenizerInitTokenizer(tokenizerPath: tokenizerPath);
+/// Initialize tokenizer with tokenizer.json file path
+Future<void> initTokenizer({required String tokenizerPath}) => RustLib
+    .instance
+    .api
+    .crateApiTokenizerInitTokenizer(tokenizerPath: tokenizerPath);
 
 /// Tokenize text (returns token IDs)
 /// add_special_tokens=true to include CLS/SEP tokens
-Uint32List  tokenize({required String text }) => RustLib.instance.api.crateApiTokenizerTokenize(text: text);
+Uint32List tokenize({required String text}) =>
+    RustLib.instance.api.crateApiTokenizerTokenize(text: text);
 
 /// Decode token IDs to text
-String  decodeTokens({required List<int> tokenIds }) => RustLib.instance.api.crateApiTokenizerDecodeTokens(tokenIds: tokenIds);
+String decodeTokens({required List<int> tokenIds}) =>
+    RustLib.instance.api.crateApiTokenizerDecodeTokens(tokenIds: tokenIds);
 
 /// Get tokenizer info (vocab size, etc.)
-int  getVocabSize() => RustLib.instance.api.crateApiTokenizerGetVocabSize();
-
-            
-            
+int getVocabSize() => RustLib.instance.api.crateApiTokenizerGetVocabSize();

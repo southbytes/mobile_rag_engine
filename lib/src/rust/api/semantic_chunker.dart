@@ -6,13 +6,11 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-
-            // These functions are ignored because they are not marked as `pub`: `is_article_title`, `split_by_article_titles`
+// These functions are ignored because they are not marked as `pub`: `is_article_title`, `split_by_article_titles`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `eq`, `fmt`, `fmt`
 
-
-            /// Classify a chunk based on its content using rule-based patterns.
-/// 
+/// Classify a chunk based on its content using rule-based patterns.
+///
 /// Strategy (in order of priority):
 /// 1. List patterns (bullet points, numbered items)
 /// 2. Definition patterns (formal definitions)
@@ -20,92 +18,122 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 /// 4. Procedure patterns (step-by-step)
 /// 5. Comparison patterns
 /// 6. Default to General
-ChunkType  classifyChunk({required String text }) => RustLib.instance.api.crateApiSemanticChunkerClassifyChunk(text: text);
+ChunkType classifyChunk({required String text}) =>
+    RustLib.instance.api.crateApiSemanticChunkerClassifyChunk(text: text);
 
 /// Split text into semantic chunks using paragraph boundaries first.
-/// 
+///
 /// Strategy:
 /// 1. First split by double newlines (\n\n) - paragraph boundaries
 /// 2. If a paragraph is too long, split by single newlines (\n)
 /// 3. If still too long, use text-splitter for Unicode sentence/word boundaries
-/// 
+///
 /// This approach works better for Korean and other languages where
 /// newlines often indicate logical section boundaries.
-/// 
+///
 /// # Arguments
 /// * `text` - The text to chunk
 /// * `max_chars` - Maximum characters per chunk (soft limit, may exceed slightly to preserve sentence)
-/// 
+///
 /// # Returns
 /// Vector of SemanticChunk with complete paragraphs/sentences/words
-List<SemanticChunk>  semanticChunk({required String text , required int maxChars }) => RustLib.instance.api.crateApiSemanticChunkerSemanticChunk(text: text, maxChars: maxChars);
+List<SemanticChunk> semanticChunk({
+  required String text,
+  required int maxChars,
+}) => RustLib.instance.api.crateApiSemanticChunkerSemanticChunk(
+  text: text,
+  maxChars: maxChars,
+);
 
 /// Split text with overlap for RAG context continuity.
-/// 
+///
 /// Similar to `semantic_chunk` but ensures overlap between chunks
 /// for better context retrieval.
-/// 
+///
 /// # Arguments
 /// * `text` - The text to chunk
 /// * `max_chars` - Maximum characters per chunk
 /// * `overlap_chars` - Target overlap between consecutive chunks (not used in paragraph mode, kept for API compatibility)
-List<SemanticChunk>  semanticChunkWithOverlap({required String text , required int maxChars , required int overlapChars }) => RustLib.instance.api.crateApiSemanticChunkerSemanticChunkWithOverlap(text: text, maxChars: maxChars, overlapChars: overlapChars);
+List<SemanticChunk> semanticChunkWithOverlap({
+  required String text,
+  required int maxChars,
+  required int overlapChars,
+}) => RustLib.instance.api.crateApiSemanticChunkerSemanticChunkWithOverlap(
+  text: text,
+  maxChars: maxChars,
+  overlapChars: overlapChars,
+);
 
-            /// Type classification for a chunk based on content analysis.
+/// Type classification for a chunk based on content analysis.
 enum ChunkType {
-                    /// Definition or overview content
-definition,
-/// Example or illustration
-example,
-/// Bulleted or numbered list
-list,
-/// Procedure or step-by-step instructions
-procedure,
-/// Comparison between items
-comparison,
-/// General content (default)
-general,
-                    ;
-                    /// Convert to string for database storage.
- Future<void>  asStr()=>RustLib.instance.api.crateApiSemanticChunkerChunkTypeAsStr(that: this, );
+  /// Definition or overview content
+  definition,
 
+  /// Example or illustration
+  example,
 
-/// Parse from string (database retrieval).
-static Future<ChunkType>  fromStr({required String s })=>RustLib.instance.api.crateApiSemanticChunkerChunkTypeFromStr(s: s);
+  /// Bulleted or numbered list
+  list,
 
+  /// Procedure or step-by-step instructions
+  procedure,
 
-                }
+  /// Comparison between items
+  comparison,
+
+  /// General content (default)
+  general;
+
+  /// Convert to string for database storage.
+  Future<void> asStr() =>
+      RustLib.instance.api.crateApiSemanticChunkerChunkTypeAsStr(that: this);
+
+  /// Parse from string (database retrieval).
+  static Future<ChunkType> fromStr({required String s}) =>
+      RustLib.instance.api.crateApiSemanticChunkerChunkTypeFromStr(s: s);
+}
 
 /// Result of semantic chunking operation.
-class SemanticChunk  {
-                /// Index of this chunk (0-based).
-final int index;
-/// The chunk content (complete sentences/words, never cut mid-word).
-final String content;
-/// Approximate character position where this chunk starts.
-final int startPos;
-/// Approximate character position where this chunk ends.
-final int endPos;
-/// Classification type of this chunk.
-final String chunkType;
+class SemanticChunk {
+  /// Index of this chunk (0-based).
+  final int index;
 
-                const SemanticChunk({required this.index ,required this.content ,required this.startPos ,required this.endPos ,required this.chunkType ,});
+  /// The chunk content (complete sentences/words, never cut mid-word).
+  final String content;
 
-                
-                
+  /// Approximate character position where this chunk starts.
+  final int startPos;
 
-                
-        @override
-        int get hashCode => index.hashCode^content.hashCode^startPos.hashCode^endPos.hashCode^chunkType.hashCode;
-        
+  /// Approximate character position where this chunk ends.
+  final int endPos;
 
-                
-        @override
-        bool operator ==(Object other) =>
-            identical(this, other) ||
-            other is SemanticChunk &&
-                runtimeType == other.runtimeType
-                && index == other.index&& content == other.content&& startPos == other.startPos&& endPos == other.endPos&& chunkType == other.chunkType;
-        
-            }
-            
+  /// Classification type of this chunk.
+  final String chunkType;
+
+  const SemanticChunk({
+    required this.index,
+    required this.content,
+    required this.startPos,
+    required this.endPos,
+    required this.chunkType,
+  });
+
+  @override
+  int get hashCode =>
+      index.hashCode ^
+      content.hashCode ^
+      startPos.hashCode ^
+      endPos.hashCode ^
+      chunkType.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SemanticChunk &&
+          runtimeType == other.runtimeType &&
+          index == other.index &&
+          content == other.content &&
+          startPos == other.startPos &&
+          endPos == other.endPos &&
+          chunkType == other.chunkType;
+}

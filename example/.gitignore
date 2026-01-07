@@ -1,8 +1,3 @@
-# Environment files (secrets)
-.env
-*.env
-**/.env
-
 # Miscellaneous
 *.class
 *.log
@@ -48,31 +43,3 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-# Platform specific
-/windows/
-/web/
-/linux/
-/macos/
-
-# docs
-# docs/
-# fix/
-
-# test_app/
-platform-build/
-
-# Large embedding models (download via download_models.sh)
-assets/bge-m3-int8.onnx
-assets/bge-m3-tokenizer.json
-**/assets/bge-m3-int8.onnx
-**/assets/bge-m3-tokenizer.json
-
-# Python venv
-.venv/
-bge-m3-temp/
-
-# Example app assets (too large for git, use download_models.sh)
-example/assets/model.onnx
-example/assets/tokenizer.json
-docs/
