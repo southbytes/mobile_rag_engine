@@ -284,17 +284,17 @@ mod tests {
     }
 
     #[test]
-    fn test_bm25_korean() {
+    fn test_bm25_fruits() {
         let mut index = InvertedIndex::new();
         
-        index.add_document(1, "사과는 맛있는 과일입니다");
-        index.add_document(2, "바나나는 노란색 과일입니다");
-        index.add_document(3, "사과와 바나나로 만든 샐러드");
+        index.add_document(1, "Apple is a delicious fruit");
+        index.add_document(2, "Banana is a yellow fruit");
+        index.add_document(3, "Salad made with apple and banana");
         
-        let results = index.search("사과", 10);
+        let results = index.search("apple", 10);
         
         assert!(!results.is_empty());
-        // Documents 1 and 3 contain "사과"
+        // Documents 1 and 3 contain "apple"
         assert!(results.iter().any(|(id, _)| *id == 1));
         assert!(results.iter().any(|(id, _)| *id == 3));
     }

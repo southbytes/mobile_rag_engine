@@ -40,10 +40,10 @@ refrag-develop.md
 test_driver/
 integration_test/
 
-# 플랫폼별 디렉토리 (rust_builder에서 제공)
-android/
-ios/
-linux/
-macos/
-windows/
-web/
+# 플랫폼별 디렉토리 (rust_builder에서 제공, 루트 레벨만 제외)
+/android/
+/ios/
+/linux/
+/macos/
+/windows/
+/web/

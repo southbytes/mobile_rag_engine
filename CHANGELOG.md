@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.3.5
+- Globalization: Removed all Korean text and logic, replaced with English.
+- Updated prompt builder and semantic chunker for better international support.
+- Updated default language settings to English.
+
+## 0.3.4
+
+- Fix model download URLs in README (use correct Teradata/bge-m3 and BAAI/bge-m3 sources)
+- Add production model deployment strategies guide
+
+## 0.3.3
+
+- Improve README with Quick Start guide and model download instructions
+- Update to pub.dev dependency instead of git
+
+## 0.3.2
+
+- Update `rag_engine_flutter` dependency to `^0.3.0` (fixes platform directory issue)
+
 ## [0.3.1] - 2026-01-08
 
 ### Fixed

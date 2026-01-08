@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+
+- **Fix platform directories missing**: Include ios/, android/, macos/, linux/, windows/ in package
+- Add .pubignore to prevent parent ignore rules from excluding platform configs
+
 ## 0.2.0
 
 - **Fix package structure**: Include rust/ directory in package for correct pub.dev distribution

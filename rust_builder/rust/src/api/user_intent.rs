@@ -78,12 +78,12 @@ pub fn parse_user_intent(input: &str) -> UserIntent {
     let argument = parts.get(1).map(|s| s.trim()).unwrap_or("");
     
     match command.as_str() {
-        "/summary" | "/요약" => {
+        "/summary" => {
             UserIntent::Summary {
                 query: argument.to_string(),
             }
         }
-        "/define" | "/정의" => {
+        "/define" => {
             if argument.is_empty() {
                 UserIntent::InvalidCommand {
                     command: command.to_string(),
@@ -95,7 +95,7 @@ pub fn parse_user_intent(input: &str) -> UserIntent {
                 }
             }
         }
-        "/more" | "/확장" => {
+        "/more" => {
             UserIntent::ExpandKnowledge {
                 query: argument.to_string(),
             }
@@ -163,30 +163,17 @@ mod tests {
     use super::*;
     
     #[test]
-    fn test_parse_general_query() {
-        let intent = parse_user_intent("비트코인이란 무엇인가요?");
-        assert!(matches!(intent, UserIntent::General { .. }));
-        assert_eq!(intent.get_query(), "비트코인이란 무엇인가요?");
-    }
-    
-    #[test]
     fn test_parse_summary_command() {
-        let intent = parse_user_intent("/summary RWA에 대해");
+        let intent = parse_user_intent("/summary about RWA");
         assert!(matches!(intent, UserIntent::Summary { .. }));
-        assert_eq!(intent.get_query(), "RWA에 대해");
-    }
-    
-    #[test]
-    fn test_parse_summary_korean() {
-        let intent = parse_user_intent("/요약 블록체인 기술");
-        assert!(matches!(intent, UserIntent::Summary { .. }));
+        assert_eq!(intent.get_query(), "about RWA");
     }
     
     #[test]
     fn test_parse_define_command() {
-        let intent = parse_user_intent("/define 스마트 컨트랙트");
+        let intent = parse_user_intent("/define smart contract");
         assert!(matches!(intent, UserIntent::Define { .. }));
-        assert_eq!(intent.get_query(), "스마트 컨트랙트");
+        assert_eq!(intent.get_query(), "smart contract");
     }
     
     #[test]
@@ -197,9 +184,9 @@ mod tests {
     
     #[test]
     fn test_parse_more_command() {
-        let intent = parse_user_intent("/more 트레이딩 전략");
+        let intent = parse_user_intent("/more trading strategies");
         assert!(matches!(intent, UserIntent::ExpandKnowledge { .. }));
-        assert_eq!(intent.get_query(), "트레이딩 전략");
+        assert_eq!(intent.get_query(), "trading strategies");
     }
     
     #[test]

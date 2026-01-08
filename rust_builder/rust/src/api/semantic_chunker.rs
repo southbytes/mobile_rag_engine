@@ -79,13 +79,8 @@ pub fn classify_chunk(text: &str) -> ChunkType {
         return ChunkType::List;
     }
     
-    // 2. Definition patterns (Korean & English)
+    // 2. Definition patterns (English default)
     let definition_patterns = [
-        // Korean
-        "이란", "이라 함은", "을 말한다", "를 말한다",
-        "를 의미한다", "을 의미한다", "으로 정의된다", "로 정의된다",
-        "이다.", "(은)는 ", "(이)란",
-        // English
         "is defined as", "refers to", "means that", "is a type of",
         "can be defined as", "is known as",
     ];
@@ -97,9 +92,6 @@ pub fn classify_chunk(text: &str) -> ChunkType {
     
     // 3. Example patterns
     let example_patterns = [
-        // Korean
-        "예를 들어", "예시:", "예:", "예를 들면", "사례:", "사례로",
-        // English
         "for example", "e.g.", "for instance", "such as", "example:",
     ];
     for pattern in example_patterns {
@@ -110,10 +102,6 @@ pub fn classify_chunk(text: &str) -> ChunkType {
     
     // 4. Procedure patterns
     let procedure_patterns = [
-        // Korean
-        "방법", "단계", "먼저", "그 다음", "그다음", "마지막으로",
-        "첫째", "둘째", "셋째", "1단계", "2단계", "절차",
-        // English
         "step 1", "step 2", "first,", "then,", "finally,",
         "how to", "procedure", "instructions",
     ];
@@ -126,10 +114,6 @@ pub fn classify_chunk(text: &str) -> ChunkType {
     
     // 5. Comparison patterns
     let comparison_patterns = [
-        // Korean
-        "반면", "차이점", "비교하면", "대비", "와 달리", "과 달리",
-        "보다 더", "에 비해", "비교 분석",
-        // English
         "vs", "versus", "compared to", "in contrast", "on the other hand",
         "differs from", "difference between",
     ];
@@ -193,11 +177,7 @@ pub fn semantic_chunk(text: String, max_chars: i32) -> Vec<SemanticChunk> {
             continue;
         }
         
-        // Step 2: Further split by article title patterns (Korean legal docs)
-        // Pattern: "제X조" or "제 X 조" at start of line
-        let split_chunks = split_by_article_titles(para_trimmed);
-        
-        for sub_para in split_chunks {
+        for sub_para in vec![para_trimmed.to_string()] {
             if sub_para.is_empty() {
                 continue;
             }
@@ -302,53 +282,14 @@ pub fn semantic_chunk(text: String, max_chars: i32) -> Vec<SemanticChunk> {
     chunks
 }
 
-/// Check if a line starts with Korean article title pattern
-fn is_article_title(line: &str) -> bool {
-    let trimmed = line.trim();
-    // Pattern: "제X조" or "제 X 조" or "제X장" etc.
-    if trimmed.starts_with("제") {
-        // Check for patterns like "제1조", "제 1 조", "제1장", "제 1 장"
-        let chars: Vec<char> = trimmed.chars().collect();
-        if chars.len() >= 3 {
-            // "제X조" pattern (compact)
-            if chars.get(1).map_or(false, |c| c.is_numeric()) {
-                return true;
-            }
-            // "제 X 조" pattern (spaced) or "제 1장" etc.
-            if chars.get(1) == Some(&' ') && chars.get(2).map_or(false, |c| c.is_numeric()) {
-                return true;
-            }
-        }
-    }
+/// Stub for article title detection (legacy/multilingual if needed)
+fn is_article_title(_line: &str) -> bool {
     false
 }
 
-/// Split text by article title patterns
+/// Stub for splitting by article titles (legacy/multilingual if needed)
 fn split_by_article_titles(text: &str) -> Vec<String> {
-    let mut result = Vec::new();
-    let mut current = String::new();
-    
-    for line in text.lines() {
-        let trimmed = line.trim();
-        
-        if is_article_title(trimmed) && !current.is_empty() {
-            // Found new article, save current buffer
-            result.push(current.trim().to_string());
-            current = String::new();
-        }
-        
-        if !current.is_empty() {
-            current.push('\n');
-        }
-        current.push_str(line);
-    }
-    
-    // Don't forget the last chunk
-    if !current.is_empty() {
-        result.push(current.trim().to_string());
-    }
-    
-    result
+    vec![text.to_string()]
 }
 
 /// Split text with overlap for RAG context continuity.
@@ -397,11 +338,6 @@ mod tests {
     
     #[test]
     fn test_classify_chunk_definition() {
-        // Korean definition patterns
-        assert_eq!(classify_chunk("비트코인이란 분산형 디지털 화폐이다."), ChunkType::Definition);
-        assert_eq!(classify_chunk("이 용어를 말한다."), ChunkType::Definition);
-        assert_eq!(classify_chunk("프로토콜을 의미한다."), ChunkType::Definition);
-        
         // English definition patterns
         assert_eq!(classify_chunk("A blockchain is defined as a distributed ledger."), ChunkType::Definition);
         assert_eq!(classify_chunk("This term refers to a specific concept."), ChunkType::Definition);
@@ -409,7 +345,7 @@ mod tests {
     
     #[test]
     fn test_classify_chunk_list() {
-        let list_text = "다음은 주요 특징입니다:\n• 분산화\n• 투명성\n• 불변성";
+        let list_text = "Following are the key features:\n• Decentralization\n• Transparency\n• Immutability";
         assert_eq!(classify_chunk(list_text), ChunkType::List);
         
         let numbered_list = "Steps:\n1. First step\n2. Second step\n3. Third step";
@@ -418,25 +354,24 @@ mod tests {
     
     #[test]
     fn test_classify_chunk_example() {
-        assert_eq!(classify_chunk("예를 들어, 비트코인의 경우..."), ChunkType::Example);
         assert_eq!(classify_chunk("For example, consider the following case."), ChunkType::Example);
     }
     
     #[test]
     fn test_classify_chunk_procedure() {
-        let procedure = "먼저 계정을 생성하세요. 그 다음 지갑을 연결합니다.";
+        let procedure = "First create an account. Then connect your wallet.";
         assert_eq!(classify_chunk(procedure), ChunkType::Procedure);
     }
     
     #[test]
     fn test_classify_chunk_comparison() {
-        assert_eq!(classify_chunk("비트코인과 이더리움의 차이점은..."), ChunkType::Comparison);
+        assert_eq!(classify_chunk("The difference between Apple and Banana is..."), ChunkType::Comparison);
         assert_eq!(classify_chunk("In contrast to traditional systems..."), ChunkType::Comparison);
     }
     
     #[test]
     fn test_classify_chunk_general() {
-        assert_eq!(classify_chunk("오늘 시장이 활발하게 움직였다."), ChunkType::General);
+        assert_eq!(classify_chunk("The market was very active today."), ChunkType::General);
         assert_eq!(classify_chunk("The market showed strong activity today."), ChunkType::General);
     }
     

@@ -1,0 +1,7 @@
+# Override parent .pubignore to include platform directories
+# This file intentionally includes platform-specific build configs
+
+# Only exclude build artifacts
+.dart_tool/
+build/
+rust/target/

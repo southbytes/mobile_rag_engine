@@ -249,19 +249,18 @@ class ContextBuilder {
     final instruction =
         systemInstruction ??
         (useStrictMode
-            ? '아래 문서 내용만을 참고하여 질문에 답변하세요. 문서에 없는 내용은 "문서에서 해당 정보를 찾을 수 없습니다"라고 답변하세요.\n'
-                  'Answer the question based ONLY on the documents below. If the information is not in the documents, say so.'
-            : '아래 문서를 참고하여 답변하세요.\nAnswer based on the following documents:');
+            ? 'Answer the question based ONLY on the documents below. If the information is not in the documents, say "I could not find the information in the provided documents".'
+            : 'Answer based on the following documents:');
 
     return '''$instruction
 
---- 참고 문서 (Reference Documents) ---
+--- Reference Documents ---
 ${context.text}
---- 문서 끝 (End of Documents) ---
+--- End of Documents ---
 
-질문 (Question): $query
+Question: $query
 
-답변:''';
+Answer:''';
   }
 
   /// Build context with REFRAG-style compression.

@@ -24,7 +24,7 @@ impl Default for CompressionOptions {
         Self {
             remove_stopwords: true,
             remove_duplicates: true,
-            language: "ko".to_string(),
+            language: "en".to_string(),
             level: 1,
         }
     }
@@ -50,7 +50,7 @@ pub struct CompressedText {
 }
 
 /// Split text into sentences using Unicode-aware boundaries.
-/// Supports Korean (sentence-ending patterns) and English (period, ?, !).
+/// Supports English (period, ?, !) and other languages.
 pub fn split_sentences(text: String) -> Vec<String> {
     if text.is_empty() {
         return vec![];
@@ -62,8 +62,7 @@ pub fn split_sentences(text: String) -> Vec<String> {
     for ch in text.chars() {
         current.push(ch);
         
-        // Korean sentence endings: 다., 요., 니다., 까?, etc.
-        // English sentence endings: . ? !
+        // Sentence endings: . ? !
         if ch == '.' || ch == '?' || ch == '!' || ch == '。' {
             let trimmed = current.trim().to_string();
             if !trimmed.is_empty() && trimmed.len() > 1 {
@@ -194,15 +193,9 @@ pub fn compress_text_simple(text: String, level: i32) -> String {
 /// Check if text needs compression based on token estimate.
 /// Returns true if estimated tokens exceed threshold.
 pub fn should_compress(text: String, token_threshold: i32) -> bool {
-    // Rough estimate: ~4 chars per token for English, ~2 for Korean
+    // Rough estimate: ~4 chars per token for English
     let char_count = text.chars().count();
-    let has_korean = text.chars().any(|c| c >= '\u{AC00}' && c <= '\u{D7A3}');
-    
-    let estimated_tokens = if has_korean {
-        char_count / 2
-    } else {
-        char_count / 4
-    };
+    let estimated_tokens = char_count / 4;
     
     estimated_tokens > token_threshold as usize
 }
@@ -212,13 +205,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_split_sentences_korean() {
-        let text = "안녕하세요. 반갑습니다! 어떻게 지내세요?".to_string();
+    fn test_split_sentences_multilingual() {
+        let text = "Hello. Nice to meet you! How are you doing?".to_string();
         let sentences = split_sentences(text);
         assert_eq!(sentences.len(), 3);
-        assert_eq!(sentences[0], "안녕하세요.");
-        assert_eq!(sentences[1], "반갑습니다!");
-        assert_eq!(sentences[2], "어떻게 지내세요?");
+        assert_eq!(sentences[0], "Hello.");
+        assert_eq!(sentences[1], "Nice to meet you!");
+        assert_eq!(sentences[2], "How are you doing?");
     }
 
     #[test]
@@ -251,7 +244,7 @@ mod tests {
 
     #[test]
     fn test_compress_text_removes_duplicates() {
-        let text = "첫 번째 문장입니다. 두 번째 문장입니다. 첫 번째 문장입니다.".to_string();
+        let text = "First sentence. Second sentence. First sentence.".to_string();
         let options = CompressionOptions {
             remove_duplicates: true,
             remove_stopwords: false,

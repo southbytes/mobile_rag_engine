@@ -84,42 +84,84 @@ Identical documents caused duplicates in search results. Added SHA256 content ha
 ### 4. ONNX Runtime Thread Safety
 Tried parallel batch embedding, but `onnxruntime`'s `OrtSession` isn't thread-safe. Switched to sequential processing—still fast enough for real-world use since individual embeddings are quick.
 
-## Usage
+## Quick Start
 
-### Installation
+### 1. Install the Package
 
-#### Prerequisites: Rust Environment
+```yaml
+dependencies:
+  mobile_rag_engine: ^0.3.2
+```
 
-This package uses Rust for high-performance tokenization and vector search. **You need to install Rust to build locally.** Once installed, `cargokit` handles the build automatically when you run `flutter run`.
+### 2. Install Rust (Required for Build)
+
+This package uses Rust for high-performance tokenization and vector search.
 
 **macOS / Linux:**
 ```bash
-# Install Rust via rustup
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
 **Windows:**
 ```powershell
-# Download and run rustup-init.exe from https://rustup.rs
-# Or use winget:
 winget install Rustlang.Rustup
 ```
 
-> Required toolchains and targets (iOS/Android) are **automatically installed** by `cargokit` during the first build.
+> Restart your terminal after installation. Required toolchains are auto-installed by `cargokit`.
 
-> **Note**: After installing Rust, restart your terminal/IDE for the changes to take effect.
+### 3. Download Model Files
 
-#### Flutter Dependency
+Download the required model files to your project's `assets/` folder:
+
+```bash
+# Create assets folder if it doesn't exist
+[ ! -d "assets" ] && mkdir assets
+cd assets
+
+# Download BGE-m3 model (INT8 quantized, multilingual)
+curl -L -o model.onnx "https://huggingface.co/Teradata/bge-m3/resolve/main/onnx/model_int8.onnx"
+# 
+curl -L -o tokenizer.json "https://huggingface.co/BAAI/bge-m3/resolve/main/tokenizer.json"
+```
+
+**Alternative models:**
+| Model | Size | Best For |
+|-------|------|----------|
+| [Teradata/bge-m3](https://huggingface.co/Teradata/bge-m3) (INT8) | ~200MB | Multilingual (Korean, English, etc.) |
+| [all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) | ~25MB | English only, faster |
+
+### 4. Update pubspec.yaml
 
 ```yaml
-dependencies:
-  mobile_rag_engine:
-    git:
-      url: https://github.com/dev07060/mobile_rag_engine.git
-  
-  # Required for iOS static library loading
-  flutter_rust_bridge: ^2.0.0
+flutter:
+  assets:
+    - assets/
 ```
+
+### 5. Model Deployment Strategies (Production)
+
+When releasing your app to production, consider these strategies for including ML models:
+
+| Strategy | App Size | Offline Ready | Best For |
+|----------|----------|--------------|----------|
+| **Bundle in Assets** | +200MB | ✅ Immediate | Prototypes, offline-first apps |
+| **Download on First Launch** | ~10MB | After download | Production apps |
+| **On-Demand Resources** | ~10MB | After download | iOS/Android optimized delivery |
+
+**Recommended for production** — Download on first launch:
+
+```dart
+final modelFile = File('${appDir}/model.onnx');
+if (!modelFile.existsSync()) {
+  // Show download progress UI
+  await downloadModel(MODEL_URL, modelFile);
+}
+await EmbeddingService.initFromFile(modelFile.path);
+```
+
+---
+
+## Usage
 
 ### iOS Setup
 
@@ -200,18 +242,16 @@ for (final doc in results) {
 }
 ```
 
-## Required Models
+## Custom Models
 
-You need a Sentence Transformer model in ONNX format.
+To use a different model, export any Sentence Transformer to ONNX:
 
 ```bash
 pip install optimum[exporters]
-optimum-cli export onnx \
-  --model sentence-transformers/all-MiniLM-L6-v2 \
-  ./model_output
+optimum-cli export onnx --model sentence-transformers/YOUR_MODEL ./output
 ```
 
-Add `model_output/model.onnx` and `tokenizer.json` to your app's assets.
+Then use `output/model.onnx` and `output/tokenizer.json` in your assets.
 
 ## Releases
 

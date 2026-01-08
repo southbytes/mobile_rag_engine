@@ -281,7 +281,7 @@ class SourceRagService {
   ) {
     if (results.isEmpty) return results;
 
-    // Extract key phrases from query (look for patterns like "제 X 조 (내용)")
+    // Extract key phrases from query
     final queryLower = query.toLowerCase();
 
     // First: Try to find source that contains the exact query text
