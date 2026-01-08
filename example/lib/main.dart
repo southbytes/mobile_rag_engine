@@ -4,9 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:mobile_rag_engine/mobile_rag_engine.dart';
-import 'package:mobile_rag_engine/src/rust/frb_generated.dart';
-import 'package:mobile_rag_engine/services/embedding_service.dart';
-import 'package:mobile_rag_engine/services/source_rag_service.dart';
 
 import 'screens/benchmark_screen.dart';
 import 'screens/quality_test_screen.dart';

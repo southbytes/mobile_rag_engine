@@ -1,0 +1,35 @@
+PODS:
+  - FlutterMacOS (1.0.0)
+  - onnxruntime_v2 (0.0.1):
+    - FlutterMacOS
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - rag_engine_flutter (0.0.1):
+    - FlutterMacOS
+
+DEPENDENCIES:
+  - FlutterMacOS (from `Flutter/ephemeral`)
+  - onnxruntime_v2 (from `Flutter/ephemeral/.symlinks/plugins/onnxruntime_v2/macos`)
+  - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
+  - rag_engine_flutter (from `Flutter/ephemeral/.symlinks/plugins/rag_engine_flutter/macos`)
+
+EXTERNAL SOURCES:
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+  onnxruntime_v2:
+    :path: Flutter/ephemeral/.symlinks/plugins/onnxruntime_v2/macos
+  path_provider_foundation:
+    :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
+  rag_engine_flutter:
+    :path: Flutter/ephemeral/.symlinks/plugins/rag_engine_flutter/macos
+
+SPEC CHECKSUMS:
+  FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
+  onnxruntime_v2: 6139ce3ad878306be6ceec6a9974891ab1d34658
+  path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
+  rag_engine_flutter: df8f9905ee4a053f3ec3557a83b096c04917e337
+
+PODFILE CHECKSUM: 54d867c82ac51cbd61b565781b9fada492027009
+
+COCOAPODS: 1.16.2

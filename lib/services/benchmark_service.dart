@@ -5,6 +5,15 @@ import 'package:mobile_rag_engine/src/rust/api/simple_rag.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
+/// Benchmark category for grouping results
+enum BenchmarkCategory {
+  /// Rust-powered operations (tokenization, HNSW search)
+  rust,
+
+  /// ONNX Runtime operations (embedding generation)
+  onnx,
+}
+
 /// Benchmark result data class
 class BenchmarkResult {
   final String name;
@@ -12,6 +21,7 @@ class BenchmarkResult {
   final double minMs;
   final double maxMs;
   final int iterations;
+  final BenchmarkCategory category;
 
   BenchmarkResult({
     required this.name,
@@ -19,6 +29,7 @@ class BenchmarkResult {
     required this.minMs,
     required this.maxMs,
     required this.iterations,
+    required this.category,
   });
 
   @override
@@ -51,6 +62,7 @@ class BenchmarkService {
     String name,
     Future<void> Function() fn, {
     int iterations = 10,
+    required BenchmarkCategory category,
   }) async {
     final times = <double>[];
 
@@ -71,43 +83,59 @@ class BenchmarkService {
       minMs: times.first,
       maxMs: times.last,
       iterations: iterations,
+      category: category,
     );
   }
 
-  /// Tokenization benchmark
+  /// Tokenization benchmark (Rust-powered)
   static Future<BenchmarkResult> benchmarkTokenize(
     String text, {
     int iterations = 50,
   }) async {
-    return benchmark('Tokenize (${text.length} chars)', () async {
-      tokenize(text: text);
-    }, iterations: iterations);
+    return benchmark(
+      'Tokenize (${text.length} chars)',
+      () async {
+        tokenize(text: text);
+      },
+      iterations: iterations,
+      category: BenchmarkCategory.rust,
+    );
   }
 
-  /// Embedding generation benchmark
+  /// Embedding generation benchmark (ONNX-powered)
   static Future<BenchmarkResult> benchmarkEmbed(
     String text, {
     int iterations = 10,
   }) async {
-    return benchmark('Embed (${text.length} chars)', () async {
-      await EmbeddingService.embed(text);
-    }, iterations: iterations);
+    return benchmark(
+      'Embed (${text.length} chars)',
+      () async {
+        await EmbeddingService.embed(text);
+      },
+      iterations: iterations,
+      category: BenchmarkCategory.onnx,
+    );
   }
 
-  /// Search benchmark
+  /// Search benchmark (Rust HNSW-powered)
   static Future<BenchmarkResult> benchmarkSearch(
     String dbPath,
     List<double> queryEmbedding,
     int docCount, {
     int iterations = 20,
   }) async {
-    return benchmark('Search ($docCount docs)', () async {
-      await searchSimilar(
-        dbPath: dbPath,
-        queryEmbedding: queryEmbedding,
-        topK: 3,
-      );
-    }, iterations: iterations);
+    return benchmark(
+      'HNSW Search ($docCount docs)',
+      () async {
+        await searchSimilar(
+          dbPath: dbPath,
+          queryEmbedding: queryEmbedding,
+          topK: 3,
+        );
+      },
+      iterations: iterations,
+      category: BenchmarkCategory.rust,
+    );
   }
 
   /// Run full benchmark suite
@@ -158,18 +186,28 @@ class BenchmarkService {
 
     // Sequential embedding (for comparison)
     results.add(
-      await benchmark('Sequential Embed (10 texts)', () async {
-        for (final text in batchTexts) {
-          await EmbeddingService.embed(text);
-        }
-      }, iterations: 3),
+      await benchmark(
+        'Sequential Embed (10 texts)',
+        () async {
+          for (final text in batchTexts) {
+            await EmbeddingService.embed(text);
+          }
+        },
+        iterations: 3,
+        category: BenchmarkCategory.onnx,
+      ),
     );
 
     // Batch embedding
     results.add(
-      await benchmark('Batch Embed (10 texts)', () async {
-        await EmbeddingService.embedBatch(batchTexts, concurrency: 4);
-      }, iterations: 3),
+      await benchmark(
+        'Batch Embed (10 texts)',
+        () async {
+          await EmbeddingService.embedBatch(batchTexts, concurrency: 4);
+        },
+        iterations: 3,
+        category: BenchmarkCategory.onnx,
+      ),
     );
 
     onProgress?.call("Preparing search benchmark...");

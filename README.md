@@ -60,7 +60,7 @@ Data never leaves the user's device. Perfect for privacy-focused apps (journals,
 
 ```yaml
 dependencies:
-  mobile_rag_engine: ^0.3.5
+  mobile_rag_engine: ^0.3.6
 ```
 
 ### 2. Download Model Files
@@ -116,16 +116,16 @@ void main() async {
 
 ## 📊 Benchmarks
 
-Tested on iOS Simulator (Apple Silicon Mac):
+**Rust-powered components** (M3 Pro macOS):
 
-| Operation | Time |
-|:---|:---:|
-| Tokenization (short text) | **0.8ms** |
-| Embedding generation (short) | **4ms** |
-| Embedding generation (long) | **36ms** |
-| HNSW search (100 docs) | **1ms** |
+| Operation | Time | Notes |
+|:---|:---:|:---|
+| **Tokenization** (234 chars) | **0.04ms** | HuggingFace `tokenizers` crate |
+| **HNSW Search** (100 docs) | **0.3ms** | `instant-distance` (O(log n)) |
 
-> Real-time search is feasible even with large document sets (**10,000+ documents**).
+> These are the components where Rust provides **10-100x speedup** over pure Dart implementations.
+>
+> Embedding generation uses ONNX Runtime (platform-dependent, typically 25-100ms per text).
 
 ---
 

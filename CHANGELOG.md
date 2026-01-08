@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.3.6
+
+### Changed
+- **ONNX Runtime Upgrade**: Migrated from `onnxruntime` to `onnxruntime_v2` (v1.23.2) with optional GPU acceleration support
+- **README Remake**: Completely redesigned README with "No Rust Installation Required" emphasis, accurate benchmarks, and Mermaid architecture diagram
+- **Benchmark UI Overhaul**: Visual separation of Rust-powered (fast) vs ONNX (standard) operations with category headers and icons
+
+### Added
+- **GPU Acceleration Option**: `EmbeddingService.init()` now accepts `useGpuAcceleration` parameter (CoreML/NNAPI support, disabled by default)
+- **macOS Support for Example App**: Example app now supports macOS platform
+- **Benchmark Categories**: Results now grouped by `BenchmarkCategory.rust` and `BenchmarkCategory.onnx`
+
+### Fixed
+- **Pub Point Warning**: Removed non-existent `assets/` directory reference from pubspec.yaml
+- **Static Analysis**: Fixed all lint issues (unnecessary imports, avoid_print, curly braces)
+
 ## 0.3.5
 - Globalization: Removed all Korean text and logic, replaced with English.
 - Updated prompt builder and semantic chunker for better international support.

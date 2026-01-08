@@ -1,6 +1,6 @@
 // lib/services/embedding_service.dart
 import 'dart:typed_data';
-import 'package:onnxruntime/onnxruntime.dart';
+import 'package:onnxruntime_v2/onnxruntime_v2.dart';
 import 'package:mobile_rag_engine/src/rust/api/tokenizer.dart';
 
 /// Dart-based embedding service
@@ -11,10 +11,26 @@ class EmbeddingService {
   /// Debug mode flag
   static bool debugMode = false;
 
-  /// Initialize ONNX model
-  static Future<void> init(Uint8List modelBytes) async {
+  /// Initialize ONNX model with optional GPU acceleration
+  ///
+  /// [useGpuAcceleration]: Enable CoreML (iOS/macOS) or NNAPI (Android) acceleration.
+  /// Note: Some models (e.g., BGE-m3) may run slower with GPU acceleration due to
+  /// model conversion overhead. Test with your specific model before enabling.
+  static Future<void> init(
+    Uint8List modelBytes, {
+    bool useGpuAcceleration = false,
+  }) async {
     OrtEnv.instance.init();
     final sessionOptions = OrtSessionOptions();
+
+    if (useGpuAcceleration) {
+      // Auto-select best available provider:
+      // iOS/macOS: CoreML (Neural Engine)
+      // Android: NNAPI
+      // Fallback: CPU
+      sessionOptions.appendDefaultProviders();
+    }
+
     _session = OrtSession.fromBuffer(modelBytes, sessionOptions);
   }
 
