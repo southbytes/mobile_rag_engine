@@ -1,233 +1,379 @@
-// example/lib/main.dart
-//
-// Simple example demonstrating Mobile RAG Engine usage
-//
+// lib/main.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-
-// Import from mobile_rag_engine package
-import 'package:mobile_rag_engine/src/rust/api/simple_rag.dart';
-import 'package:mobile_rag_engine/src/rust/api/tokenizer.dart';
+import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 import 'package:mobile_rag_engine/src/rust/frb_generated.dart';
 import 'package:mobile_rag_engine/services/embedding_service.dart';
+import 'package:mobile_rag_engine/services/source_rag_service.dart';
 
-void main() async {
+import 'screens/benchmark_screen.dart';
+import 'screens/quality_test_screen.dart';
+import 'screens/chunking_test_screen.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await RustLib.init();
-  runApp(const ExampleApp());
+  runApp(const MyApp());
 }
 
-class ExampleApp extends StatelessWidget {
-  const ExampleApp({super.key});
-
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Mobile RAG Engine Example',
-      theme: ThemeData(colorSchemeSeed: Colors.blue, useMaterial3: true),
-      home: const RagExampleScreen(),
-    );
-  }
+  State<MyApp> createState() => _MyAppState();
 }
 
-class RagExampleScreen extends StatefulWidget {
-  const RagExampleScreen({super.key});
-
-  @override
-  State<RagExampleScreen> createState() => _RagExampleScreenState();
-}
-
-class _RagExampleScreenState extends State<RagExampleScreen> {
-  String _status = 'Not initialized';
-  String _dbPath = '';
+class _MyAppState extends State<MyApp> {
+  String _status = "Initializing...";
+  String _dbPath = "";
   bool _isReady = false;
   bool _isLoading = false;
+  SourceRagService? _ragService;
 
-  final _queryController = TextEditingController();
-  List<String> _results = [];
+  final TextEditingController _docController = TextEditingController();
+  final TextEditingController _queryController = TextEditingController();
+  List<String> _searchResults = [];
 
   @override
   void initState() {
     super.initState();
-    _initialize();
+    _setup();
   }
 
-  Future<void> _initialize() async {
+  Future<void> _setup() async {
     setState(() {
+      _status = "Copying files...";
       _isLoading = true;
-      _status = 'Initializing...';
     });
 
     try {
       final dir = await getApplicationDocumentsDirectory();
-      _dbPath = '${dir.path}/example_rag.db';
+      _dbPath = "${dir.path}/rag_db.sqlite";
+      final tokenizerPath = "${dir.path}/tokenizer.json";
 
       // 1. Copy and initialize tokenizer
-      final tokenizerPath = '${dir.path}/tokenizer.json';
-      await _copyAsset('assets/tokenizer.json', tokenizerPath);
+      await _copyAssetToFile('assets/tokenizer.json', tokenizerPath);
       await initTokenizer(tokenizerPath: tokenizerPath);
+      final vocabSize = getVocabSize();
+      setState(() => _status = "Tokenizer loaded (Vocab: $vocabSize)");
 
-      // 2. Load ONNX model
-      setState(() => _status = 'Loading ONNX model...');
+      // 2. Load ONNX model (Flutter onnxruntime)
+      setState(() => _status = "Loading ONNX model (90MB)...");
       final modelBytes = await rootBundle.load('assets/model.onnx');
       await EmbeddingService.init(modelBytes.buffer.asUint8List());
+      setState(() => _status = "ONNX model loaded!");
 
-      // 3. Initialize database
-      await initDb(dbPath: _dbPath);
+      // 3. Initialize Source RAG Service (with chunking support)
+      _ragService = SourceRagService(dbPath: _dbPath);
+      await _ragService!.init();
+      setState(() => _status = "Source RAG DB initialized");
 
-      // 4. Add sample documents
-      await _addSampleDocuments();
-
+      _isReady = true;
       setState(() {
-        _isReady = true;
+        _status = "✅ Ready!\nVocab: $vocabSize | Embedding: 384 dims";
         _isLoading = false;
-        _status = 'Ready! Try searching.';
       });
+    } catch (e, st) {
+      setState(() {
+        _status = "❌ Init error: $e\n$st";
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _copyAssetToFile(String assetPath, String filePath) async {
+    final file = File(filePath);
+    if (!await file.exists()) {
+      final data = await rootBundle.load(assetPath);
+      await file.writeAsBytes(data.buffer.asUint8List());
+    }
+  }
+
+  /// Save document: text -> chunking -> embedding -> DB storage
+  Future<void> _saveDocument() async {
+    final text = _docController.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+      _status = "Processing document (chunking + embedding)...";
+    });
+
+    try {
+      // Add source with automatic chunking and embedding
+      final result = await _ragService!.addSourceWithChunking(
+        text,
+        onProgress: (done, total) {
+          setState(() => _status = "Embedding chunks: $done/$total");
+        },
+      );
+
+      if (result.isDuplicate) {
+        setState(() {
+          _status =
+              "⚠️ Duplicate detected!\nDocument already exists in database.";
+          _isLoading = false;
+        });
+      } else {
+        // Rebuild HNSW index after adding
+        await _ragService!.rebuildIndex();
+
+        setState(() {
+          _status =
+              "✅ Saved!\n"
+              "📄 Source ID: ${result.sourceId}\n"
+              "📦 Chunks created: ${result.chunkCount}\n"
+              "(Each chunk ~500 chars with 50 char overlap)";
+          _isLoading = false;
+        });
+        _docController.clear();
+      }
     } catch (e) {
       setState(() {
+        _status = "❌ Save error: $e";
         _isLoading = false;
-        _status = 'Error: $e';
       });
     }
   }
 
-  Future<void> _copyAsset(String assetPath, String targetPath) async {
-    final file = File(targetPath);
-    // Always overwrite to ensure latest assets are used
-    final data = await rootBundle.load(assetPath);
-    await file.writeAsBytes(data.buffer.asUint8List());
-  }
-
-  Future<void> _addSampleDocuments() async {
-    final samples = [
-      'Apple is a red fruit that is sweet and crunchy.',
-      'Banana is a yellow tropical fruit rich in potassium.',
-      'Tesla is an electric vehicle company founded by Elon Musk.',
-      'Google is a technology company known for its search engine.',
-      'Python is a programming language popular for data science.',
-      'The Great Wall of China is one of the Seven Wonders of the World.',
-    ];
-
-    for (final doc in samples) {
-      final embedding = await EmbeddingService.embed(doc);
-      await addDocument(dbPath: _dbPath, content: doc, embedding: embedding);
-    }
-
-    // Rebuild HNSW index after bulk insert
-    await rebuildHnswIndex(dbPath: _dbPath);
-  }
-
-  Future<void> _search() async {
+  /// Search: query -> embedding -> chunk similarity search
+  Future<void> _searchDocuments() async {
     final query = _queryController.text.trim();
     if (query.isEmpty) return;
 
     setState(() {
       _isLoading = true;
-      _status = 'Searching...';
+      _status = "Searching chunks...";
     });
 
     try {
-      final queryEmbedding = await EmbeddingService.embed(query);
-      final results = await searchSimilar(
-        dbPath: _dbPath,
-        queryEmbedding: queryEmbedding,
-        topK: 3,
+      // Search using SourceRagService (searches chunks, not full documents)
+      final ragResult = await _ragService!.search(
+        query,
+        topK: 5,
+        tokenBudget: 2000,
       );
 
+      // Extract chunk contents for display
+      final results = ragResult.chunks.map((c) => c.content).toList();
+
       setState(() {
-        _results = results;
+        _searchResults = results;
+        _status =
+            "✅ Search complete!\n"
+            "Found ${ragResult.chunks.length} relevant chunks\n"
+            "Context: ${ragResult.context.estimatedTokens} tokens used";
         _isLoading = false;
-        _status = 'Found ${results.length} results';
       });
     } catch (e) {
       setState(() {
+        _status = "❌ Search error: $e";
         _isLoading = false;
-        _status = 'Search error: $e';
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('RAG Engine Example'),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Status
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    if (_isLoading)
-                      const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    else
-                      Icon(
-                        _isReady ? Icons.check_circle : Icons.info,
-                        color: _isReady ? Colors.green : Colors.grey,
-                      ),
-                    const SizedBox(width: 12),
-                    Expanded(child: Text(_status)),
-                  ],
-                ),
+    return MaterialApp(
+      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.blue),
+      home: Builder(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: const Text('🔍 Local RAG Engine'),
+            centerTitle: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.auto_awesome),
+                tooltip: 'Chunking Test',
+                onPressed: _isReady
+                    ? () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const ChunkingTestScreen(),
+                          ),
+                        );
+                      }
+                    : null,
               ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Search input
-            TextField(
-              controller: _queryController,
-              decoration: const InputDecoration(
-                labelText: 'Search Query',
-                hintText: 'e.g., "fruit" or "technology company"',
-                border: OutlineInputBorder(),
+              IconButton(
+                icon: const Icon(Icons.speed),
+                tooltip: 'Benchmark',
+                onPressed: _isReady
+                    ? () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const BenchmarkScreen(),
+                          ),
+                        );
+                      }
+                    : null,
               ),
-              enabled: _isReady,
-              onSubmitted: (_) => _search(),
-            ),
-
-            const SizedBox(height: 12),
-
-            ElevatedButton.icon(
-              onPressed: _isReady && !_isLoading ? _search : null,
-              icon: const Icon(Icons.search),
-              label: const Text('Search'),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Results
-            if (_results.isNotEmpty) ...[
-              Text('Results:', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _results.length,
-                  itemBuilder: (context, index) {
-                    return Card(
-                      child: ListTile(
-                        leading: CircleAvatar(child: Text('${index + 1}')),
-                        title: Text(_results[index]),
-                      ),
-                    );
-                  },
-                ),
+              IconButton(
+                icon: const Icon(Icons.checklist),
+                tooltip: 'Quality Test',
+                onPressed: _isReady
+                    ? () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const QualityTestScreen(),
+                          ),
+                        );
+                      }
+                    : null,
               ),
             ],
-          ],
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Status display
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      children: [
+                        if (_isLoading)
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        else
+                          Icon(
+                            _isReady ? Icons.check_circle : Icons.error,
+                            color: _isReady ? Colors.green : Colors.red,
+                          ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _status,
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Document save section
+                const Text(
+                  '📄 Save Document',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _docController,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: 'Enter document content to save',
+                  ),
+                  maxLines: 3,
+                  enabled: _isReady,
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  onPressed: _isReady && !_isLoading ? _saveDocument : null,
+                  icon: const Icon(Icons.save),
+                  label: const Text('Save Document (Auto Embed)'),
+                ),
+
+                const Divider(height: 40),
+
+                // Search section
+                const Text(
+                  '🔎 Semantic Search',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _queryController,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: 'Enter search query',
+                  ),
+                  enabled: _isReady,
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  onPressed: _isReady && !_isLoading ? _searchDocuments : null,
+                  icon: const Icon(Icons.search),
+                  label: const Text('Search Similar Documents'),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Search results
+                if (_searchResults.isNotEmpty) ...[
+                  const Text(
+                    'Search Results:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  ...List.generate(
+                    _searchResults.length,
+                    (i) => Card(
+                      child: ListTile(
+                        leading: CircleAvatar(child: Text('${i + 1}')),
+                        title: Text(_searchResults[i]),
+                      ),
+                    ),
+                  ),
+                ],
+
+                const Divider(height: 40),
+
+                // Sample data load button
+                OutlinedButton.icon(
+                  onPressed: _isReady && !_isLoading
+                      ? () async {
+                          setState(() => _isLoading = true);
+                          try {
+                            final samples = [
+                              "Apple is a red fruit.",
+                              "Banana is yellow and sweet.",
+                              "Tesla is an electric car company.",
+                              "Apple is a company that makes iPhones.",
+                              "Orange is a fruit rich in vitamin C.",
+                            ];
+                            int totalChunks = 0;
+                            for (var i = 0; i < samples.length; i++) {
+                              setState(
+                                () => _status =
+                                    "Adding sample ${i + 1}/${samples.length}...",
+                              );
+                              final result = await _ragService!
+                                  .addSourceWithChunking(samples[i]);
+                              totalChunks += result.chunkCount;
+                            }
+                            // Rebuild index after all samples added
+                            await _ragService!.rebuildIndex();
+
+                            setState(() {
+                              _status =
+                                  "✅ Saved ${samples.length} sample documents!\n"
+                                  "📦 Total chunks: $totalChunks";
+                              _isLoading = false;
+                            });
+                          } catch (e) {
+                            setState(() {
+                              _status = "❌ Sample save error: $e";
+                              _isLoading = false;
+                            });
+                          }
+                        }
+                      : null,
+                  icon: const Icon(Icons.dataset),
+                  label: const Text('Load 5 Sample Documents'),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -235,7 +381,6 @@ class _RagExampleScreenState extends State<RagExampleScreen> {
 
   @override
   void dispose() {
-    _queryController.dispose();
     EmbeddingService.dispose();
     super.dispose();
   }

@@ -41,7 +41,7 @@ SPEC CHECKSUMS:
   onnxruntime-c: ebdcfd8650bcbd10121c125262f99dea681b92a3
   onnxruntime-objc: ae7acec7a3d03eaf072d340afed7a35635c1c2a6
   path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
-  rag_engine_flutter: 3a3180fcca0d2e1660e4a5030b92fb3ef17feea6
+  rag_engine_flutter: 2171c6b8b39916dc3e06acf7bfeda538d9edb65e
 
 PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e
 
