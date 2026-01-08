@@ -7,7 +7,6 @@ import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
 import 'screens/benchmark_screen.dart';
 import 'screens/quality_test_screen.dart';
-import 'screens/chunking_test_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -181,19 +180,6 @@ class _MyAppState extends State<MyApp> {
             title: const Text('🔍 Local RAG Engine'),
             centerTitle: true,
             actions: [
-              IconButton(
-                icon: const Icon(Icons.auto_awesome),
-                tooltip: 'Chunking Test',
-                onPressed: _isReady
-                    ? () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const ChunkingTestScreen(),
-                          ),
-                        );
-                      }
-                    : null,
-              ),
               IconButton(
                 icon: const Icon(Icons.speed),
                 tooltip: 'Benchmark',

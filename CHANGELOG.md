@@ -5,7 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.3.6
+## 0.3.8
+
+### Changed
+- **ONNX Runtime**: Reverted to `onnxruntime ^1.4.1` for CocoaPods compatibility (1.23.2 not yet available)
+- **README**: Added benchmark result screenshots (iOS/Android) and architecture diagram
+- **Platform Support**: Removed Linux/Windows from publish (no pre-compiled binaries available)
+
+### Removed
+- **ChunkingTestScreen**: Removed unnecessary test screen from example app
+
+### Added
+- **Android Platform**: Added Android support to example app
+
+## 0.3.7
 
 ### Changed
 - **ONNX Runtime Upgrade**: Migrated from `onnxruntime` to `onnxruntime_v2` (v1.23.2) with optional GPU acceleration support

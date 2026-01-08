@@ -1,7 +1,13 @@
 # 별도 프로젝트/앱 (패키지에 포함 안됨)
 test_app/
 local-gemma-macos/
-example/
+
+# Example 앱 내 불필요한 파일 (example.md는 포함)
+example/build/
+example/.dart_tool/
+example/ios/
+example/macos/
+example/assets/
 
 # 개발용 파일
 docs/
@@ -21,7 +27,8 @@ platform-build/
 rust/target/
 
 # 대용량 모델 파일 (사용자가 직접 다운로드)
-assets/
+assets/*
+!assets/readme-sources/
 *.onnx
 *.bin
 

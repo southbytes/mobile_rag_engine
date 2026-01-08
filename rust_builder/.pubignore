@@ -5,3 +5,7 @@
 .dart_tool/
 build/
 rust/target/
+
+# Unsupported platforms (no pre-compiled binaries)
+linux/
+windows/
