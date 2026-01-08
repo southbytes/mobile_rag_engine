@@ -46,11 +46,12 @@ Data never leaves the user's device. Perfect for privacy-focused apps (journals,
 
 ---
 
-## 📸 Demo
+## 📸 Benchmark Results
 
-> *아래에 검색 결과가 빠르게 뜨는 GIF를 추가하세요! [예시 포맷]*
->
-> ![Demo](assets/demo.gif)
+<p align="center">
+  <img src="assets/readme-sources/ios_benchmark_result.png" width="280" alt="iOS Benchmark">
+  <img src="assets/readme-sources/android_benchmark_result.png" width="280" alt="Android Benchmark">
+</p>
 
 ---
 
@@ -60,7 +61,7 @@ Data never leaves the user's device. Perfect for privacy-focused apps (journals,
 
 ```yaml
 dependencies:
-  mobile_rag_engine: ^0.3.6
+  mobile_rag_engine: ^0.3.8
 ```
 
 ### 2. Download Model Files
@@ -133,14 +134,9 @@ void main() async {
 
 This package bridges the best of two worlds: **Flutter for UI** and **Rust for heavy lifting**.
 
-```mermaid
-graph TD
-    A[Flutter App] -->|Dart FFI| B(Rust Wrapper)
-    B -->|Zero-Copy| C{Rust Core Engine}
-    C --> D[ONNX Runtime]
-    C --> E[HNSW Index]
-    C --> F[SQLite Storage]
-```
+<p align="center">
+  <img src="assets/readme-sources/rag_engine_architecture.png" width="600" alt="Architecture">
+</p>
 
 | Component | Technology |
 |:---|:---|
