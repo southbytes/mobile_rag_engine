@@ -12,17 +12,15 @@ Powered by a **Rust core**, it delivers lightning-fast vector search and embeddi
 
 ---
 
-## ⚡️ Why this package?
+## Why this package?
 
-### ✅ No Rust Installation Required
+### No Rust Installation Required
 
 **You do NOT need to install Rust, Cargo, or Android NDK.**
 
 This package includes **pre-compiled binaries** for iOS, Android, and macOS. Just `pub add` and run.
 
-*(Powered by `flutter_rust_bridge` & `cargokit`)*
-
-### 🚀 Performance First
+### Performance
 
 | Feature | Pure Dart | **Mobile RAG Engine (Rust)** |
 |:---|:---:|:---:|
@@ -30,13 +28,13 @@ This package includes **pre-compiled binaries** for iOS, Android, and macOS. Jus
 | **Vector Search** | O(n) | **O(log n)** (HNSW Index) |
 | **Memory Usage** | High | **Optimized** (Zero-copy FFI) |
 
-### 🔒 100% Offline & Private
+### 100% Offline & Private
 
 Data never leaves the user's device. Perfect for privacy-focused apps (journals, secure chats, enterprise tools).
 
 ---
 
-## ✨ Features
+## Features
 
 - **Cross-Platform:** Works seamlessly on **iOS, Android, and macOS**
 - **HNSW Vector Index:** Fast approximate nearest neighbor search (proven scale up to 10k+ docs)
@@ -46,22 +44,22 @@ Data never leaves the user's device. Perfect for privacy-focused apps (journals,
 
 ---
 
-## 📸 Benchmark Results
+## Benchmark Results
 
 <p align="center">
-  <img src="assets/readme-sources/ios_benchmark_result.png" width="280" alt="iOS Benchmark">
-  <img src="assets/readme-sources/android_benchmark_result.png" width="280" alt="Android Benchmark">
+  <img src="https://raw.githubusercontent.com/dev07060/mobile_rag_engine/main/assets/readme-sources/ios_benchmark_result.png" width="280" alt="iOS Benchmark">
+  <img src="https://raw.githubusercontent.com/dev07060/mobile_rag_engine/main/assets/readme-sources/android_benchmark_result.png" width="280" alt="Android Benchmark">
 </p>
 
 ---
 
-## 🛠 Installation
+## Installation
 
 ### 1. Add the dependency
 
 ```yaml
 dependencies:
-  mobile_rag_engine: ^0.3.8
+  mobile_rag_engine: ^0.3.9
 ```
 
 ### 2. Download Model Files
@@ -75,11 +73,11 @@ curl -L -o model.onnx "https://huggingface.co/Teradata/bge-m3/resolve/main/onnx/
 curl -L -o tokenizer.json "https://huggingface.co/BAAI/bge-m3/resolve/main/tokenizer.json"
 ```
 
-> 📖 See [Model Setup Guide](docs/guides/model_setup.md) for alternative models and production deployment strategies.
+> See [Model Setup Guide](docs/guides/model_setup.md) for alternative models and production deployment strategies.
 
 ---
 
-## ⚡️ Quick Start
+## Quick Start
 
 Initialize the engine and start searching in just a few lines of code:
 
@@ -115,7 +113,7 @@ void main() async {
 
 ---
 
-## 📊 Benchmarks
+## Benchmarks
 
 **Rust-powered components** (M3 Pro macOS):
 
@@ -130,12 +128,12 @@ void main() async {
 
 ---
 
-## 🏗 Architecture
+## Architecture
 
 This package bridges the best of two worlds: **Flutter for UI** and **Rust for heavy lifting**.
 
 <p align="center">
-  <img src="assets/readme-sources/rag_engine_architecture.png" width="600" alt="Architecture">
+  <img src="https://raw.githubusercontent.com/dev07060/mobile_rag_engine/main/assets/readme-sources/rag_engine_architecture.png" width="600" alt="Architecture">
 </p>
 
 | Component | Technology |
@@ -147,35 +145,7 @@ This package bridges the best of two worlds: **Flutter for UI** and **Rust for h
 
 ---
 
-## 🧩 Problems Solved
-
-<details>
-<summary><b>iOS Cross-Compilation</b></summary>
-
-The `onig` regex library blocked iOS builds (`___chkstk_darwin` symbol missing). Switched to pure Rust `fancy-regex` to fix it.
-</details>
-
-<details>
-<summary><b>HNSW Index Timing</b></summary>
-
-Rebuilding HNSW on every insert → O(n²). Changed to rebuild once after bulk inserts.
-</details>
-
-<details>
-<summary><b>Duplicate Document Handling</b></summary>
-
-Added SHA256 content hashing to skip already-stored documents.
-</details>
-
-<details>
-<summary><b>ONNX Runtime Thread Safety</b></summary>
-
-`OrtSession` isn't thread-safe. Switched to sequential processing—still fast enough since individual embeddings are quick.
-</details>
-
----
-
-## 📦 Model Options
+## Model Options
 
 | Model | Size | Best For |
 |:---|:---:|:---|
@@ -190,14 +160,14 @@ optimum-cli export onnx --model sentence-transformers/YOUR_MODEL ./output
 
 ---
 
-## 📋 Releases
+## Releases
 
 - **[v0.3.0 - Rust Semantic Chunking](docs/guides/v0.3.0_semantic_chunking_update.md)** - Unicode-based semantic chunking
 - **[v0.2.0 - LLM-Optimized Chunking](docs/guides/v0.2.0_chunking_update.md)** - Chunking and context assembly
 
 ---
 
-## 🛣 Roadmap
+## Roadmap
 
 - [x] INT8 quantization support
 - [x] Chunking strategies for long documents
@@ -207,10 +177,10 @@ optimum-cli export onnx --model sentence-transformers/YOUR_MODEL ./output
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Bug reports, feature requests, and PRs are all welcome!
 
-## 📄 License
+## License
 
 This project is licensed under the [MIT License](LICENSE).
