@@ -10,10 +10,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `BufferEntry`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`
 
-/// Add a single vector to the index immediately (incremental)
-///
-/// The vector is added to the buffer and becomes searchable immediately.
-/// When buffer reaches threshold, triggers background merge to HNSW.
+/// Add a single vector to buffer (immediately searchable).
 Future<void> incrementalAdd({
   required PlatformInt64 docId,
   required List<double> embedding,
@@ -22,26 +19,20 @@ Future<void> incrementalAdd({
   embedding: embedding,
 );
 
-/// Add multiple vectors to index (batch incremental)
+/// Add multiple vectors to buffer.
 Future<void> incrementalAddBatch({
   required List<(PlatformInt64, Float32List)> docs,
 }) => RustLib.instance.api.crateApiIncrementalIndexIncrementalAddBatch(
   docs: docs,
 );
 
-/// Remove a document from the index
-///
-/// Note: Removes from buffer immediately, but HNSW removal requires rebuild
+/// Remove a document from buffer.
 Future<void> incrementalRemove({required PlatformInt64 docId}) => RustLib
     .instance
     .api
     .crateApiIncrementalIndexIncrementalRemove(docId: docId);
 
-/// Search the incremental index (both buffer and HNSW)
-///
-/// Combines results from:
-/// 1. Linear scan of buffer (for recently added docs)
-/// 2. HNSW search (for pre-indexed docs)
+/// Search both buffer and HNSW.
 Future<List<IncrementalSearchResult>> incrementalSearch({
   required List<double> queryEmbedding,
   required BigInt topK,
@@ -53,21 +44,18 @@ Future<List<IncrementalSearchResult>> incrementalSearch({
 Future<BufferStats> getBufferStats() =>
     RustLib.instance.api.crateApiIncrementalIndexGetBufferStats();
 
-/// Clear the buffer (useful after manual HNSW rebuild)
+/// Clear buffer.
 Future<void> clearBuffer() =>
     RustLib.instance.api.crateApiIncrementalIndexClearBuffer();
 
-/// Check if buffer needs merging
+/// Check if buffer needs merging.
 Future<bool> needsMerge() =>
     RustLib.instance.api.crateApiIncrementalIndexNeedsMerge();
 
-/// Get all buffer entries for HNSW rebuild
-///
-/// Returns (doc_id, embedding) pairs to be combined with DB data for rebuild
+/// Get buffer entries for HNSW rebuild.
 Future<List<(PlatformInt64, Float32List)>> getBufferForMerge() =>
     RustLib.instance.api.crateApiIncrementalIndexGetBufferForMerge();
 
-/// Get buffer statistics
 class BufferStats {
   final BigInt bufferSize;
   final BigInt threshold;
@@ -93,12 +81,9 @@ class BufferStats {
           hnswLoaded == other.hnswLoaded;
 }
 
-/// Search result from incremental index
 class IncrementalSearchResult {
   final PlatformInt64 docId;
   final double distance;
-
-  /// Source: 'buffer' or 'hnsw'
   final String source;
 
   const IncrementalSearchResult({

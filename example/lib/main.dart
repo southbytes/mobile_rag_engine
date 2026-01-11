@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
 import 'screens/benchmark_screen.dart';
@@ -170,6 +171,98 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  /// Import PDF/DOCX file and embed: file -> text extraction -> chunking -> embedding
+  Future<void> _importAndEmbedDocument() async {
+    setState(() {
+      _isLoading = true;
+      _status = "Selecting file...";
+    });
+
+    try {
+      // Pick a PDF or DOCX file
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'docx'],
+      );
+
+      if (result == null || result.files.isEmpty) {
+        setState(() {
+          _status = "⚠️ No file selected";
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final file = result.files.first;
+      final filePath = file.path;
+      if (filePath == null) {
+        setState(() {
+          _status = "❌ Could not get file path";
+          _isLoading = false;
+        });
+        return;
+      }
+
+      setState(() => _status = "Reading file: ${file.name}");
+
+      // Read file bytes
+      final bytes = await File(filePath).readAsBytes();
+      setState(() => _status = "Extracting text from ${file.name}...");
+
+      // Extract text using Rust DTT module
+      final extractedText = await extractTextFromDocument(
+        fileBytes: bytes.toList(),
+      );
+
+      if (extractedText.isEmpty) {
+        setState(() {
+          _status = "⚠️ No text extracted from file";
+          _isLoading = false;
+        });
+        return;
+      }
+
+      setState(
+        () => _status =
+            "Text extracted! (${extractedText.length} chars)\nProcessing chunks...",
+      );
+
+      // Add to RAG with chunking and embedding
+      final addResult = await _ragService!.addSourceWithChunking(
+        extractedText,
+        metadata: '{"filename": "${file.name}"}',
+        onProgress: (done, total) {
+          setState(() => _status = "Embedding chunks: $done/$total");
+        },
+      );
+
+      if (addResult.isDuplicate) {
+        setState(() {
+          _status =
+              "⚠️ Duplicate document detected!\n${file.name} already exists.";
+          _isLoading = false;
+        });
+      } else {
+        // Rebuild HNSW index
+        await _ragService!.rebuildIndex();
+
+        setState(() {
+          _status =
+              "✅ PDF/DOCX imported!\n"
+              "📄 File: ${file.name}\n"
+              "📝 Text: ${extractedText.length} chars\n"
+              "📦 Chunks: ${addResult.chunkCount}";
+          _isLoading = false;
+        });
+      }
+    } catch (e, st) {
+      setState(() {
+        _status = "❌ Import error: $e\n$st";
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -265,6 +358,18 @@ class _MyAppState extends State<MyApp> {
                   icon: const Icon(Icons.save),
                   label: const Text('Save Document (Auto Embed)'),
                 ),
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  onPressed: _isReady && !_isLoading
+                      ? _importAndEmbedDocument
+                      : null,
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('Import PDF/DOCX'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
 
                 const Divider(height: 40),
 
@@ -353,6 +458,73 @@ class _MyAppState extends State<MyApp> {
                       : null,
                   icon: const Icon(Icons.dataset),
                   label: const Text('Load 5 Sample Documents'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _isReady && !_isLoading
+                      ? () async {
+                          // Confirm dialog
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Delete All Documents'),
+                              content: const Text(
+                                'Are you sure you want to delete all documents? This cannot be undone.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                  ),
+                                  child: const Text('Delete All'),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirmed != true) return;
+
+                          setState(() {
+                            _isLoading = true;
+                            _status = "Deleting all documents...";
+                          });
+
+                          try {
+                            // Get stats before deletion
+                            final stats = await _ragService!.getStats();
+                            // Delete DB file and re-initialize
+                            final dbFile = File(_dbPath);
+                            if (await dbFile.exists()) {
+                              await dbFile.delete();
+                            }
+                            // Re-initialize the database
+                            await _ragService!.init();
+                            _searchResults.clear();
+
+                            setState(() {
+                              _status =
+                                  "✅ Deleted all documents!\n"
+                                  "Previously had ${stats.sourceCount} sources.";
+                              _isLoading = false;
+                            });
+                          } catch (e) {
+                            setState(() {
+                              _status = "❌ Delete error: $e";
+                              _isLoading = false;
+                            });
+                          }
+                        }
+                      : null,
+                  icon: const Icon(Icons.delete_forever, color: Colors.red),
+                  label: const Text(
+                    'Delete All Documents',
+                    style: TextStyle(color: Colors.red),
+                  ),
                 ),
               ],
             ),

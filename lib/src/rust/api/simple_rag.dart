@@ -9,7 +9,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 // These functions are ignored because they are not marked as `pub`: `calculate_content_hash`, `rebuild_bm25_index_internal`, `rebuild_hnsw_index_internal`, `search_with_hnsw`, `search_with_linear_scan`, `truncate_str`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`
 
-/// Calculate cosine similarity between two vectors
+/// Calculate cosine similarity between two vectors.
 double calculateCosineSimilarity({
   required List<double> vecA,
   required List<double> vecB,
@@ -18,20 +18,19 @@ double calculateCosineSimilarity({
   vecB: vecB,
 );
 
-/// Initialize database: create docs table with content_hash for deduplication
+/// Initialize database with docs table.
 Future<void> initDb({required String dbPath}) =>
     RustLib.instance.api.crateApiSimpleRagInitDb(dbPath: dbPath);
 
-/// Rebuild HNSW index (public API)
+/// Rebuild HNSW index.
 Future<void> rebuildHnswIndex({required String dbPath}) =>
     RustLib.instance.api.crateApiSimpleRagRebuildHnswIndex(dbPath: dbPath);
 
-/// Rebuild BM25 index (public API)
+/// Rebuild BM25 index.
 Future<void> rebuildBm25Index({required String dbPath}) =>
     RustLib.instance.api.crateApiSimpleRagRebuildBm25Index(dbPath: dbPath);
 
-/// Add document with embedding vector (with deduplication)
-/// Returns whether document was saved or skipped due to duplicate
+/// Add document with embedding vector (with deduplication).
 Future<AddDocumentResult> addDocument({
   required String dbPath,
   required String content,
@@ -42,7 +41,7 @@ Future<AddDocumentResult> addDocument({
   embedding: embedding,
 );
 
-/// Legacy add_document for backward compatibility (ignores result details)
+/// Legacy add_document for backward compatibility.
 Future<void> addDocumentSimple({
   required String dbPath,
   required String content,
@@ -53,7 +52,7 @@ Future<void> addDocumentSimple({
   embedding: embedding,
 );
 
-/// Similarity-based search (uses HNSW)
+/// Similarity-based search (uses HNSW).
 Future<List<String>> searchSimilar({
   required String dbPath,
   required List<double> queryEmbedding,
@@ -64,15 +63,14 @@ Future<List<String>> searchSimilar({
   topK: topK,
 );
 
-/// Get document count in database
+/// Get document count.
 Future<PlatformInt64> getDocumentCount({required String dbPath}) =>
     RustLib.instance.api.crateApiSimpleRagGetDocumentCount(dbPath: dbPath);
 
-/// Clear all documents (for testing)
+/// Clear all documents.
 Future<void> clearAllDocuments({required String dbPath}) =>
     RustLib.instance.api.crateApiSimpleRagClearAllDocuments(dbPath: dbPath);
 
-/// Add document result
 class AddDocumentResult {
   final bool success;
   final bool isDuplicate;

@@ -1,6 +1,8 @@
 PODS:
+  - file_picker (0.0.1):
+    - FlutterMacOS
   - FlutterMacOS (1.0.0)
-  - onnxruntime_v2 (0.0.1):
+  - onnxruntime (0.0.1):
     - FlutterMacOS
   - path_provider_foundation (0.0.1):
     - Flutter
@@ -9,24 +11,28 @@ PODS:
     - FlutterMacOS
 
 DEPENDENCIES:
+  - file_picker (from `Flutter/ephemeral/.symlinks/plugins/file_picker/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
-  - onnxruntime_v2 (from `Flutter/ephemeral/.symlinks/plugins/onnxruntime_v2/macos`)
+  - onnxruntime (from `Flutter/ephemeral/.symlinks/plugins/onnxruntime/macos`)
   - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
   - rag_engine_flutter (from `Flutter/ephemeral/.symlinks/plugins/rag_engine_flutter/macos`)
 
 EXTERNAL SOURCES:
+  file_picker:
+    :path: Flutter/ephemeral/.symlinks/plugins/file_picker/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
-  onnxruntime_v2:
-    :path: Flutter/ephemeral/.symlinks/plugins/onnxruntime_v2/macos
+  onnxruntime:
+    :path: Flutter/ephemeral/.symlinks/plugins/onnxruntime/macos
   path_provider_foundation:
     :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
   rag_engine_flutter:
     :path: Flutter/ephemeral/.symlinks/plugins/rag_engine_flutter/macos
 
 SPEC CHECKSUMS:
+  file_picker: e716a70a9fe5fd9e09ebc922d7541464289443af
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
-  onnxruntime_v2: 6139ce3ad878306be6ceec6a9974891ab1d34658
+  onnxruntime: 922a85d3c9ed1b3c2b515ec903fc4d9b8f51d96b
   path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
   rag_engine_flutter: df8f9905ee4a053f3ec3557a83b096c04917e337
 

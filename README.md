@@ -59,7 +59,7 @@ Data never leaves the user's device. Perfect for privacy-focused apps (journals,
 
 ```yaml
 dependencies:
-  mobile_rag_engine: ^0.3.9
+  mobile_rag_engine: ^0.4.1
 ```
 
 ### 2. Download Model Files
@@ -110,6 +110,41 @@ void main() async {
   print(results.first); // "Flutter is a UI toolkit."
 }
 ```
+
+---
+
+## PDF/DOCX Import
+
+Extract text from documents and add to RAG:
+
+```dart
+// 1. Add file_picker to your pubspec.yaml (optional)
+dependencies:
+  mobile_rag_engine: ^0.4.1
+  file_picker: ^9.2.1  # For file selection UI
+
+// 2. Pick and process documents
+import 'package:file_picker/file_picker.dart';
+import 'package:mobile_rag_engine/mobile_rag_engine.dart';
+
+Future<void> importDocument() async {
+  // Pick file
+  final result = await FilePicker.platform.pickFiles(
+    type: FileType.custom,
+    allowedExtensions: ['pdf', 'docx'],
+  );
+  if (result == null) return;
+
+  // Extract text (handles hyphenation, page numbers automatically)
+  final bytes = await File(result.files.single.path!).readAsBytes();
+  final text = await extractTextFromDocument(fileBytes: bytes);
+
+  // Add to RAG with auto-chunking
+  await ragService.addSourceWithChunking(text);
+}
+```
+
+> **Note:** `file_picker` is optional. You can obtain file bytes from any source (network, camera, etc.) and pass to `extractTextFromDocument()`.
 
 ---
 

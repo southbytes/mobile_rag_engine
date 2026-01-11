@@ -6,37 +6,14 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `is_article_title`, `split_by_article_titles`
+// These functions are ignored because they are not marked as `pub`: `is_article_title`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `eq`, `fmt`, `fmt`
 
-/// Classify a chunk based on its content using rule-based patterns.
-///
-/// Strategy (in order of priority):
-/// 1. List patterns (bullet points, numbered items)
-/// 2. Definition patterns (formal definitions)
-/// 3. Example patterns
-/// 4. Procedure patterns (step-by-step)
-/// 5. Comparison patterns
-/// 6. Default to General
+/// Classify chunk by rule-based pattern matching.
 ChunkType classifyChunk({required String text}) =>
     RustLib.instance.api.crateApiSemanticChunkerClassifyChunk(text: text);
 
-/// Split text into semantic chunks using paragraph boundaries first.
-///
-/// Strategy:
-/// 1. First split by double newlines (\n\n) - paragraph boundaries
-/// 2. If a paragraph is too long, split by single newlines (\n)
-/// 3. If still too long, use text-splitter for Unicode sentence/word boundaries
-///
-/// This approach works better for Korean and other languages where
-/// newlines often indicate logical section boundaries.
-///
-/// # Arguments
-/// * `text` - The text to chunk
-/// * `max_chars` - Maximum characters per chunk (soft limit, may exceed slightly to preserve sentence)
-///
-/// # Returns
-/// Vector of SemanticChunk with complete paragraphs/sentences/words
+/// Split text into semantic chunks using paragraph-first strategy.
 List<SemanticChunk> semanticChunk({
   required String text,
   required int maxChars,
@@ -45,15 +22,7 @@ List<SemanticChunk> semanticChunk({
   maxChars: maxChars,
 );
 
-/// Split text with overlap for RAG context continuity.
-///
-/// Similar to `semantic_chunk` but ensures overlap between chunks
-/// for better context retrieval.
-///
-/// # Arguments
-/// * `text` - The text to chunk
-/// * `max_chars` - Maximum characters per chunk
-/// * `overlap_chars` - Target overlap between consecutive chunks (not used in paragraph mode, kept for API compatibility)
+/// Split text with overlap (API compatibility wrapper).
 List<SemanticChunk> semanticChunkWithOverlap({
   required String text,
   required int maxChars,
@@ -64,50 +33,28 @@ List<SemanticChunk> semanticChunkWithOverlap({
   overlapChars: overlapChars,
 );
 
-/// Type classification for a chunk based on content analysis.
+/// Chunk type classification.
 enum ChunkType {
-  /// Definition or overview content
   definition,
-
-  /// Example or illustration
   example,
-
-  /// Bulleted or numbered list
   list,
-
-  /// Procedure or step-by-step instructions
   procedure,
-
-  /// Comparison between items
   comparison,
-
-  /// General content (default)
   general;
 
-  /// Convert to string for database storage.
   Future<void> asStr() =>
       RustLib.instance.api.crateApiSemanticChunkerChunkTypeAsStr(that: this);
 
-  /// Parse from string (database retrieval).
   static Future<ChunkType> fromStr({required String s}) =>
       RustLib.instance.api.crateApiSemanticChunkerChunkTypeFromStr(s: s);
 }
 
-/// Result of semantic chunking operation.
+/// Semantic chunk result.
 class SemanticChunk {
-  /// Index of this chunk (0-based).
   final int index;
-
-  /// The chunk content (complete sentences/words, never cut mid-word).
   final String content;
-
-  /// Approximate character position where this chunk starts.
   final int startPos;
-
-  /// Approximate character position where this chunk ends.
   final int endPos;
-
-  /// Classification type of this chunk.
   final String chunkType;
 
   const SemanticChunk({

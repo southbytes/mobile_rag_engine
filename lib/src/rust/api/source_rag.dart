@@ -9,11 +9,11 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 // These functions are ignored because they are not marked as `pub`: `hash_content`, `search_chunks_linear`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
 
-/// Initialize extended database with sources and chunks tables.
+/// Initialize database with sources and chunks tables.
 Future<void> initSourceDb({required String dbPath}) =>
     RustLib.instance.api.crateApiSourceRagInitSourceDb(dbPath: dbPath);
 
-/// Add a source document (without chunks - chunks added separately).
+/// Add a source document (chunks added separately via add_chunks).
 Future<AddSourceResult> addSource({
   required String dbPath,
   required String content,
@@ -24,8 +24,7 @@ Future<AddSourceResult> addSource({
   metadata: metadata,
 );
 
-/// Add chunks for a source document.
-/// Uses transaction for atomicity - all chunks are saved or none.
+/// Add chunks for a source (uses transaction for atomicity).
 Future<int> addChunks({
   required String dbPath,
   required PlatformInt64 sourceId,
@@ -36,7 +35,7 @@ Future<int> addChunks({
   chunks: chunks,
 );
 
-/// Rebuild HNSW index from chunks table and save to disk.
+/// Rebuild HNSW index from chunks table.
 Future<void> rebuildChunkHnswIndex({required String dbPath}) =>
     RustLib.instance.api.crateApiSourceRagRebuildChunkHnswIndex(dbPath: dbPath);
 
@@ -70,7 +69,6 @@ Future<List<String>> getSourceChunks({
 );
 
 /// Get adjacent chunks by source_id and chunk_index range.
-/// Returns chunks where chunk_index is between min_index and max_index (inclusive).
 Future<List<ChunkSearchResult>> getAdjacentChunks({
   required String dbPath,
   required PlatformInt64 sourceId,
@@ -113,7 +111,6 @@ Future<void> updateChunkEmbedding({
   embedding: embedding,
 );
 
-/// Result of adding a source document.
 class AddSourceResult {
   final PlatformInt64 sourceId;
   final bool isDuplicate;
@@ -145,7 +142,6 @@ class AddSourceResult {
           message == other.message;
 }
 
-/// Chunk data for batch insertion.
 class ChunkData {
   final String content;
   final int chunkIndex;
@@ -185,7 +181,6 @@ class ChunkData {
           embedding == other.embedding;
 }
 
-/// Chunk info for re-embedding (id and content only).
 class ChunkForReembedding {
   final PlatformInt64 chunkId;
   final String content;
@@ -204,7 +199,6 @@ class ChunkForReembedding {
           content == other.content;
 }
 
-/// Search result with chunk and source info.
 class ChunkSearchResult {
   final PlatformInt64 chunkId;
   final PlatformInt64 sourceId;
@@ -244,7 +238,6 @@ class ChunkSearchResult {
           similarity == other.similarity;
 }
 
-/// Get count of sources and chunks.
 class SourceStats {
   final PlatformInt64 sourceCount;
   final PlatformInt64 chunkCount;

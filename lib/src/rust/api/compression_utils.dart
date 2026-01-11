@@ -8,22 +8,15 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `fmt`, `fmt`
 
-/// Split text into sentences using Unicode-aware boundaries.
-/// Supports Korean (sentence-ending patterns) and English (period, ?, !).
+/// Split text into sentences.
 Future<List<String>> splitSentences({required String text}) =>
     RustLib.instance.api.crateApiCompressionUtilsSplitSentences(text: text);
 
-/// Calculate a fast hash for sentence deduplication.
-/// Uses a simple but effective string hash.
+/// Calculate hash for sentence deduplication (FNV-1a).
 Future<BigInt> sentenceHash({required String sentence}) => RustLib.instance.api
     .crateApiCompressionUtilsSentenceHash(sentence: sentence);
 
-/// Compress text using the full pipeline.
-///
-/// # Arguments
-/// * `text` - Text to compress
-/// * `max_chars` - Maximum characters in result (0 = no limit)
-/// * `options` - Compression options
+/// Compress text with deduplication and truncation.
 Future<CompressedText> compressText({
   required String text,
   required int maxChars,
@@ -42,7 +35,6 @@ Future<String> compressTextSimple({required String text, required int level}) =>
     );
 
 /// Check if text needs compression based on token estimate.
-/// Returns true if estimated tokens exceed threshold.
 Future<bool> shouldCompress({
   required String text,
   required int tokenThreshold,
@@ -51,27 +43,13 @@ Future<bool> shouldCompress({
   tokenThreshold: tokenThreshold,
 );
 
-/// Result of text compression
 class CompressedText {
-  /// Compressed text content
   final String text;
-
-  /// Original character count
   final int originalChars;
-
-  /// Compressed character count
   final int compressedChars;
-
-  /// Compression ratio (0.0 - 1.0, lower = more compressed)
   final double ratio;
-
-  /// Number of duplicate sentences removed
   final int sentencesRemoved;
-
-  /// Characters saved by stopword removal
   final int charsSavedStopwords;
-
-  /// Characters saved by truncation
   final int charsSavedTruncation;
 
   const CompressedText({
@@ -108,18 +86,10 @@ class CompressedText {
           charsSavedTruncation == other.charsSavedTruncation;
 }
 
-/// Compression options
 class CompressionOptions {
-  /// Remove stopwords (common words with low information value)
   final bool removeStopwords;
-
-  /// Remove duplicate sentences
   final bool removeDuplicates;
-
-  /// Language for stopword filtering ("ko" or "en")
   final String language;
-
-  /// Compression level: 0=minimal, 1=balanced, 2=aggressive
   final int level;
 
   const CompressionOptions({

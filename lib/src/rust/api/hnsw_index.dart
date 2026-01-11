@@ -8,27 +8,20 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`, `fmt`
 
-/// Build HNSW index (Optimized)
+/// Build HNSW index from embedding points.
 Future<void> buildHnswIndex({
   required List<(PlatformInt64, Float32List)> points,
 }) => RustLib.instance.api.crateApiHnswIndexBuildHnswIndex(points: points);
 
-/// Save HNSW index point data to disk (bincode serialization)
-///
-/// Since hnsw_rs's native persistence has lifetime constraints,
-/// we save the point data and rebuild the index on load.
-/// This is fast enough for practical use (1000 points < 100ms rebuild).
+/// Save HNSW index marker to disk (uses DB-based persistence).
 Future<void> saveHnswIndex({required String basePath}) =>
     RustLib.instance.api.crateApiHnswIndexSaveHnswIndex(basePath: basePath);
 
-/// Load HNSW index from disk
-///
-/// Returns true if marker exists (index should be rebuilt from DB),
-/// false if no cached index exists.
+/// Load HNSW index marker. Returns true if marker exists.
 Future<bool> loadHnswIndex({required String basePath}) =>
     RustLib.instance.api.crateApiHnswIndexLoadHnswIndex(basePath: basePath);
 
-/// Search in HNSW index
+/// Search in HNSW index.
 Future<List<HnswSearchResult>> searchHnsw({
   required List<double> queryEmbedding,
   required BigInt topK,
@@ -37,17 +30,15 @@ Future<List<HnswSearchResult>> searchHnsw({
   topK: topK,
 );
 
-/// Check if HNSW index is loaded
+/// Check if HNSW index is loaded.
 Future<bool> isHnswIndexLoaded() =>
     RustLib.instance.api.crateApiHnswIndexIsHnswIndexLoaded();
 
-/// Clear HNSW index
+/// Clear HNSW index from memory.
 Future<void> clearHnswIndex() =>
     RustLib.instance.api.crateApiHnswIndexClearHnswIndex();
 
-/// Custom point type: wrapper for FRB compatibility
-/// This struct was used in previous FRB generation, so we keep it to avoid breaking changes.
-/// We don't use it in the index itself anymore (we use native vectors).
+/// Embedding point wrapper for FRB compatibility (legacy support).
 class EmbeddingPoint {
   final PlatformInt64 id;
   final Float32List embedding;
@@ -81,7 +72,7 @@ class EmbeddingPoint {
           norm == other.norm;
 }
 
-/// HNSW search result
+/// HNSW search result containing doc ID and distance.
 class HnswSearchResult {
   final PlatformInt64 id;
   final double distance;
