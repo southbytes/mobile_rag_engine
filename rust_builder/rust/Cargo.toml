@@ -31,6 +31,13 @@ sha2 = "0.10"
 # Semantic text splitting with Unicode sentence/word boundaries
 text-splitter = { version = "0.29.3", default-features = false }
 
+# Document-to-Text (DTT) - PDF and DOCX text extraction
+pdf-extract = "0.7"
+docx-lite = "0.2"
+
+# Regex for PDF dehyphenation (fix line-break word splits)
+regex = "1.11"
+
 # Removed 'ort' crate: failed to load libonnxruntime.dylib on iOS
 # ONNX inference moved to Flutter onnxruntime package
 

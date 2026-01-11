@@ -11,7 +11,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `fmt`, `fmt`, `fmt`
 // These functions are ignored (category: IgnoreBecauseOwnerTyShouldIgnore): `add_document`, `clear`, `is_empty`, `len`, `new`, `remove_document`, `search`
 
-/// Add document to BM25 index
+/// Add document to BM25 index.
 Future<void> bm25AddDocument({
   required PlatformInt64 docId,
   required String content,
@@ -20,34 +20,33 @@ Future<void> bm25AddDocument({
   content: content,
 );
 
-/// Add multiple documents to BM25 index (batch)
+/// Add multiple documents to BM25 index (batch).
 Future<void> bm25AddDocuments({required List<(PlatformInt64, String)> docs}) =>
     RustLib.instance.api.crateApiBm25SearchBm25AddDocuments(docs: docs);
 
-/// Remove document from BM25 index
+/// Remove document from BM25 index.
 Future<void> bm25RemoveDocument({required PlatformInt64 docId}) =>
     RustLib.instance.api.crateApiBm25SearchBm25RemoveDocument(docId: docId);
 
-/// Search using BM25
+/// Search using BM25.
 Future<List<Bm25SearchResult>> bm25Search({
   required String query,
   required int topK,
 }) =>
     RustLib.instance.api.crateApiBm25SearchBm25Search(query: query, topK: topK);
 
-/// Clear BM25 index
+/// Clear BM25 index.
 Future<void> bm25ClearIndex() =>
     RustLib.instance.api.crateApiBm25SearchBm25ClearIndex();
 
-/// Check if BM25 index is loaded
+/// Check if BM25 index is loaded.
 Future<bool> isBm25IndexLoaded() =>
     RustLib.instance.api.crateApiBm25SearchIsBm25IndexLoaded();
 
-/// Get BM25 index document count
+/// Get BM25 index document count.
 Future<BigInt> bm25GetDocumentCount() =>
     RustLib.instance.api.crateApiBm25SearchBm25GetDocumentCount();
 
-/// BM25 search result
 class Bm25SearchResult {
   final PlatformInt64 docId;
   final double score;

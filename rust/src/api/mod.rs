@@ -16,3 +16,4 @@ pub mod hybrid_search;
 pub mod incremental_index;
 pub mod compression_utils;
 pub mod user_intent;
+pub mod document_parser;

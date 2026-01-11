@@ -11,20 +11,13 @@ part 'user_intent.freezed.dart';
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `eq`, `fmt`, `fmt`
 
 /// Parse user input into a UserIntent.
-///
-/// Supported commands:
-/// - /summary [query] - Summarize the query results
-/// - /define `<term>` - Define a specific term
-/// - /more [query] - Expand knowledge beyond RAG
-/// - Any other text - General query
 UserIntent parseUserIntent({required String input}) =>
     RustLib.instance.api.crateApiUserIntentParseUserIntent(input: input);
 
-/// Parse user input and return a FRB-friendly struct
+/// Parse intent (FRB-friendly wrapper).
 ParsedIntent parseIntent({required String input}) =>
     RustLib.instance.api.crateApiUserIntentParseIntent(input: input);
 
-/// Parsed intent result for FRB serialization
 class ParsedIntent {
   final String intentType;
   final String query;
@@ -60,32 +53,21 @@ class ParsedIntent {
 sealed class UserIntent with _$UserIntent {
   const UserIntent._();
 
-  /// /summary - Summarize RAG results
   const factory UserIntent.summary({required String query}) =
       UserIntent_Summary;
-
-  /// /define `<term>` - Define a term
   const factory UserIntent.define({required String term}) = UserIntent_Define;
-
-  /// /more - Expand knowledge using LLM beyond RAG
   const factory UserIntent.expandKnowledge({required String query}) =
       UserIntent_ExpandKnowledge;
-
-  /// General query without any special command
   const factory UserIntent.general({required String query}) =
       UserIntent_General;
-
-  /// Invalid or unrecognized command
   const factory UserIntent.invalidCommand({
     required String command,
     required String reason,
   }) = UserIntent_InvalidCommand;
 
-  /// Get the query/term part of the intent
   Future<void> getQuery() =>
       RustLib.instance.api.crateApiUserIntentUserIntentGetQuery(that: this);
 
-  /// Get the intent type as a string for logging/debugging
   Future<void> intentType() =>
       RustLib.instance.api.crateApiUserIntentUserIntentIntentType(that: this);
 }

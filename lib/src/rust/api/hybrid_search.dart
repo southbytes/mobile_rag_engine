@@ -9,14 +9,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 // These functions are ignored because they are not marked as `pub`: `rrf_score`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `fmt`, `fmt`
 
-/// Perform hybrid search combining vector and keyword search
-///
-/// # Arguments
-/// * `db_path` - Path to SQLite database
-/// * `query_text` - Original query text for BM25
-/// * `query_embedding` - Query embedding for vector search
-/// * `top_k` - Number of results to return
-/// * `config` - RRF configuration (optional, uses default if None)
+/// Perform hybrid search combining vector and keyword search.
 Future<List<HybridSearchResult>> searchHybrid({
   required String dbPath,
   required String queryText,
@@ -31,8 +24,7 @@ Future<List<HybridSearchResult>> searchHybrid({
   config: config,
 );
 
-/// Simplified hybrid search that returns only content strings
-/// Compatible with existing search_similar API
+/// Simplified hybrid search returning content strings only.
 Future<List<String>> searchHybridSimple({
   required String dbPath,
   required String queryText,
@@ -45,16 +37,7 @@ Future<List<String>> searchHybridSimple({
   topK: topK,
 );
 
-/// Search with custom weights
-///
-/// # Arguments
-/// * `vector_weight` - Weight for vector search (0.0 - 1.0)
-/// * `bm25_weight` - Weight for BM25 search (0.0 - 1.0)
-///
-/// # Example
-/// - Pure vector search: vector_weight=1.0, bm25_weight=0.0
-/// - Balanced: vector_weight=0.5, bm25_weight=0.5
-/// - Keyword-heavy: vector_weight=0.3, bm25_weight=0.7
+/// Search with custom weights (vector_weight + bm25_weight = 1.0 recommended).
 Future<List<HybridSearchResult>> searchHybridWeighted({
   required String dbPath,
   required String queryText,
@@ -71,21 +54,11 @@ Future<List<HybridSearchResult>> searchHybridWeighted({
   bm25Weight: bm25Weight,
 );
 
-/// Hybrid search result with combined ranking
 class HybridSearchResult {
-  /// Document ID
   final PlatformInt64 docId;
-
-  /// Document content
   final String content;
-
-  /// Combined RRF score
   final double score;
-
-  /// Original vector search rank (0 if not found)
   final int vectorRank;
-
-  /// Original BM25 rank (0 if not found)
   final int bm25Rank;
 
   const HybridSearchResult({
@@ -116,15 +89,9 @@ class HybridSearchResult {
           bm25Rank == other.bm25Rank;
 }
 
-/// Reciprocal Rank Fusion parameters
 class RrfConfig {
-  /// RRF constant k (default: 60, higher = more smoothing)
   final int k;
-
-  /// Weight for vector search (0.0 - 1.0)
   final double vectorWeight;
-
-  /// Weight for BM25 search (0.0 - 1.0)
   final double bm25Weight;
 
   const RrfConfig({

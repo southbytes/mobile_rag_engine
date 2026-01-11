@@ -6,5 +6,6 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+/// Simple greeting function for FRB demo.
 String greet({required String name}) =>
     RustLib.instance.api.crateApiSimpleGreet(name: name);
