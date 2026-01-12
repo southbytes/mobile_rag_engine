@@ -415,6 +415,13 @@ class SourceRagService {
     );
   }
 
+  /// Remove a source and all its chunks from the database.
+  Future<void> removeSource(int sourceId) async {
+    await deleteSource(dbPath: dbPath, sourceId: sourceId);
+    // Note: HNSW index is not automatically updated.
+    // It's recommended to call rebuildIndex() if many sources are deleted.
+  }
+
   /// Hybrid search combining vector and keyword (BM25) search.
   ///
   /// This method uses Reciprocal Rank Fusion (RRF) to combine:

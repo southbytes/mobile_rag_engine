@@ -11,14 +11,14 @@ PODS:
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - rust_lib_mobile_rag_engine (0.0.1):
+  - rag_engine_flutter (0.0.1):
     - Flutter
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - onnxruntime (from `.symlinks/plugins/onnxruntime/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
-  - rust_lib_mobile_rag_engine (from `.symlinks/plugins/rust_lib_mobile_rag_engine/ios`)
+  - rag_engine_flutter (from `.symlinks/plugins/rag_engine_flutter/ios`)
 
 SPEC REPOS:
   trunk:
@@ -32,8 +32,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/onnxruntime/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
-  rust_lib_mobile_rag_engine:
-    :path: ".symlinks/plugins/rust_lib_mobile_rag_engine/ios"
+  rag_engine_flutter:
+    :path: ".symlinks/plugins/rag_engine_flutter/ios"
 
 SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
@@ -41,7 +41,7 @@ SPEC CHECKSUMS:
   onnxruntime-c: ebdcfd8650bcbd10121c125262f99dea681b92a3
   onnxruntime-objc: ae7acec7a3d03eaf072d340afed7a35635c1c2a6
   path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
-  rust_lib_mobile_rag_engine: 13d49dc68e389fac2721562ac7a2468165bd67d9
+  rag_engine_flutter: 2171c6b8b39916dc3e06acf7bfeda538d9edb65e
 
 PODFILE CHECKSUM: f85c1d21ef732f06396898404659d1e4095ee085
 

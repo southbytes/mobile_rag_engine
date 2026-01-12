@@ -46,6 +46,40 @@ print('Created ${result.chunkCount} chunks');
 await ragService.rebuildIndex();
 ```
 
+## Advanced: PDF & DOCX Support
+
+Can automatically extract text from PDF and DOCX files.
+
+```dart
+import 'dart:io';
+
+// Read file bytes
+final file = File('path/to/document.pdf');
+final bytes = await file.readAsBytes();
+
+// explicit extraction
+final text = await extractTextFromPdf(bytes);
+
+// OR auto-detect format
+final text = await extractTextFromDocument(bytes);
+
+// Then add to RAG
+await ragService.addSourceWithChunking(text, metadata: 'source: document.pdf');
+```
+
+## Managing Documents
+
+```dart
+// Remove a document by ID
+await ragService.removeSource(sourceId);
+
+// Get duplicate status when adding
+final result = await ragService.addSourceWithChunking(content);
+if (result.isDuplicate) {
+  print('Document already exists (ID: ${result.sourceId})');
+}
+```
+
 ## Semantic Search
 
 ```dart

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.3
+- **PDF Fix**: Enhanced text normalization to preserve paragraph structure.
+- **Safety**: Added 50MB file size processing limit.
+
+## 0.4.0
+- **Fix binary mismatch**: Rebuilt native binaries to resolve hash mismatch with Dart bindings.
 ## 0.3.0
 
 - **Fix platform directories missing**: Include ios/, android/, macos/, linux/, windows/ in package

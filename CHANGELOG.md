@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.3
+
+### Added
+- **API**: Added `removeSource(id)` to `SourceRagService` for deleting documents.
+- **Documentation**: Enhanced `example/example.md` with PDF/DOCX handling and document management examples.
+
+### Fixed
+- **PDF Text Extraction**: Fixed issue where paragraph breaks were removed during text normalization, causing single-chunk embedding.
+- **Safety**: Added 50MB limit for document extraction check to prevent OOM.
+
+## 0.4.2
+
+### Fixed
+- **Hash Mismatch**: Resolved "Content hash on Dart side is different from Rust side" error by updating `rag_engine_flutter` dependency.
+
 ## 0.4.1
 
 ### Added

@@ -116,6 +116,12 @@ pub fn extract_text_from_docx(file_bytes: Vec<u8>) -> Result<String> {
 /// Auto-detect document type and extract text
 /// Uses magic bytes to determine file format
 pub fn extract_text_from_document(file_bytes: Vec<u8>) -> Result<String> {
+    const MAX_FILE_SIZE: usize = 50 * 1024 * 1024; // 50MB
+    
+    if file_bytes.len() > MAX_FILE_SIZE {
+        return Err(anyhow!("File too large ({} bytes). Maximum supported size is 50MB.", file_bytes.len()));
+    }
+
     if file_bytes.len() < 4 {
         return Err(anyhow!("File too small to determine format"));
     }
