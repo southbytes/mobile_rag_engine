@@ -1,6 +1,9 @@
+// Copyright 2025 mobile_rag_engine contributors
+// SPDX-License-Identifier: MIT
+//
+// CONTRIBUTOR GUIDELINES:
+// This file is part of the core engine. Any modifications require owner approval.
+// Please submit a PR with detailed explanation of changes before modifying.
+
 pub mod api;
 mod frb_generated;
-
-// Logger is automatically initialized by flutter_rust_bridge's setup_default_user_utils()
-// iOS: uses oslog (output to Xcode console)
-// Android: uses android_logger (output to logcat)

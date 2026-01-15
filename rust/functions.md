@@ -1,51 +1,134 @@
-# Code Analysis: `src/api/source_rag.rs`
+# Mobile RAG Engine Architecture
 
-This file implements the **Advanced RAG Architecture**, creating a hierarchical "Source -> Chunk" relationship. This is critical for mobile RAG as it allows retrieving "context windows" (adjacent chunks) rather than just isolated text snippets.
+This document describes the architectural components, module responsibilities, and function interdependencies of the Mobile RAG Engine.
 
-| Line Range | Type     | Name                       | Technical Logic (Stack-Specific)                                                                                                                                     | Role in Mobile RAG                                                                                                                                                |
-|:-----------|:---------|:---------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 19-58      | Function | `init_source_db`           | Executes `rusqlite` SQL to create `sources` (parent) and `chunks` (child) tables with `FOREIGN KEY` constraints.                                                     | Sets up the persistent relational schema for the on-device knowledge base.                                                                                        |
-| 70-113     | Function | `add_source`               | Computes `SHA256` hash of content to prevent duplicates before insertion. Returns `AddSourceResult`.                                                                 | Specific Ingestion entry point. Handles deduplication to save mobile storage space.                                                                               |
-| 127-164    | Function | `add_chunks`               | Uses `rusqlite::Transaction` for atomicity. Manually serializes `Vec<f32>` embeddings into `Vec<u8>` (BLOB) using `to_ne_bytes` to avoid overhead.                   | **Critical Path**: Efficiently writes batch embeddings to disk. The transaction ensures data integrity if the app crashes during sync.                            |
-| 167-194    | Function | `rebuild_chunk_hnsw_index` | Reads **all** embeddings from SQLite, deserializes BLOBs to `f32`, and feeds them into `hnsw_index::build_hnsw_index`.                                               | **Memory Bottleneck**: Loads the entire vector dataset into RAM to build the search graph. High memory pressure risk on startup.                                  |
-| 207-251    | Function | `search_chunks`            | Checks if the HNSW index is loaded (`is_hnsw_index_loaded`). If not, triggers a synchronous rebuild. Performs retrieval and joins results with SQL to fetch content. | The main retrieval entry point. The auto-rebuild logic implies the first search after launch will be significantly slower (cold start).                           |
-| 253-305    | Function | `search_chunks_linear`     | Uses `ndarray::Array1` to calculate cosine similarity via dot product. Iterates through the entire SQL result set.                                                   | **Fallback Mechanism**: Ensures search works even if index build fails, but is O(N) and CPU-intensive. Valid only for small datasets (<1k chunks).                |
-| 355-385    | Function | `get_adjacent_chunks`      | SQl query filtering by `source_id` and a `chunk_index` range.                                                                                                        | **Context Expansion**: Allows the LLM to see text *surrounding* the match, improving answer quality (e.g., retrieving the full paragraph of a matching sentence). |
+## High-Level Overview
 
-### Summary
+The engine is designed as a modular Rust library optimized for mobile use via Flutter Rust Bridge (FRB). It provides a complete RAG (Retrieval-Augmented Generation) pipeline, including document parsing, chunking, indexing, and hybrid search (Vector + Keyword).
 
-1.  **Core Responsibility:** Implements the persistent layer of the RAG engine, managing the lifecycle of Documents (Sources) and their Vector Embeddings (Chunks), and bridging the gap between disk storage (SQLite) and high-speed in-memory search (HNSW).
-2.  **Mobile Optimization Check:**
-    *   **Efficient:** Embedding storage as raw BLOBs (`Vec<u8>`) minimizes disk usage and serialization overhead compared to JSON.
-    *   **Risk (Memory):** `rebuild_chunk_hnsw_index` loads *all* chunks into RAM at once. On a low-end Android device with a large knowledge base (e.g., 50k chunks), this could trigger an OOM (Out of Memory) crash.
-    *   **Risk (Latency):** The synchronous call to `rebuild` inside `search_chunks` means the first search operation effectively blocks until the entire index is built. This should ideally be moved to an asynchronous background initialization task in Flutter.
+## Core Modules
 
+### 1. RAG Implementations
 
+#### `simple_rag.rs` (Basic RAG)
+A lightweight RAG implementation suitable for simple use cases.
+-   **Storage:** Single SQLite table `docs` (content, hash, embedding).
+-   **Indexing:** Manages both HNSW (Vector) and BM25 (Keyword) indexes.
+-   **Key Functions:**
+    -   `add_document`: Adds a doc to SQLite, updates BM25, and adds to incremental buffer.
+    -   `search_similar`: Performs HNSW search, falling back to linear scan if needed.
+    -   `rebuild_hnsw_index` / `rebuild_bm25_index`: Full index reconstruction.
 
-RAG Engine Optimization Walkthrough
-Goal
-Resolve Memory (OOM) and Latency risks in the mobile RAG engine (rust/src/api/).
+#### `source_rag.rs` (Advanced RAG)
+The primary RAG implementation supporting hierarchical data (Sources -> Chunks).
+-   **Storage:** Two SQLite tables:
+    -   `sources`: Original document metadata.
+    -   `chunks`: Individual text chunks with embeddings.
+-   **Indexing:** Chunk-level HNSW indexing.
+-   **Key Functions:**
+    -   `add_source`: Creates a source entry.
+    -   `add_chunks`: transactional insertion of chunks.
+    -   `search_chunks`: Vector search over chunks.
+    -   `rebuild_chunk_hnsw_index`: Rebuilds HNSW index from the `chunks` table.
 
-Changes
-1. Library Replacement
-Old: instant-distance.
-Issue: Compilation failure in version 0.6.x (broken internal dependency on BigArray when serde enabled).
-New: hnsw_rs (Version 0.3).
-Benefit: Actively maintained, better features.
-2. Memory Optimization (Implemented)
-Refactored build_hnsw_index to consume the input vectors (Vec<Vec<f32>>) instead of cloning them.
-Impact: Removes the need to hold 2x the dataset size in RAM during index construction. This significantly lowers the risk of OOM on mobile devices.
-// Old (implicit clone in map)
-let embedding_points: Vec<EmbeddingPoint> = points.iter().map(...).collect();
-// New (zero-copy consumption)
-for (id, embedding) in points {
-    hwns.insert((&embedding, u_id)); // inserts owned/referenced slice
-}
-3. Latency Optimization (Persistence)
-Goal: Save HNSW index to disk (.hnsw files) to avoid rebuilding on every app launch.
-Status: Disabled.
-Reason: hnsw_rs loading API (HnswIo::load_hnsw) returns a structure that borrows from the IO loader, which conflicts with the 'static lifetime required by the global static HNSW_INDEX.
-Workaround: Code infrastructure for save/load is present but loading returns false, gracefully falling back to (optimized) in-memory rebuild.
-Verification
-Build: Passed (cargo build).
-Dependencies: successfully updated Cargo.toml.
+### 2. Indexing & Search
+
+#### `hnsw_index.rs` (Vector Search)
+Wraps the `hnsw_rs` crate for approximate nearest neighbor search.
+-   **State:** Thread-safe global static `HNSW_INDEX`.
+-   **Persistence:** Supports saving/loading index markers (rebuilds from DB on mobile).
+-   **Key Functions:** `build_hnsw_index`, `search_hnsw`.
+
+#### `bm25_search.rs` (Keyword Search)
+In-memory implementation of the BM25 ranking algorithm.
+-   **State:** Thread-safe global static `INVERTED_INDEX`.
+-   **Key Functions:** `bm25_add_document`, `bm25_search`.
+
+#### `hybrid_search.rs` (Fused Search)
+Combines Vector and Keyword search results using Reciprocal Rank Fusion (RRF).
+-   **Logic:**
+    1.  Fetch top-K results from `hnsw_index`.
+    2.  Fetch top-K results from `bm25_search`.
+    3.  Compute RRF scores: `1 / (k + rank)`.
+    4.  Sort and return unified results.
+
+#### `incremental_index.rs` (Real-time Updates)
+Manages a temporary buffer for new vectors before they are merged into the main index.
+-   **Strategy:** Dual-search (Buffer + Main Index).
+-   **Key Functions:** `incremental_add`, `incremental_search` (searches both buffer and HNSW).
+
+### 3. Data Processing Pipeline
+
+#### `document_parser.rs` (Ingestion)
+Extracts raw text from binary file formats.
+-   **Supported Formats:** PDF, DOCX.
+-   **Key Features:** Smart page joining (de-hyphenation), page number removal.
+
+#### `semantic_chunker.rs` (Chunking)
+Splits text into semantically meaningful units.
+-   **Strategies:**
+    -   `semantic_chunk`: Paragraph-based splitting with semantic type classification (Definition, List, etc.).
+    -   `markdown_chunk`: Structure-aware splitting that preserves Markdown hierarchy (Headers, Code blocks, Tables).
+
+#### `tokenizer.rs` (Tokenization)
+Wraps HuggingFace `tokenizers` for text-to-vector preparation.
+-   **Key Functions:** `tokenize` (returns IDs), `decode_tokens`.
+
+### 4. Utilities
+
+#### `user_intent.rs` (Command Parsing)
+Parses user slash commands (e.g., `/summary`, `/define`) to determine intent.
+
+#### `compression_utils.rs` (Optimization)
+Compresses text for LLM context windows by removing duplicates and optionally stop-words.
+
+## Dependency Graph
+
+```mermaid
+graph TD
+    User[Mobile App / User] --> SourceRAG
+    User --> SimpleRAG
+    User --> HybridSearch
+    User --> DocParser
+
+    subgraph "Core RAG"
+        SourceRAG[source_rag.rs] --> HNSW
+        SourceRAG --> SQLite[(SQLite DB)]
+        SimpleRAG[simple_rag.rs] --> HNSW
+        SimpleRAG --> BM25
+        SimpleRAG --> Incremental
+        SimpleRAG --> SQLite
+    end
+
+    subgraph "Search Engines"
+        HybridSearch[hybrid_search.rs] --> HNSW[hnsw_index.rs]
+        HybridSearch --> BM25[bm25_search.rs]
+        Incremental[incremental_index.rs] --> HNSW
+    end
+
+    subgraph "Processing"
+        DocParser[document_parser.rs] --> Chunker[semantic_chunker.rs]
+        Chunker --> Tokenizer[tokenizer.rs]
+        BM25 --> Tokenizer
+    end
+```
+
+## Function Call Flow Example: Adding a Document
+
+1.  **Parse:** `extract_text_from_document` (PDF/DOCX -> String).
+2.  **Chunk:** `markdown_chunk` (String -> Vec<StructuredChunk>).
+3.  **Embed:** (External Model) -> Vec<f32>.
+4.  **Store:** `add_source` + `add_chunks` (Write to SQLite).
+5.  **Index:**
+    *   `rebuild_chunk_hnsw_index` (if batch).
+    *   `incremental_add` (if single real-time).
+
+## Function Call Flow Example: Hybrid Search
+
+1.  **User Query:** "How does the engine work?"
+2.  **Intent:** `parse_user_intent` -> `General`.
+3.  **Embed Query:** (External Model) -> Vec<f32>.
+4.  **Search:** `search_hybrid(query_text, query_vec)`.
+    *   Parallel Call 1: `search_hnsw(query_vec)`.
+    *   Parallel Call 2: `bm25_search(query_text)`.
+5.  **Fusion:** Compute RRF scores, sort, and fetch content from SQLite.

@@ -156,6 +156,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<SemanticChunk> dco_decode_list_semantic_chunk(dynamic raw);
 
   @protected
+  List<StructuredChunk> dco_decode_list_structured_chunk(dynamic raw);
+
+  @protected
   String? dco_decode_opt_String(dynamic raw);
 
   @protected
@@ -180,6 +183,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   SourceStats dco_decode_source_stats(dynamic raw);
+
+  @protected
+  StructuredChunk dco_decode_structured_chunk(dynamic raw);
 
   @protected
   int dco_decode_u_32(dynamic raw);
@@ -356,6 +362,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  List<StructuredChunk> sse_decode_list_structured_chunk(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
 
   @protected
@@ -384,6 +395,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   SourceStats sse_decode_source_stats(SseDeserializer deserializer);
+
+  @protected
+  StructuredChunk sse_decode_structured_chunk(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_32(SseDeserializer deserializer);
@@ -617,6 +631,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_structured_chunk(
+    List<StructuredChunk> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
 
   @protected
@@ -648,6 +668,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_source_stats(SourceStats self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_structured_chunk(
+    StructuredChunk self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_u_32(int self, SseSerializer serializer);

@@ -16,6 +16,26 @@ import '../src/rust/api/hnsw_index.dart' as hnsw;
 import 'context_builder.dart';
 import 'embedding_service.dart';
 
+/// Chunking strategy for document processing.
+enum ChunkingStrategy {
+  /// Default paragraph-based chunking (recursive character splitting)
+  recursive,
+
+  /// Markdown-aware chunking (preserves headers, code blocks, tables)
+  markdown,
+}
+
+/// Detect the appropriate chunking strategy based on file extension.
+ChunkingStrategy detectChunkingStrategy(String? filePath) {
+  if (filePath == null) return ChunkingStrategy.recursive;
+
+  final ext = filePath.split('.').lastOrNull?.toLowerCase() ?? '';
+  return switch (ext) {
+    'md' || 'markdown' => ChunkingStrategy.markdown,
+    _ => ChunkingStrategy.recursive,
+  };
+}
+
 /// Result of adding a source document with automatic chunking.
 class SourceAddResult {
   final int sourceId;
@@ -95,12 +115,18 @@ class SourceRagService {
   /// Add a source document with automatic chunking and embedding.
   ///
   /// The document is:
-  /// 1. Split into chunks based on [chunkConfig]
+  /// 1. Split into chunks based on file type (auto-detected from [filePath])
   /// 2. Each chunk is embedded
   /// 3. Source and chunks are stored in DB
+  ///
+  /// If [filePath] is provided, chunking strategy is auto-detected:
+  /// - `.md`, `.markdown` → Markdown-aware chunking (preserves headers, code blocks)
+  /// - Other files → Default recursive chunking
   Future<SourceAddResult> addSourceWithChunking(
     String content, {
     String? metadata,
+    String? filePath,
+    ChunkingStrategy? strategy,
     void Function(int done, int total)? onProgress,
   }) async {
     // 1. Add source document
@@ -119,14 +145,66 @@ class SourceRagService {
       );
     }
 
-    // 2. Split into semantic chunks using Rust (Unicode sentence/word boundaries)
-    final chunks = semanticChunkWithOverlap(
-      text: content,
-      maxChars: maxChunkChars,
-      overlapChars: overlapChars,
-    );
+    // 2. Determine chunking strategy
+    final effectiveStrategy = strategy ?? detectChunkingStrategy(filePath);
 
-    if (chunks.isEmpty) {
+    // 3. Split content based on strategy
+    final chunkDataList = <ChunkData>[];
+
+    if (effectiveStrategy == ChunkingStrategy.markdown) {
+      // Markdown-aware chunking
+      final chunks = markdownChunk(text: content, maxChars: maxChunkChars);
+
+      for (var i = 0; i < chunks.length; i++) {
+        onProgress?.call(i, chunks.length);
+        final chunk = chunks[i];
+        final embedding = await EmbeddingService.embed(chunk.content);
+
+        // Include header path in chunk type for context
+        final enrichedType = chunk.headerPath.isNotEmpty
+            ? '${chunk.chunkType}|${chunk.headerPath}'
+            : chunk.chunkType;
+
+        chunkDataList.add(
+          ChunkData(
+            content: chunk.content,
+            chunkIndex: chunk.index,
+            startPos: chunk.startPos,
+            endPos: chunk.endPos,
+            chunkType: enrichedType,
+            embedding: Float32List.fromList(embedding),
+          ),
+        );
+      }
+      onProgress?.call(chunks.length, chunks.length);
+    } else {
+      // Default recursive chunking
+      final chunks = semanticChunkWithOverlap(
+        text: content,
+        maxChars: maxChunkChars,
+        overlapChars: overlapChars,
+      );
+
+      for (var i = 0; i < chunks.length; i++) {
+        onProgress?.call(i, chunks.length);
+        final chunk = chunks[i];
+        final embedding = await EmbeddingService.embed(chunk.content);
+
+        chunkDataList.add(
+          ChunkData(
+            content: chunk.content,
+            chunkIndex: chunk.index,
+            startPos: chunk.startPos,
+            endPos: chunk.endPos,
+            chunkType: chunk.chunkType,
+            embedding: Float32List.fromList(embedding),
+          ),
+        );
+      }
+      onProgress?.call(chunks.length, chunks.length);
+    }
+
+    if (chunkDataList.isEmpty) {
       return SourceAddResult(
         sourceId: sourceResult.sourceId.toInt(),
         isDuplicate: false,
@@ -134,29 +212,6 @@ class SourceRagService {
         message: 'No chunks created',
       );
     }
-
-    // 3. Generate embeddings for each chunk
-    final chunkDataList = <ChunkData>[];
-
-    for (var i = 0; i < chunks.length; i++) {
-      onProgress?.call(i, chunks.length);
-
-      final chunk = chunks[i];
-      final embedding = await EmbeddingService.embed(chunk.content);
-
-      chunkDataList.add(
-        ChunkData(
-          content: chunk.content,
-          chunkIndex: chunk.index,
-          startPos: chunk.startPos,
-          endPos: chunk.endPos,
-          chunkType: chunk.chunkType,
-          embedding: Float32List.fromList(embedding),
-        ),
-      );
-    }
-
-    onProgress?.call(chunks.length, chunks.length);
 
     // 4. Store chunks
     await addChunks(
@@ -168,8 +223,9 @@ class SourceRagService {
     return SourceAddResult(
       sourceId: sourceResult.sourceId.toInt(),
       isDuplicate: false,
-      chunkCount: chunks.length,
-      message: 'Added ${chunks.length} chunks',
+      chunkCount: chunkDataList.length,
+      message:
+          'Added ${chunkDataList.length} chunks (${effectiveStrategy.name})',
     );
   }
 

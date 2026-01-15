@@ -6,8 +6,9 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `is_article_title`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `eq`, `fmt`, `fmt`
+// These functions are ignored because they are not marked as `pub`: `is_article_title`, `protect_structural_blocks`, `recursive_split`, `split_by_headers`, `split_by_sentences`
+// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ChunkingStrategy`, `ProtectedText`, `Section`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`
 
 /// Classify chunk by rule-based pattern matching.
 ChunkType classifyChunk({required String text}) =>
@@ -31,6 +32,20 @@ List<SemanticChunk> semanticChunkWithOverlap({
   text: text,
   maxChars: maxChars,
   overlapChars: overlapChars,
+);
+
+/// Markdown chunk with structure preservation and metadata inheritance.
+///
+/// - Splits by Markdown headers (#, ##, ###)
+/// - Preserves code blocks (```) as single units
+/// - Preserves tables (|---|) as single units
+/// - Inherits header path as metadata
+List<StructuredChunk> markdownChunk({
+  required String text,
+  required int maxChars,
+}) => RustLib.instance.api.crateApiSemanticChunkerMarkdownChunk(
+  text: text,
+  maxChars: maxChars,
 );
 
 /// Chunk type classification.
@@ -83,4 +98,44 @@ class SemanticChunk {
           startPos == other.startPos &&
           endPos == other.endPos &&
           chunkType == other.chunkType;
+}
+
+/// Structured chunk with header path for context inheritance.
+class StructuredChunk {
+  final int index;
+  final String content;
+  final String headerPath;
+  final String chunkType;
+  final int startPos;
+  final int endPos;
+
+  const StructuredChunk({
+    required this.index,
+    required this.content,
+    required this.headerPath,
+    required this.chunkType,
+    required this.startPos,
+    required this.endPos,
+  });
+
+  @override
+  int get hashCode =>
+      index.hashCode ^
+      content.hashCode ^
+      headerPath.hashCode ^
+      chunkType.hashCode ^
+      startPos.hashCode ^
+      endPos.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StructuredChunk &&
+          runtimeType == other.runtimeType &&
+          index == other.index &&
+          content == other.content &&
+          headerPath == other.headerPath &&
+          chunkType == other.chunkType &&
+          startPos == other.startPos &&
+          endPos == other.endPos;
 }
