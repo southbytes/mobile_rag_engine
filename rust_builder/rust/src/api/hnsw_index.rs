@@ -1,5 +1,20 @@
-// rust/src/api/hnsw_index.rs
-//! HNSW (Hierarchical Navigable Small Worlds) vector indexing using hnsw_rs
+// Copyright 2025 mobile_rag_engine contributors
+// SPDX-License-Identifier: MIT
+//
+// Licensed under the MIT License. You may obtain a copy of the License at
+// https://opensource.org/licenses/MIT
+//
+// This software is provided "AS IS", without warranty of any kind, express or
+// implied, including but not limited to the warranties of merchantability,
+// fitness for a particular purpose, and noninfringement. In no event shall the
+// authors or copyright holders be liable for any claim, damages, or other
+// liability arising from the use of this software.
+//
+// CONTRIBUTOR GUIDELINES:
+// This file is part of the core engine. Any modifications require owner approval.
+// Please submit a PR with detailed explanation of changes before modifying.
+//
+//! HNSW (Hierarchical Navigable Small Worlds) vector indexing module.
 
 use hnsw_rs::prelude::*;
 use std::sync::RwLock;
@@ -7,11 +22,8 @@ use once_cell::sync::Lazy;
 use log::{info, debug, warn};
 use std::path::Path;
 use serde::{Serialize, Deserialize};
-// HnswIo persistence disabled due to lifetime constraints with static storage
 
-/// Custom point type: wrapper for FRB compatibility
-/// This struct was used in previous FRB generation, so we keep it to avoid breaking changes.
-/// We don't use it in the index itself anymore (we use native vectors).
+/// Embedding point wrapper for FRB compatibility (legacy support).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EmbeddingPoint {
     pub id: i64,
@@ -26,13 +38,11 @@ impl EmbeddingPoint {
     }
 }
 
-/// Global HNSW index (in-memory cache)
-// hnsw_rs::Hnsw is thread-safe for searching, so RwLock is good for replacing the index
-// Explicitly specifying types helps: Hnsw<Data, Distance>
+/// Global HNSW index (thread-safe in-memory cache).
 static HNSW_INDEX: Lazy<RwLock<Option<Hnsw<f32, DistCosine>>>> = 
     Lazy::new(|| RwLock::new(None));
 
-/// Build HNSW index (Optimized)
+/// Build HNSW index from embedding points.
 pub fn build_hnsw_index(points: Vec<(i64, Vec<f32>)>) -> anyhow::Result<()> {
     info!("[hnsw] Building index with {} points", points.len());
     
@@ -42,28 +52,12 @@ pub fn build_hnsw_index(points: Vec<(i64, Vec<f32>)>) -> anyhow::Result<()> {
     }
     
     let count = points.len();
+    let hwns = Hnsw::new(16, count, 16, 100, DistCosine);
     
-    // hnsw_rs 0.3.x: Hnsw::new(max_nb_connection, max_elements, max_layer, ef_construction, distance_fn)
-    // We expect f32 data and Cosine distance
-    // Note: insert takes &self, so hwns doesn't need to be mut if using interior mutability
-    let hwns = Hnsw::new(
-        16, // max_nb_connection
-        count, // max_elements: initial capacity
-        16, // max_layer
-        100, // ef_construction
-        DistCosine
-    );
-    
-    // Insert items
     for (id, embedding) in points {
-        // hnsw_rs inserts using &slice and an external ID (usize).
-        let u_id = id as usize; 
-        
-        // Insert takes a tuple: (&[T], usize)
-        hwns.insert((&embedding, u_id)); 
+        hwns.insert((&embedding, id as usize));
     }
     
-    // Store in global
     let mut index_guard = HNSW_INDEX.write().unwrap();
     *index_guard = Some(hwns);
     
@@ -71,18 +65,10 @@ pub fn build_hnsw_index(points: Vec<(i64, Vec<f32>)>) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Save HNSW index point data to disk (bincode serialization)
-/// 
-/// Since hnsw_rs's native persistence has lifetime constraints,
-/// we save the point data and rebuild the index on load.
-/// This is fast enough for practical use (1000 points < 100ms rebuild).
+/// Save HNSW index marker to disk (uses DB-based persistence).
 pub fn save_hnsw_index(base_path: &str) -> anyhow::Result<()> {
-    // We need access to the points that were used to build the index
-    // For now, this will be a no-op until we track points during build
-    // The actual save happens in source_rag.rs after rebuild_chunk_hnsw_index
     info!("[hnsw] save_hnsw_index called - using DB-based persistence");
     
-    // Create a marker file to indicate index was built
     let marker_path = format!("{}.hnsw.marker", base_path);
     if let Some(parent) = Path::new(&marker_path).parent() {
         std::fs::create_dir_all(parent)?;
@@ -93,17 +79,12 @@ pub fn save_hnsw_index(base_path: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Load HNSW index from disk
-/// 
-/// Returns true if marker exists (index should be rebuilt from DB),
-/// false if no cached index exists.
+/// Load HNSW index marker. Returns true if marker exists.
 pub fn load_hnsw_index(base_path: &str) -> anyhow::Result<bool> {
     let marker_path = format!("{}.hnsw.marker", base_path);
     
     if Path::new(&marker_path).exists() {
         info!("[hnsw] Index marker found at {} - rebuild from DB recommended", base_path);
-        // Marker exists, but actual rebuild happens via rebuild_chunk_hnsw_index
-        // This just tells the caller that an index was previously built
         return Ok(true);
     }
     
@@ -111,14 +92,14 @@ pub fn load_hnsw_index(base_path: &str) -> anyhow::Result<bool> {
     Ok(false)
 }
 
-/// HNSW search result
+/// HNSW search result containing doc ID and distance.
 #[derive(Debug)]
 pub struct HnswSearchResult {
     pub id: i64,
     pub distance: f32,
 }
 
-/// Search in HNSW index
+/// Search in HNSW index.
 pub fn search_hnsw(query_embedding: Vec<f32>, top_k: usize) -> anyhow::Result<Vec<HnswSearchResult>> {
     debug!("[hnsw] Starting search, top_k: {}", top_k);
     
@@ -126,10 +107,7 @@ pub fn search_hnsw(query_embedding: Vec<f32>, top_k: usize) -> anyhow::Result<Ve
     let index = index_guard.as_ref()
         .ok_or_else(|| anyhow::anyhow!("HNSW index not initialized"))?;
     
-    // ef_search = top_k * 2 usually good
     let ef_search = core::cmp::max(30, top_k * 2);
-    
-    // search returns Vec<Neighbor>
     let neighbors = index.search(&query_embedding, top_k, ef_search);
     
     let results: Vec<HnswSearchResult> = neighbors.iter()
@@ -143,13 +121,13 @@ pub fn search_hnsw(query_embedding: Vec<f32>, top_k: usize) -> anyhow::Result<Ve
     Ok(results)
 }
 
-/// Check if HNSW index is loaded
+/// Check if HNSW index is loaded.
 pub fn is_hnsw_index_loaded() -> bool {
     let index_guard = HNSW_INDEX.read().unwrap();
     index_guard.is_some()
 }
 
-/// Clear HNSW index
+/// Clear HNSW index from memory.
 pub fn clear_hnsw_index() {
     let mut index_guard = HNSW_INDEX.write().unwrap();
     *index_guard = None;

@@ -6,10 +6,10 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `dehyphenate`
+// These functions are ignored because they are not marked as `pub`: `join_pages`, `remove_trailing_page_number`
 
 /// Extract text content from a PDF file (bytes)
-/// Includes dehyphenation to fix line-break word splits
+/// Uses page-by-page extraction for safe page number removal and hyphenation handling
 Future<String> extractTextFromPdf({required List<int> fileBytes}) => RustLib
     .instance
     .api

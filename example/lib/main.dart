@@ -8,6 +8,7 @@ import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
 import 'screens/benchmark_screen.dart';
 import 'screens/quality_test_screen.dart';
+import 'screens/chunking_test_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -171,7 +172,7 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  /// Import PDF/DOCX file and embed: file -> text extraction -> chunking -> embedding
+  /// Import PDF/DOCX/Markdown file and embed: file -> text extraction -> chunking -> embedding
   Future<void> _importAndEmbedDocument() async {
     setState(() {
       _isLoading = true;
@@ -179,10 +180,10 @@ class _MyAppState extends State<MyApp> {
     });
 
     try {
-      // Pick a PDF or DOCX file
+      // Pick a PDF, DOCX, or Markdown file
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'docx'],
+        allowedExtensions: ['pdf', 'docx', 'md', 'markdown'],
       );
 
       if (result == null || result.files.isEmpty) {
@@ -205,14 +206,24 @@ class _MyAppState extends State<MyApp> {
 
       setState(() => _status = "Reading file: ${file.name}");
 
-      // Read file bytes
-      final bytes = await File(filePath).readAsBytes();
-      setState(() => _status = "Extracting text from ${file.name}...");
+      String extractedText;
+      final ext = filePath.split('.').last.toLowerCase();
 
-      // Extract text using Rust DTT module
-      final extractedText = await extractTextFromDocument(
-        fileBytes: bytes.toList(),
-      );
+      if (ext == 'md' || ext == 'markdown') {
+        // Markdown: read as text directly
+        extractedText = await File(filePath).readAsString();
+        setState(
+          () => _status = "Markdown loaded! (${extractedText.length} chars)",
+        );
+      } else {
+        // PDF/DOCX: use Rust DTT extractor
+        final bytes = await File(filePath).readAsBytes();
+        setState(() => _status = "Extracting text from ${file.name}...");
+
+        extractedText = await extractTextFromDocument(
+          fileBytes: bytes.toList(),
+        );
+      }
 
       if (extractedText.isEmpty) {
         setState(() {
@@ -227,10 +238,11 @@ class _MyAppState extends State<MyApp> {
             "Text extracted! (${extractedText.length} chars)\nProcessing chunks...",
       );
 
-      // Add to RAG with chunking and embedding
+      // Add to RAG with chunking and embedding (auto-detect strategy from filePath)
       final addResult = await _ragService!.addSourceWithChunking(
         extractedText,
         metadata: '{"filename": "${file.name}"}',
+        filePath: filePath, // <-- Auto-detect chunking strategy
         onProgress: (done, total) {
           setState(() => _status = "Embedding chunks: $done/$total");
         },
@@ -248,10 +260,10 @@ class _MyAppState extends State<MyApp> {
 
         setState(() {
           _status =
-              "✅ PDF/DOCX imported!\n"
+              "✅ Document imported!\n"
               "📄 File: ${file.name}\n"
               "📝 Text: ${extractedText.length} chars\n"
-              "📦 Chunks: ${addResult.chunkCount}";
+              "📦 ${addResult.message}";
           _isLoading = false;
         });
       }
@@ -273,6 +285,19 @@ class _MyAppState extends State<MyApp> {
             title: const Text('🔍 Local RAG Engine'),
             centerTitle: true,
             actions: [
+              IconButton(
+                icon: const Icon(Icons.science),
+                tooltip: 'Chunking Test',
+                onPressed: _isReady
+                    ? () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const ChunkingTestScreen(),
+                          ),
+                        );
+                      }
+                    : null,
+              ),
               IconButton(
                 icon: const Icon(Icons.speed),
                 tooltip: 'Benchmark',
