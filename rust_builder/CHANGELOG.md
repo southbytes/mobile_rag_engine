@@ -1,8 +1,10 @@
 # Changelog
 
-## 0.4.3
-- **PDF Fix**: Enhanced text normalization to preserve paragraph structure.
-- **Safety**: Added 50MB file size processing limit.
+## 0.5.0
+- **PDF/DOCX Text Extraction**: New text extraction with smart dehyphenation
+- **Markdown Chunking**: Structure-aware chunking with header path inheritance
+- **PDF Fix**: Enhanced text normalization to preserve paragraph structure
+- **Safety**: Added 50MB file size processing limit
 
 ## 0.4.0
 - **Fix binary mismatch**: Rebuilt native binaries to resolve hash mismatch with Dart bindings.

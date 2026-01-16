@@ -39,6 +39,8 @@ Data never leaves the user's device. Perfect for privacy-focused apps (journals,
 - **Cross-Platform:** Works seamlessly on **iOS, Android, and macOS**
 - **HNSW Vector Index:** Fast approximate nearest neighbor search (proven scale up to 10k+ docs)
 - **Hybrid Search Ready:** Supports semantic search combined with exact matching
+- **Markdown Structure-Aware Chunking:** Preserves headers, code blocks, and tables during chunking with header path inheritance
+- **PDF/DOCX Text Extraction:** Built-in document parsing with smart dehyphenation and page number removal
 - **Auto-Chunking:** Intelligent text splitting strategies included (Unicode-based semantic chunking)
 - **Model Flexibility:** Use standard ONNX models (e.g., `bge-m3`, `all-MiniLM-L6-v2`)
 
@@ -59,7 +61,7 @@ Data never leaves the user's device. Perfect for privacy-focused apps (journals,
 
 ```yaml
 dependencies:
-  mobile_rag_engine: ^0.4.1
+  mobile_rag_engine: ^0.4.3
 ```
 
 ### 2. Download Model Files
@@ -120,7 +122,7 @@ Extract text from documents and add to RAG:
 ```dart
 // 1. Add file_picker to your pubspec.yaml (optional)
 dependencies:
-  mobile_rag_engine: ^0.4.1
+  mobile_rag_engine: ^0.4.3
   file_picker: ^9.2.1  # For file selection UI
 
 // 2. Pick and process documents
@@ -192,23 +194,6 @@ This package bridges the best of two worlds: **Flutter for UI** and **Rust for h
 pip install optimum[exporters]
 optimum-cli export onnx --model sentence-transformers/YOUR_MODEL ./output
 ```
-
----
-
-## Releases
-
-- **[v0.3.0 - Rust Semantic Chunking](docs/guides/v0.3.0_semantic_chunking_update.md)** - Unicode-based semantic chunking
-- **[v0.2.0 - LLM-Optimized Chunking](docs/guides/v0.2.0_chunking_update.md)** - Chunking and context assembly
-
----
-
-## Roadmap
-
-- [x] INT8 quantization support
-- [x] Chunking strategies for long documents
-- [ ] Korean-specific models (KoSimCSE, KR-SBERT)
-- [ ] Hybrid search (keyword + semantic)
-- [ ] iOS/Android On-Demand Resources
 
 ---
 

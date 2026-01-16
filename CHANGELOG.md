@@ -8,28 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 0.4.3
 
 ### Added
-- **API**: Added `removeSource(id)` to `SourceRagService` for deleting documents.
-- **Documentation**: Enhanced `example/example.md` with PDF/DOCX handling and document management examples.
-
-### Fixed
-- **PDF Text Extraction**: Fixed issue where paragraph breaks were removed during text normalization, causing single-chunk embedding.
-- **Safety**: Added 50MB limit for document extraction check to prevent OOM.
-
-## 0.4.2
-
-### Fixed
-- **Hash Mismatch**: Resolved "Content hash on Dart side is different from Rust side" error by updating `rag_engine_flutter` dependency.
-
-## 0.4.1
-
-### Added
 - **PDF/DOCX Text Extraction**: New `extractTextFromPdf()`, `extractTextFromDocx()`, and `extractTextFromDocument()` functions
+- **Markdown Structure-Aware Chunking**: New `markdownChunk()` function with header path inheritance, code block/table preservation
+- **API**: Added `removeSource(id)` to `SourceRagService` for deleting documents
 - **Smart Dehyphenation**: Automatically rejoins words split by line breaks and page boundaries
 - **Page Number Removal**: Strips standalone page numbers from PDF text extraction
 - **macOS Entitlements**: Added file read permissions for macOS file picker support
+- **Documentation**: Enhanced `example/example.md` with PDF/DOCX handling and document management examples
 
 ### Changed
+- **Project Structure Cleanup**: Removed duplicate `/rust/` directory; consolidated Rust source to `rust_builder/rust/` only
+- **Flutter Rust Bridge Config**: Updated `rust_root` path in `flutter_rust_bridge.yaml`
 - **Rust Core**: Added `pdf-extract`, `docx-lite`, and `regex` crates for document processing
+
+### Fixed
+- **PDF Text Extraction**: Fixed issue where paragraph breaks were removed during text normalization
+- **Safety**: Added 50MB limit for document extraction to prevent OOM
 
 ## 0.4.0
 
