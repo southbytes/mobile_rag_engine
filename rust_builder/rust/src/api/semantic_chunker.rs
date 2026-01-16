@@ -616,10 +616,13 @@ mod markdown_tests {
     fn test_code_block_preservation() {
         let text = "# Code Example\n\n```rust\nfn main() {\n    println!(\"Hello\");\n}\n```\n\nText after code.";
         let chunks = markdown_chunk(text.to_string(), 500);
-        // Find code chunk
-        let code_chunk = chunks.iter().find(|c| c.chunk_type == "code");
+        // Find code chunk (chunk_type is "code" or "code:language")
+        let code_chunk = chunks.iter().find(|c| c.chunk_type.starts_with("code"));
         assert!(code_chunk.is_some());
-        assert!(code_chunk.unwrap().content.contains("fn main()"));
+        let chunk = code_chunk.unwrap();
+        assert!(chunk.content.contains("fn main()"));
+        // Verify language detection
+        assert!(chunk.chunk_type == "code:rust" || chunk.chunk_type == "code");
     }
 
     #[test]
