@@ -55,6 +55,18 @@ Data never leaves the user's device. Perfect for privacy-focused apps (journals,
 
 ---
 
+## Requirements
+
+| Platform | Minimum Version |
+|:---------|:----------------|
+| **iOS** | 13.0+ |
+| **Android** | API 21+ (Android 5.0 Lollipop) |
+| **macOS** | 10.15+ (Catalina) |
+
+> **ONNX Runtime** is bundled automatically via the [`onnxruntime`](https://pub.dev/packages/onnxruntime) plugin. No additional native setup required.
+
+---
+
 ## Installation
 
 ### 1. Add the dependency
@@ -75,7 +87,7 @@ curl -L -o model.onnx "https://huggingface.co/Teradata/bge-m3/resolve/main/onnx/
 curl -L -o tokenizer.json "https://huggingface.co/BAAI/bge-m3/resolve/main/tokenizer.json"
 ```
 
-> See [Model Setup Guide](docs/guides/model_setup.md) for alternative models and production deployment strategies.
+> See [Model Setup Guide](https://github.com/dev07060/mobile_rag_engine/blob/main/docs/guides/model_setup.md) for alternative models and production deployment strategies.
 
 ---
 
@@ -184,16 +196,31 @@ This package bridges the best of two worlds: **Flutter for UI** and **Rust for h
 
 ## Model Options
 
-| Model | Size | Best For |
-|:---|:---:|:---|
-| [Teradata/bge-m3](https://huggingface.co/Teradata/bge-m3) (INT8) | ~200MB | Multilingual (Korean, English, etc.) |
-| [all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) | ~25MB | English only, faster |
+| Model | Dimensions | Size | Max Tokens | Languages |
+|:------|:----------:|:----:|:----------:|:----------|
+| [Teradata/bge-m3](https://huggingface.co/Teradata/bge-m3) (INT8) | **1024** | ~542 MB | 8,194 | 100+ (multilingual) |
+| [all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) | **384** | ~25 MB | 256 | English only |
+
+> **Important:** The embedding dimension must be consistent across all documents. Switching models requires re-embedding your entire corpus.
 
 **Custom Models:** Export any Sentence Transformer to ONNX:
 ```bash
 pip install optimum[exporters]
 optimum-cli export onnx --model sentence-transformers/YOUR_MODEL ./output
 ```
+
+See [Model Setup Guide](https://github.com/dev07060/mobile_rag_engine/blob/main/docs/guides/model_setup.md) for deployment strategies and troubleshooting.
+
+---
+
+## Documentation
+
+| Guide | Description |
+|:------|:------------|
+| [Quick Start](https://github.com/dev07060/mobile_rag_engine/blob/main/docs/guides/quick_start.md) | Get started in 5 minutes |
+| [Model Setup](https://github.com/dev07060/mobile_rag_engine/blob/main/docs/guides/model_setup.md) | Model selection, download, deployment strategies |
+| [FAQ](https://github.com/dev07060/mobile_rag_engine/blob/main/docs/guides/faq.md) | Frequently asked questions |
+| [Troubleshooting](https://github.com/dev07060/mobile_rag_engine/blob/main/docs/guides/troubleshooting.md) | Problem solving guide |
 
 ---
 

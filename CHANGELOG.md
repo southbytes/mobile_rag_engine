@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.4
+
+### Added
+- **Documentation**: Added comprehensive guides in `docs/guides/`:
+  - `quick_start.md` - Get started in 5 minutes
+  - `model_setup.md` - Model selection, download, deployment strategies
+  - `faq.md` - Frequently asked questions
+  - `troubleshooting.md` - Problem solving guide
+- **README**: Added Requirements section with platform minimum versions (iOS 13.0+, Android API 21+, macOS 10.15+)
+- **README**: Added Documentation section with links to all guides
+
+### Changed
+- **README**: Enhanced Model Options table with dimensions, max tokens, and language support info
+- **README**: Updated all doc links to absolute GitHub URLs for pub.dev compatibility
+
 ## 0.4.3
 
 ### Added

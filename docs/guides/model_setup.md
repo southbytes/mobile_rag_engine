@@ -1,0 +1,172 @@
+# Model Setup Guide
+
+This guide covers embedding model selection, download, and deployment strategies for `mobile_rag_engine`.
+
+---
+
+## Model Comparison
+
+| Model | Dimensions | Size (ONNX) | Max Tokens | Languages | Best For |
+|:------|:----------:|:-----------:|:----------:|:----------|:---------|
+| [Teradata/bge-m3](https://huggingface.co/Teradata/bge-m3) (INT8) | **1024** | ~542 MB | 8,194 | 100+ (multilingual) | Korean, CJK, mixed-language apps |
+| [all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) | **384** | ~25 MB | 256 | English | English-only apps, size-sensitive |
+
+> **Dimension Matters**: The embedding dimension affects your vector index. Once you choose a model, all documents must use the same dimension. Switching models requires re-embedding all documents.
+
+---
+
+## Download Instructions
+
+### BGE-m3 (Recommended for Multilingual)
+
+```bash
+# Create assets folder
+mkdir -p assets && cd assets
+
+# Download INT8 quantized model (~542MB)
+curl -L -o model.onnx "https://huggingface.co/Teradata/bge-m3/resolve/main/onnx/model_int8.onnx"
+
+# Download tokenizer (~17MB)
+curl -L -o tokenizer.json "https://huggingface.co/BAAI/bge-m3/resolve/main/tokenizer.json"
+```
+
+### all-MiniLM-L6-v2 (Lightweight English)
+
+```bash
+mkdir -p assets && cd assets
+
+# Download model (~25MB)
+curl -L -o model.onnx "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx"
+
+# Download tokenizer
+curl -L -o tokenizer.json "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json"
+```
+
+---
+
+## Production Deployment Strategies
+
+### Strategy 1: Bundle with App (Recommended for <100MB)
+
+Include model files in your app bundle. Simple and works offline immediately.
+
+```yaml
+# pubspec.yaml
+flutter:
+  assets:
+    - assets/model.onnx
+    - assets/tokenizer.json
+```
+
+**Pros:**
+- Works immediately after install
+- No network dependency
+- Consistent performance
+
+**Cons:**
+- Increases app download size
+- App store limits (iOS: 4GB, Android Play: 150MB AAB)
+
+### Strategy 2: Download on First Launch (Recommended for >100MB)
+
+Download models from your CDN or Hugging Face on first app launch.
+
+```dart
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+
+Future<void> downloadModelIfNeeded() async {
+  final dir = await getApplicationDocumentsDirectory();
+  final modelFile = File('${dir.path}/model.onnx');
+  
+  if (!await modelFile.exists()) {
+    final response = await http.get(Uri.parse(
+      'https://huggingface.co/Teradata/bge-m3/resolve/main/onnx/model_int8.onnx'
+    ));
+    await modelFile.writeAsBytes(response.bodyBytes);
+  }
+}
+```
+
+**Pros:**
+- Smaller initial app size
+- Can update models without app update
+
+**Cons:**
+- Requires network on first launch
+- Need to handle download failures
+
+### Strategy 3: Hybrid (Best of Both Worlds)
+
+Bundle a small model (MiniLM) for immediate use, then download a larger model (BGE-m3) in background.
+
+---
+
+## Custom Model Export
+
+Export any Sentence Transformer model to ONNX format:
+
+```bash
+# Install optimum
+pip install optimum[exporters]
+
+# Export to ONNX
+optimum-cli export onnx \
+  --model sentence-transformers/YOUR_MODEL \
+  --task feature-extraction \
+  ./output
+
+# (Optional) Quantize to INT8 for mobile
+python -m onnxruntime.quantization.preprocess \
+  --input model.onnx \
+  --output model_prep.onnx
+
+python -m onnxruntime.quantization.quantize \
+  --input model_prep.onnx \
+  --output model_int8.onnx \
+  --per_channel
+```
+
+---
+
+## ONNX Runtime Notes
+
+This package uses the [`onnxruntime`](https://pub.dev/packages/onnxruntime) Flutter plugin which bundles ONNX Runtime binaries for each platform.
+
+**No additional setup required** - the plugin automatically includes:
+- iOS: CoreML execution provider (uses Neural Engine on A12+ chips)
+- Android: NNAPI execution provider (hardware acceleration)
+- macOS: CoreML execution provider
+
+### Performance Tips
+
+1. **Use INT8 quantized models** - 2-4x smaller, similar accuracy
+2. **Batch embeddings** when processing many documents:
+   ```dart
+   await EmbeddingService.embedBatch(texts, onProgress: (i, n) => ...);
+   ```
+3. **Run in isolate** for heavy processing to avoid UI jank
+
+---
+
+## Troubleshooting
+
+### "Failed to load ONNX model"
+
+- Ensure model file exists at the specified path
+- Check file is not corrupted (re-download if needed)
+- Verify model is ONNX format (not PyTorch .bin or .safetensors)
+
+### "Tokenizer initialization failed"
+
+- Ensure `tokenizer.json` file exists
+- File must be HuggingFace tokenizers format (not SentencePiece)
+
+### iOS Simulator Limitations
+
+ONNX Runtime works on iOS Simulator but without hardware acceleration. Expect ~3-5x slower inference compared to physical devices.
+
+### Android Emulator
+
+ARM-based emulators (M1/M2 Mac) work well. x86 emulators may have compatibility issues with some ONNX operations.

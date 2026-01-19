@@ -75,4 +75,4 @@ bge-m3-temp/
 # Example app assets (too large for git, use download_models.sh)
 example/assets/model.onnx
 example/assets/tokenizer.json
-docs/
+# docs/
