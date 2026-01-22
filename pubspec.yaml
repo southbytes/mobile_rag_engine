@@ -23,7 +23,7 @@ dependencies:
   # For development, use path dependency:
   # rag_engine_flutter:
   #   path: rust_builder/
-  rag_engine_flutter: ^0.5.0
+  rag_engine_flutter: ^0.5.1
   path_provider: ^2.1.5
   onnxruntime: ^1.4.1
   freezed_annotation: ^3.1.0
