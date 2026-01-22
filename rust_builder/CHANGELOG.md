@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1
+- **Unit Tests**: Added tests for `hnsw_index` and `document_parser` modules
+- **BM25 Korean Support**: Improved Korean tokenization using `unicode-segmentation` crate for better word boundary detection
+- **Code Quality**: Enhanced test coverage for core Rust modules
+
 ## 0.5.0
 - **PDF/DOCX Text Extraction**: New text extraction with smart dehyphenation
 - **Markdown Chunking**: Structure-aware chunking with header path inheritance
