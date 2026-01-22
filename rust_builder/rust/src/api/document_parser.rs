@@ -138,3 +138,59 @@ pub fn extract_text_from_document(file_bytes: Vec<u8>) -> Result<String> {
     
     Err(anyhow!("Unsupported document format. Expected PDF or DOCX."))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_remove_trailing_page_number() {
+        let text = "Some content here.\n\n42";
+        let result = remove_trailing_page_number(text);
+        assert!(!result.contains("42"));
+        assert!(result.contains("Some content here."));
+    }
+
+    #[test]
+    fn test_remove_trailing_page_number_no_number() {
+        let text = "Some content here.\nMore content.";
+        let result = remove_trailing_page_number(text);
+        assert_eq!(result, text);
+    }
+
+    #[test]
+    fn test_join_pages_dehyphenation() {
+        let pages = vec![
+            "This is a hyphen-".to_string(),
+            "ated word in the text.".to_string(),
+        ];
+        let result = join_pages(pages);
+        assert!(result.contains("hyphenated"));
+        assert!(!result.contains("hyphen-"));
+    }
+
+    #[test]
+    fn test_extract_unsupported_format() {
+        let bytes = vec![0x00, 0x01, 0x02, 0x03];
+        let result = extract_text_from_document(bytes);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unsupported"));
+    }
+
+    #[test]
+    fn test_file_too_small() {
+        let bytes = vec![0x50, 0x4B]; // Only 2 bytes
+        let result = extract_text_from_document(bytes);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("too small"));
+    }
+
+    #[test]
+    fn test_file_too_large() {
+        // Create a vector that exceeds MAX_FILE_SIZE
+        let bytes = vec![0u8; 51 * 1024 * 1024]; // 51MB
+        let result = extract_text_from_document(bytes);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("too large"));
+    }
+}

@@ -180,3 +180,51 @@ pub fn clear_hnsw_index() {
     *index_guard = None;
     info!("[hnsw] Index cleared");
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_random_embedding(seed: u64, dims: usize) -> Vec<f32> {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        (0..dims).map(|i| {
+            let mut h = DefaultHasher::new();
+            (seed + i as u64).hash(&mut h);
+            (h.finish() as f32 / u64::MAX as f32) * 2.0 - 1.0
+        }).collect()
+    }
+
+    #[test]
+    fn test_build_empty_index() {
+        let result = build_hnsw_index(vec![]);
+        assert!(result.is_ok());
+        assert!(!is_hnsw_index_loaded());
+    }
+
+    #[test]
+    fn test_build_and_search() {
+        clear_hnsw_index();
+        let points: Vec<(i64, Vec<f32>)> = (0..100)
+            .map(|i| (i, make_random_embedding(i as u64, 384)))
+            .collect();
+        build_hnsw_index(points).unwrap();
+        assert!(is_hnsw_index_loaded());
+
+        let query = make_random_embedding(0, 384);
+        let results = search_hnsw(query, 5).unwrap();
+        assert_eq!(results.len(), 5);
+        // Same embedding should return itself as closest
+        assert_eq!(results[0].id, 0);
+        clear_hnsw_index();
+    }
+
+    #[test]
+    fn test_clear_index() {
+        let points = vec![(1, make_random_embedding(1, 384))];
+        build_hnsw_index(points).unwrap();
+        assert!(is_hnsw_index_loaded());
+        clear_hnsw_index();
+        assert!(!is_hnsw_index_loaded());
+    }
+}

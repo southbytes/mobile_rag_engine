@@ -31,6 +31,9 @@ sha2 = "0.10"
 # Semantic text splitting with Unicode sentence/word boundaries
 text-splitter = { version = "0.29.3", default-features = false }
 
+# Unicode word segmentation for BM25 tokenization (CJK support)
+unicode-segmentation = "1.12"
+
 # Document-to-Text (DTT) - PDF and DOCX text extraction
 pdf-extract = "0.7"
 docx-lite = "0.2"

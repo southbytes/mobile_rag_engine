@@ -1841,6 +1841,7 @@ dependencies = [
  "sha2",
  "text-splitter",
  "tokenizers",
+ "unicode-segmentation",
 ]
 
 [[package]]

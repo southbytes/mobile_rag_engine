@@ -20,7 +20,6 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 use once_cell::sync::Lazy;
 use log::{info, debug};
-use crate::api::tokenizer::tokenize;
 
 static INVERTED_INDEX: Lazy<RwLock<InvertedIndex>> = Lazy::new(|| RwLock::new(InvertedIndex::new()));
 
@@ -132,11 +131,13 @@ impl InvertedIndex {
 }
 
 fn tokenize_for_bm25(text: &str) -> Vec<String> {
-    let _token_ids = tokenize(text.to_string());
-    text.to_lowercase()
-        .split(|c: char| !c.is_alphanumeric() && c != '_')
-        .filter(|s| s.len() >= 2)
-        .map(|s| s.to_string())
+    use unicode_segmentation::UnicodeSegmentation;
+    
+    // Use Unicode word segmentation for better CJK support
+    // Handles Korean, Chinese, Japanese, and multi-language text
+    text.unicode_words()
+        .filter(|s| s.chars().count() >= 2)
+        .map(|s| s.to_lowercase())
         .collect()
 }
 
@@ -218,4 +219,44 @@ mod tests {
         assert!(tokens.contains(&"hello".to_string()));
         assert!(tokens.contains(&"world".to_string()));
     }
+
+    #[test]
+    fn test_tokenize_korean_basic() {
+        // Korean sentence: "삼성전자 주가가 올랐다" (Samsung Electronics stock price rose)
+        let tokens = tokenize_for_bm25("삼성전자 주가가 올랐다");
+        assert!(tokens.contains(&"삼성전자".to_string()));
+        assert!(tokens.contains(&"주가가".to_string()));
+        assert!(tokens.contains(&"올랐다".to_string()));
+    }
+
+    #[test]
+    fn test_tokenize_korean_mixed() {
+        // Mixed Korean + English + numbers: "iPhone15 프로 출시"
+        let tokens = tokenize_for_bm25("iPhone15 프로 출시");
+        assert!(tokens.contains(&"iphone15".to_string()));
+        assert!(tokens.contains(&"프로".to_string()));
+        assert!(tokens.contains(&"출시".to_string()));
+    }
+
+    #[test]
+    fn test_tokenize_korean_with_punctuation() {
+        // Korean with punctuation: "안녕하세요! 반갑습니다."
+        let tokens = tokenize_for_bm25("안녕하세요! 반갑습니다.");
+        assert!(tokens.contains(&"안녕하세요".to_string()));
+        assert!(tokens.contains(&"반갑습니다".to_string()));
+        assert_eq!(tokens.len(), 2); // Only words, no punctuation
+    }
+
+    #[test]
+    fn test_bm25_korean_search() {
+        let mut index = InvertedIndex::new();
+        index.add_document(1, "삼성전자 주가가 상승했습니다");
+        index.add_document(2, "애플 아이폰 신제품 출시");
+        index.add_document(3, "현대자동차 전기차 판매 증가");
+        
+        let results = index.search("삼성전자 주가", 10);
+        assert!(!results.is_empty());
+        assert_eq!(results[0].0, 1); // 삼성전자 document should be first
+    }
 }
+
