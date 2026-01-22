@@ -3,43 +3,45 @@
 /// A high-performance, on-device RAG (Retrieval-Augmented Generation) engine
 /// for Flutter. Run semantic search completely offline on iOS and Android.
 ///
-/// ## Quick Start (Simple API)
+/// ## Quick Start (Recommended)
 ///
 /// ```dart
 /// import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 ///
-/// // Initialize
+/// // Initialize (just 3 lines!)
 /// await RustLib.init();
-/// await initTokenizer(tokenizerPath: 'path/to/tokenizer.json');
-/// await EmbeddingService.init(modelBytes);
-/// await initDb(dbPath: 'path/to/rag.db');
+/// final rag = await RagEngine.initialize(
+///   config: RagConfig.fromAssets(
+///     tokenizerAsset: 'assets/tokenizer.json',
+///     modelAsset: 'assets/model.onnx',
+///   ),
+/// );
 ///
 /// // Add documents
-/// final embedding = await EmbeddingService.embed("Your text");
-/// await addDocument(dbPath: dbPath, content: "Your text", embedding: embedding);
-///
-/// // Search
-/// final queryEmb = await EmbeddingService.embed("query");
-/// final results = await searchSimilar(dbPath: dbPath, queryEmbedding: queryEmb, topK: 5);
-/// ```
-///
-/// ## LLM-Optimized API (with Chunking)
-///
-/// ```dart
-/// // Initialize
-/// final rag = SourceRagService(dbPath: 'path/to/rag.db');
-/// await rag.init();
-///
-/// // Add long document (auto-chunked)
-/// await rag.addSourceWithChunking(longDocument);
+/// await rag.addDocument('Your long document text here');
 /// await rag.rebuildIndex();
 ///
 /// // Search with LLM context assembly
-/// final result = await rag.search("query", tokenBudget: 2000);
-/// final prompt = rag.formatPrompt("query", result);
+/// final result = await rag.search('query', tokenBudget: 2000);
+/// final prompt = rag.formatPrompt('query', result);
 /// // Send prompt to LLM
 /// ```
+///
+/// ## Advanced Usage (Low-Level API)
+///
+/// For fine-grained control, use the individual services directly:
+///
+/// ```dart
+/// await initTokenizer(tokenizerPath: 'path/to/tokenizer.json');
+/// await EmbeddingService.init(modelBytes);
+/// final rag = SourceRagService(dbPath: 'path/to/rag.db');
+/// await rag.init();
+/// ```
 library;
+
+// High-level unified API (recommended)
+export 'services/rag_config.dart';
+export 'services/rag_engine.dart';
 
 // Core RAG functions (simple API)
 export 'src/rust/api/simple_rag.dart';

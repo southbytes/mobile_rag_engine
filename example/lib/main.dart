@@ -1,8 +1,6 @@
 // lib/main.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
@@ -24,10 +22,9 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _status = "Initializing...";
-  String _dbPath = "";
   bool _isReady = false;
   bool _isLoading = false;
-  SourceRagService? _ragService;
+  RagEngine? _engine;
 
   final TextEditingController _docController = TextEditingController();
   final TextEditingController _queryController = TextEditingController();
@@ -42,35 +39,24 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _setup() async {
     setState(() {
-      _status = "Copying files...";
+      _status = "Initializing...";
       _isLoading = true;
     });
 
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      _dbPath = "${dir.path}/rag_db.sqlite";
-      final tokenizerPath = "${dir.path}/tokenizer.json";
-
-      // 1. Copy and initialize tokenizer
-      await _copyAssetToFile('assets/tokenizer.json', tokenizerPath);
-      await initTokenizer(tokenizerPath: tokenizerPath);
-      final vocabSize = getVocabSize();
-      setState(() => _status = "Tokenizer loaded (Vocab: $vocabSize)");
-
-      // 2. Load ONNX model (Flutter onnxruntime)
-      setState(() => _status = "Loading ONNX model (90MB)...");
-      final modelBytes = await rootBundle.load('assets/model.onnx');
-      await EmbeddingService.init(modelBytes.buffer.asUint8List());
-      setState(() => _status = "ONNX model loaded!");
-
-      // 3. Initialize Source RAG Service (with chunking support)
-      _ragService = SourceRagService(dbPath: _dbPath);
-      await _ragService!.init();
-      setState(() => _status = "Source RAG DB initialized");
+      _engine = await RagEngine.initialize(
+        config: RagConfig.fromAssets(
+          tokenizerAsset: 'assets/tokenizer.json',
+          modelAsset: 'assets/model.onnx',
+          databaseName: 'rag_db.sqlite',
+        ),
+        onProgress: (status) => setState(() => _status = status),
+      );
 
       _isReady = true;
       setState(() {
-        _status = "✅ Ready!\nVocab: $vocabSize | Embedding: 384 dims";
+        _status =
+            "✅ Ready!\nVocab: ${_engine!.vocabSize} | Embedding: 384 dims";
         _isLoading = false;
       });
     } catch (e, st) {
@@ -78,14 +64,6 @@ class _MyAppState extends State<MyApp> {
         _status = "❌ Init error: $e\n$st";
         _isLoading = false;
       });
-    }
-  }
-
-  Future<void> _copyAssetToFile(String assetPath, String filePath) async {
-    final file = File(filePath);
-    if (!await file.exists()) {
-      final data = await rootBundle.load(assetPath);
-      await file.writeAsBytes(data.buffer.asUint8List());
     }
   }
 
@@ -100,8 +78,8 @@ class _MyAppState extends State<MyApp> {
     });
 
     try {
-      // Add source with automatic chunking and embedding
-      final result = await _ragService!.addSourceWithChunking(
+      // Add document with automatic chunking and embedding
+      final result = await _engine!.addDocument(
         text,
         onProgress: (done, total) {
           setState(() => _status = "Embedding chunks: $done/$total");
@@ -116,7 +94,7 @@ class _MyAppState extends State<MyApp> {
         });
       } else {
         // Rebuild HNSW index after adding
-        await _ragService!.rebuildIndex();
+        await _engine!.rebuildIndex();
 
         setState(() {
           _status =
@@ -147,8 +125,8 @@ class _MyAppState extends State<MyApp> {
     });
 
     try {
-      // Search using SourceRagService (searches chunks, not full documents)
-      final ragResult = await _ragService!.search(
+      // Search using RagEngine (searches chunks, not full documents)
+      final ragResult = await _engine!.search(
         query,
         topK: _topK,
         tokenBudget: 2000,
@@ -240,7 +218,7 @@ class _MyAppState extends State<MyApp> {
       );
 
       // Add to RAG with chunking and embedding (auto-detect strategy from filePath)
-      final addResult = await _ragService!.addSourceWithChunking(
+      final addResult = await _engine!.addDocument(
         extractedText,
         metadata: '{"filename": "${file.name}"}',
         filePath: filePath, // <-- Auto-detect chunking strategy
@@ -257,7 +235,7 @@ class _MyAppState extends State<MyApp> {
         });
       } else {
         // Rebuild HNSW index
-        await _ragService!.rebuildIndex();
+        await _engine!.rebuildIndex();
 
         setState(() {
           _status =
@@ -489,12 +467,13 @@ class _MyAppState extends State<MyApp> {
                                 () => _status =
                                     "Adding sample ${i + 1}/${samples.length}...",
                               );
-                              final result = await _ragService!
-                                  .addSourceWithChunking(samples[i]);
+                              final result = await _engine!.addDocument(
+                                samples[i],
+                              );
                               totalChunks += result.chunkCount;
                             }
                             // Rebuild index after all samples added
-                            await _ragService!.rebuildIndex();
+                            await _engine!.rebuildIndex();
 
                             setState(() {
                               _status =
@@ -550,14 +529,20 @@ class _MyAppState extends State<MyApp> {
 
                           try {
                             // Get stats before deletion
-                            final stats = await _ragService!.getStats();
+                            final stats = await _engine!.getStats();
                             // Delete DB file and re-initialize
-                            final dbFile = File(_dbPath);
+                            final dbFile = File(_engine!.dbPath);
                             if (await dbFile.exists()) {
                               await dbFile.delete();
                             }
-                            // Re-initialize the database
-                            await _ragService!.init();
+                            // Re-initialize via engine recreation
+                            _engine = await RagEngine.initialize(
+                              config: RagConfig.fromAssets(
+                                tokenizerAsset: 'assets/tokenizer.json',
+                                modelAsset: 'assets/model.onnx',
+                                databaseName: 'rag_db.sqlite',
+                              ),
+                            );
                             _searchResults.clear();
 
                             setState(() {
@@ -590,7 +575,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void dispose() {
-    EmbeddingService.dispose();
+    RagEngine.dispose();
     super.dispose();
   }
 }
