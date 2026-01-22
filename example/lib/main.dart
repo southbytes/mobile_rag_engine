@@ -32,6 +32,7 @@ class _MyAppState extends State<MyApp> {
   final TextEditingController _docController = TextEditingController();
   final TextEditingController _queryController = TextEditingController();
   List<String> _searchResults = [];
+  int _topK = 5; // Adjustable topK for search
 
   @override
   void initState() {
@@ -149,7 +150,7 @@ class _MyAppState extends State<MyApp> {
       // Search using SourceRagService (searches chunks, not full documents)
       final ragResult = await _ragService!.search(
         query,
-        topK: 5,
+        topK: _topK,
         tokenBudget: 2000,
       );
 
@@ -402,6 +403,34 @@ class _MyAppState extends State<MyApp> {
                 const Text(
                   '🔎 Semantic Search',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                // TopK slider
+                Row(
+                  children: [
+                    const Text('Top K: '),
+                    Expanded(
+                      child: Slider(
+                        value: _topK.toDouble(),
+                        min: 1,
+                        max: 20,
+                        divisions: 19,
+                        label: _topK.toString(),
+                        onChanged: _isReady
+                            ? (value) {
+                                setState(() => _topK = value.round());
+                              }
+                            : null,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 40,
+                      child: Text(
+                        '$_topK',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 TextField(

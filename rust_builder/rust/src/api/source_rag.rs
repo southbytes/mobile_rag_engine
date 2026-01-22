@@ -18,11 +18,11 @@
 
 use rusqlite::{params, Connection};
 use ndarray::Array1;
-use log::info;
+use log::{info, debug};
 use sha2::{Sha256, Digest};
 use crate::api::hnsw_index::{
     build_hnsw_index, search_hnsw, is_hnsw_index_loaded, 
-    save_hnsw_index, load_hnsw_index
+    save_hnsw_index
 };
 
 fn hash_content(content: &str) -> String {
@@ -206,25 +206,23 @@ pub fn search_chunks(
 ) -> anyhow::Result<Vec<ChunkSearchResult>> {
     info!("[search_chunks] Searching, top_k={}", top_k);
     
-    const FORCE_LINEAR_SCAN: bool = true;
-    if FORCE_LINEAR_SCAN {
-        info!("[search_chunks] DEBUG: Using linear scan");
-        return search_chunks_linear(&db_path, query_embedding, top_k);
+    // HNSW index enabled - use O(log n) search when index is available
+    // Falls back to linear scan if index not loaded
+    
+    let hnsw_loaded = is_hnsw_index_loaded();
+    
+    if !hnsw_loaded {
+        // HNSW index is in-memory only - rebuild from DB on each app launch
+        debug!("[search_chunks] HNSW not in memory, rebuilding from DB");
+        rebuild_chunk_hnsw_index(db_path.clone())?;
     }
     
     if !is_hnsw_index_loaded() {
-        let index_path = format!("{}.hnsw", db_path);
-        let loaded = load_hnsw_index(&index_path).unwrap_or(false);
-        
-        if !loaded {
-            info!("[search_chunks] Index load failed/missing. Rebuilding.");
-            rebuild_chunk_hnsw_index(db_path.clone())?;
-        }
-    }
-    
-    if !is_hnsw_index_loaded() {
+        debug!("[search_chunks] Falling back to linear scan");
         return search_chunks_linear(&db_path, query_embedding, top_k);
     }
+    
+    debug!("[search_chunks] Using HNSW index");
     
     let hnsw_results = search_hnsw(query_embedding, top_k as usize)?;
     let conn = Connection::open(&db_path)?;
