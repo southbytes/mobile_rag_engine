@@ -99,31 +99,29 @@ Initialize the engine and start searching in just a few lines of code:
 import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
 void main() async {
-  // 1. Initialize Rust library & services
-  await RustLib.init(externalLibrary: ExternalLibrary.process(iKnowHowToUseIt: true));
-  await initTokenizer(tokenizerPath: 'assets/tokenizer.json');
-  await EmbeddingService.init(modelBytes);
-
-  // 2. Add Documents (Auto-embedded & indexed)
-  final embedding = await EmbeddingService.embed('Flutter is a UI toolkit.');
-  await addDocument(
-    dbPath: dbPath,
-    content: 'Flutter is a UI toolkit.',
-    embedding: embedding,
-  );
-  await rebuildHnswIndex(dbPath: dbPath);
-
-  // 3. Search
-  final queryEmbedding = await EmbeddingService.embed('What is Flutter?');
-  final results = await searchSimilar(
-    dbPath: dbPath,
-    queryEmbedding: queryEmbedding,
-    topK: 5,
+  // 1. Initialize (just 3 lines!)
+  await RustLib.init();
+  final rag = await RagEngine.initialize(
+    config: RagConfig.fromAssets(
+      tokenizerAsset: 'assets/tokenizer.json',
+      modelAsset: 'assets/model.onnx',
+    ),
   );
 
-  print(results.first); // "Flutter is a UI toolkit."
+  // 2. Add Documents (auto-chunked & embedded)
+  await rag.addDocument('Flutter is a UI toolkit for building apps.');
+  await rag.rebuildIndex();
+
+  // 3. Search with LLM-ready context
+  final result = await rag.search('What is Flutter?', tokenBudget: 2000);
+  print(result.context.text); // Ready to send to LLM
+
+  // Optional: Format as prompt
+  final prompt = rag.formatPrompt('What is Flutter?', result);
 }
 ```
+
+> **Advanced Usage:** For fine-grained control, you can still use the low-level APIs (`initTokenizer`, `EmbeddingService`, `SourceRagService`) directly. See the [API Reference](https://pub.dev/documentation/mobile_rag_engine/latest/).
 
 ---
 
@@ -132,16 +130,11 @@ void main() async {
 Extract text from documents and add to RAG:
 
 ```dart
-// 1. Add file_picker to your pubspec.yaml (optional)
-dependencies:
-  mobile_rag_engine: ^0.4.3
-  file_picker: ^9.2.1  # For file selection UI
-
-// 2. Pick and process documents
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
-Future<void> importDocument() async {
+Future<void> importDocument(RagEngine rag) async {
   // Pick file
   final result = await FilePicker.platform.pickFiles(
     type: FileType.custom,
@@ -151,10 +144,11 @@ Future<void> importDocument() async {
 
   // Extract text (handles hyphenation, page numbers automatically)
   final bytes = await File(result.files.single.path!).readAsBytes();
-  final text = await extractTextFromDocument(fileBytes: bytes);
+  final text = await extractTextFromDocument(fileBytes: bytes.toList());
 
   // Add to RAG with auto-chunking
-  await ragService.addSourceWithChunking(text);
+  await rag.addDocument(text, filePath: result.files.single.path);
+  await rag.rebuildIndex();
 }
 ```
 

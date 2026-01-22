@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.0
+
+### Added
+- **`RagEngine` class**: New unified API that simplifies initialization from ~40 lines to ~3 lines
+  - `RagEngine.initialize()` handles tokenizer, ONNX model, and database setup automatically
+  - `RagConfig.fromAssets()` for convenient asset-based configuration
+  - Delegates to `SourceRagService` internally, maintaining full functionality
+- **`RagConfig` class**: Configuration object for `RagEngine` with chunking and database options
+- **Progress callback**: `onProgress` parameter in `RagEngine.initialize()` for status updates
+
+### Changed
+- **README Quick Start**: Updated to showcase new simplified `RagEngine` API
+- **Documentation**: Rewrote `docs/guides/quick_start.md` with `RagEngine` examples
+- **Example app**: Refactored `main.dart` to use `RagEngine` instead of manual initialization
+- **Library exports**: Updated `mobile_rag_engine.dart` with new Quick Start example in docstring
+
+### Migration Guide
+**Before (0.4.x):**
+```dart
+final dir = await getApplicationDocumentsDirectory();
+await _copyAssetToFile('assets/tokenizer.json', tokenizerPath);
+await initTokenizer(tokenizerPath: tokenizerPath);
+final modelBytes = await rootBundle.load('assets/model.onnx');
+await EmbeddingService.init(modelBytes.buffer.asUint8List());
+_ragService = SourceRagService(dbPath: dbPath);
+await _ragService!.init();
+```
+
+**After (0.5.0):**
+```dart
+final rag = await RagEngine.initialize(
+  config: RagConfig.fromAssets(
+    tokenizerAsset: 'assets/tokenizer.json',
+    modelAsset: 'assets/model.onnx',
+  ),
+);
+```
+
 ## 0.4.4
 
 ### Added

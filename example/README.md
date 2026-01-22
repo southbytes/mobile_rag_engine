@@ -1,16 +1,48 @@
-# mobile_rag_engine_example
+# Mobile RAG Engine Example
 
-A new Flutter project.
+This example demonstrates the `mobile_rag_engine` package with the simplified `RagEngine` API.
 
-## Getting Started
+## Quick Start
 
-This project is a starting point for a Flutter application.
+```dart
+import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
-A few resources to get you started if this is your first Flutter project:
+// 1. Initialize (just 3 lines!)
+await RustLib.init();
+final rag = await RagEngine.initialize(
+  config: RagConfig.fromAssets(
+    tokenizerAsset: 'assets/tokenizer.json',
+    modelAsset: 'assets/model.onnx',
+  ),
+  onProgress: (status) => print(status),
+);
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+// 2. Add documents
+await rag.addDocument('Your document text here');
+await rag.rebuildIndex();
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+// 3. Search
+final result = await rag.search('query', tokenBudget: 2000);
+print(result.context.text);
+```
+
+## Running the Example
+
+1. Download model files to `assets/`:
+   ```bash
+   cd assets
+   curl -L -o model.onnx "https://huggingface.co/Teradata/bge-m3/onnx/model_int8.onnx"
+   curl -L -o tokenizer.json "https://huggingface.co/BAAI/bge-m3/tokenizer.json"
+   ```
+
+2. Run:
+   ```bash
+   flutter run
+   ```
+
+## Features Demonstrated
+
+- **Document ingestion** with auto-chunking
+- **Semantic search** with vector similarity
+- **PDF/DOCX import** using built-in parser
+- **File attachment** via file_picker

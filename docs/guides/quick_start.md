@@ -51,37 +51,17 @@ flutter:
 ## Step 3: Initialize
 
 ```dart
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
 Future<void> initializeRAG() async {
-  // 1. Initialize Rust library
+  // Initialize in just 3 lines!
   await RustLib.init();
-  
-  // 2. Copy assets to documents directory (first run only)
-  final dir = await getApplicationDocumentsDirectory();
-  await _copyAssetIfNeeded('assets/tokenizer.json', '${dir.path}/tokenizer.json');
-  await _copyAssetIfNeeded('assets/model.onnx', '${dir.path}/model.onnx');
-  
-  // 3. Initialize tokenizer
-  await initTokenizer(tokenizerPath: '${dir.path}/tokenizer.json');
-  
-  // 4. Initialize embedding service
-  final modelBytes = await File('${dir.path}/model.onnx').readAsBytes();
-  await EmbeddingService.init(modelBytes);
-  
-  // 5. Initialize RAG service
-  final ragService = SourceRagService(dbPath: '${dir.path}/rag.db');
-  await ragService.init();
-}
-
-Future<void> _copyAssetIfNeeded(String asset, String targetPath) async {
-  final file = File(targetPath);
-  if (!await file.exists()) {
-    final data = await rootBundle.load(asset);
-    await file.writeAsBytes(data.buffer.asUint8List());
-  }
+  final rag = await RagEngine.initialize(
+    config: RagConfig.fromAssets(
+      tokenizerAsset: 'assets/tokenizer.json',
+      modelAsset: 'assets/model.onnx',
+    ),
+  );
 }
 ```
 
@@ -91,17 +71,17 @@ Future<void> _copyAssetIfNeeded(String asset, String targetPath) async {
 
 ```dart
 // Add text
-await ragService.addSourceWithChunking(
+await rag.addDocument(
   'Flutter is Google\'s UI toolkit for building beautiful apps.',
 );
 
 // Add PDF/DOCX
 final bytes = await File('document.pdf').readAsBytes();
-final text = await extractTextFromDocument(fileBytes: bytes);
-await ragService.addSourceWithChunking(text);
+final text = await extractTextFromDocument(fileBytes: bytes.toList());
+await rag.addDocument(text, filePath: 'document.pdf');
 
 // Rebuild index (important!)
-await ragService.rebuildIndex();
+await rag.rebuildIndex();
 ```
 
 ---
@@ -109,13 +89,18 @@ await ragService.rebuildIndex();
 ## Step 5: Search
 
 ```dart
-final result = await ragService.search(
+final result = await rag.search(
   'What is Flutter?',
   topK: 5,
+  tokenBudget: 2000,
 );
 
+// LLM-ready context
+print(result.context.text);
+
+// Or iterate chunks
 for (final chunk in result.chunks) {
-  print('Score: ${chunk.score}');
+  print('Score: ${chunk.similarity}');
   print('Content: ${chunk.content}');
 }
 ```
@@ -125,10 +110,7 @@ for (final chunk in result.chunks) {
 ## Complete Example
 
 ```dart
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
 void main() async {
@@ -136,29 +118,40 @@ void main() async {
   
   // Initialize
   await RustLib.init();
-  final dir = await getApplicationDocumentsDirectory();
-  
-  // Setup tokenizer & model
-  await initTokenizer(tokenizerPath: '${dir.path}/tokenizer.json');
-  final modelBytes = await File('${dir.path}/model.onnx').readAsBytes();
-  await EmbeddingService.init(modelBytes);
-  
-  // Create RAG service
-  final ragService = SourceRagService(dbPath: '${dir.path}/rag.db');
-  await ragService.init();
+  final rag = await RagEngine.initialize(
+    config: RagConfig.fromAssets(
+      tokenizerAsset: 'assets/tokenizer.json',
+      modelAsset: 'assets/model.onnx',
+    ),
+  );
   
   // Add a document
-  await ragService.addSourceWithChunking(
+  await rag.addDocument(
     'Flutter is an open-source UI framework by Google.',
   );
-  await ragService.rebuildIndex();
+  await rag.rebuildIndex();
   
   // Search
-  final result = await ragService.search('What is Flutter?', topK: 3);
+  final result = await rag.search('What is Flutter?', topK: 3);
   print('Found ${result.chunks.length} results');
+  print('Context: ${result.context.text}');
   
-  runApp(MyApp(ragService: ragService));
+  runApp(MyApp(rag: rag));
 }
+```
+
+---
+
+## Advanced Usage
+
+For fine-grained control, you can still use the low-level APIs:
+
+```dart
+// Manual initialization
+await initTokenizer(tokenizerPath: 'path/to/tokenizer.json');
+await EmbeddingService.init(modelBytes);
+final ragService = SourceRagService(dbPath: 'path/to/rag.db');
+await ragService.init();
 ```
 
 ---

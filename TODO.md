@@ -13,6 +13,17 @@
 - **API**: `extractTextFromPdfAsMarkdown(fileBytes)`
 - **Benefits**: Enable structure-aware chunking (`markdown_chunk()`) for PDF documents
 
+### Korean NLP Package (`mobile_rag_engine_ko`)
+- **Priority**: Low (on user demand)
+- **Complexity**: Medium
+- **Description**: Separate package with lindera Korean morpheme analyzer for advanced BM25 tokenization
+- **Features**:
+  - Korean morpheme analysis (형태소 분석)
+  - Better partial matching ("삼성" → "삼성전자")
+  - Reduced spacing error sensitivity
+- **Trade-offs**: +25MB binary size (Korean dictionary)
+- **API**: Same as `mobile_rag_engine`, drop-in replacement
+
 ---
 
 ## ✅ Completed Features
