@@ -10,7 +10,15 @@ import 'screens/chunking_test_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await RustLib.init();
+
+  // 1. Initialize Mobile RAG Engine (Singleton)
+  // This automatically handles Rust initialization, threads, and model loading.
+  await MobileRag.initialize(
+    tokenizerAsset: 'assets/tokenizer.json',
+    modelAsset: 'assets/model.onnx',
+    databaseName: 'rag_db.sqlite',
+  );
+
   runApp(const MyApp());
 }
 
@@ -21,10 +29,9 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _status = "Initializing...";
-  bool _isReady = false;
+  String _status = "Ready";
+  bool _isReady = true; // MobileRag is already initialized in main()
   bool _isLoading = false;
-  RagEngine? _engine;
 
   final TextEditingController _docController = TextEditingController();
   final TextEditingController _queryController = TextEditingController();
@@ -34,36 +41,13 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _setup();
-  }
-
-  Future<void> _setup() async {
-    setState(() {
-      _status = "Initializing...";
-      _isLoading = true;
-    });
-
-    try {
-      _engine = await RagEngine.initialize(
-        config: RagConfig.fromAssets(
-          tokenizerAsset: 'assets/tokenizer.json',
-          modelAsset: 'assets/model.onnx',
-          databaseName: 'rag_db.sqlite',
-        ),
-        onProgress: (status) => setState(() => _status = status),
-      );
-
-      _isReady = true;
-      setState(() {
-        _status =
-            "✅ Ready!\nVocab: ${_engine!.vocabSize} | Embedding: 384 dims";
-        _isLoading = false;
-      });
-    } catch (e, st) {
-      setState(() {
-        _status = "❌ Init error: $e\n$st";
-        _isLoading = false;
-      });
+    // Verify initialization
+    if (MobileRag.isInitialized) {
+      final vocab = MobileRag.instance.vocabSize;
+      _status = "✅ Ready!\nVocab: $vocab | Embedding: 384 dims";
+    } else {
+      _status = "❌ MobileRag not initialzed in main()";
+      _isReady = false;
     }
   }
 
@@ -79,7 +63,7 @@ class _MyAppState extends State<MyApp> {
 
     try {
       // Add document with automatic chunking and embedding
-      final result = await _engine!.addDocument(
+      final result = await MobileRag.instance.addDocument(
         text,
         onProgress: (done, total) {
           setState(() => _status = "Embedding chunks: $done/$total");
@@ -94,7 +78,7 @@ class _MyAppState extends State<MyApp> {
         });
       } else {
         // Rebuild HNSW index after adding
-        await _engine!.rebuildIndex();
+        await MobileRag.instance.rebuildIndex();
 
         setState(() {
           _status =
@@ -126,7 +110,7 @@ class _MyAppState extends State<MyApp> {
 
     try {
       // Search using RagEngine (searches chunks, not full documents)
-      final ragResult = await _engine!.search(
+      final ragResult = await MobileRag.instance.search(
         query,
         topK: _topK,
         tokenBudget: 2000,
@@ -218,7 +202,7 @@ class _MyAppState extends State<MyApp> {
       );
 
       // Add to RAG with chunking and embedding (auto-detect strategy from filePath)
-      final addResult = await _engine!.addDocument(
+      final addResult = await MobileRag.instance.addDocument(
         extractedText,
         metadata: '{"filename": "${file.name}"}',
         filePath: filePath, // <-- Auto-detect chunking strategy
@@ -235,7 +219,7 @@ class _MyAppState extends State<MyApp> {
         });
       } else {
         // Rebuild HNSW index
-        await _engine!.rebuildIndex();
+        await MobileRag.instance.rebuildIndex();
 
         setState(() {
           _status =
@@ -467,13 +451,12 @@ class _MyAppState extends State<MyApp> {
                                 () => _status =
                                     "Adding sample ${i + 1}/${samples.length}...",
                               );
-                              final result = await _engine!.addDocument(
-                                samples[i],
-                              );
+                              final result = await MobileRag.instance
+                                  .addDocument(samples[i]);
                               totalChunks += result.chunkCount;
                             }
                             // Rebuild index after all samples added
-                            await _engine!.rebuildIndex();
+                            await MobileRag.instance.rebuildIndex();
 
                             setState(() {
                               _status =
@@ -529,19 +512,30 @@ class _MyAppState extends State<MyApp> {
 
                           try {
                             // Get stats before deletion
-                            final stats = await _engine!.getStats();
+                            final stats = await MobileRag.instance.engine
+                                .getStats();
                             // Delete DB file and re-initialize
-                            final dbFile = File(_engine!.dbPath);
+                            final dbPath = MobileRag.instance.dbPath;
+                            // Note: MobileRag singleton is persistent, so we can't easily re-init
+                            // In a real app we would have a cleanDatabase method.
+                            // For this example, we'll just show not supported or implement delete logic
+                            // Actually MobileRag doesn't expose dispose/re-init easily for the same instance.
+                            // Let's just create a new helper or skip this function for now?
+                            // Or better: access the engine directly via MobileRag.instance.engine
+
+                            // For simplicity in this refactor, let's just delete the DB file and restart
+                            final dbFile = File(dbPath);
                             if (await dbFile.exists()) {
                               await dbFile.delete();
                             }
-                            // Re-initialize via engine recreation
-                            _engine = await RagEngine.initialize(
-                              config: RagConfig.fromAssets(
-                                tokenizerAsset: 'assets/tokenizer.json',
-                                modelAsset: 'assets/model.onnx',
-                                databaseName: 'rag_db.sqlite',
-                              ),
+
+                            // Force app restart by asking user? Or just crash/re-init?
+                            // Since MobileRag is a singleton initialized in main, we can't really re-initialize it cleanly here without disposing.
+                            MobileRag.dispose();
+                            await MobileRag.initialize(
+                              tokenizerAsset: 'assets/tokenizer.json',
+                              modelAsset: 'assets/model.onnx',
+                              databaseName: 'rag_db.sqlite',
                             );
                             _searchResults.clear();
 
@@ -575,7 +569,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void dispose() {
-    RagEngine.dispose();
+    // MobileRag is global, don't dispose it here
     super.dispose();
   }
 }

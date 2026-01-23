@@ -8,14 +8,15 @@
 /// ```dart
 /// import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 ///
-/// // Initialize (3 lines instead of 15+)
-/// await RustLib.init();
+/// // NOTE: For most apps, use [MobileRag] singleton instead.
+/// // It wraps this class and handles global access.
+///
+/// // If you need a standalone engine instance:
 /// final rag = await RagEngine.initialize(
 ///   config: RagConfig.fromAssets(
 ///     tokenizerAsset: 'assets/tokenizer.json',
 ///     modelAsset: 'assets/model.onnx',
 ///   ),
-///   onProgress: (status) => print(status),
 /// );
 ///
 /// // Use the engine
@@ -37,11 +38,29 @@ import 'rag_config.dart';
 import 'source_rag_service.dart';
 import 'context_builder.dart';
 import '../src/rust/api/hybrid_search.dart' as hybrid;
+import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
+import '../src/rust/frb_generated.dart';
 
 /// Unified RAG engine with simplified initialization.
 ///
 /// Wraps [SourceRagService] with automatic dependency initialization.
 class RagEngine {
+  static bool _isRustInitialized = false;
+
+  /// Ensures RustLib is initialized (safe to call multiple times).
+  static Future<void> _ensureRustInitialized() async {
+    if (_isRustInitialized) return;
+
+    if (Platform.isMacOS) {
+      await RustLib.init(
+        externalLibrary: ExternalLibrary.process(iKnowHowToUseIt: true),
+      );
+    } else {
+      await RustLib.init();
+    }
+    _isRustInitialized = true;
+  }
+
   final SourceRagService _ragService;
 
   /// Path to the SQLite database.
@@ -81,6 +100,9 @@ class RagEngine {
     required RagConfig config,
     void Function(String status)? onProgress,
   }) async {
+    // 0. Auto-initialize Rust library (safe to call multiple times)
+    await _ensureRustInitialized();
+
     // 1. Get app documents directory
     final dir = await getApplicationDocumentsDirectory();
     final dbPath = "${dir.path}/${config.databaseName ?? 'rag.sqlite'}";
