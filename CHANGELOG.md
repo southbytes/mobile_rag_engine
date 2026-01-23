@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.3
+
+### Added
+- **Singleton Pattern**: Introduced `MobileRag` class for simplified, global access to the engine
+  - `MobileRag.initialize()`: Single-line initialization that handles Rust FFI, Config, and Database
+  - `MobileRag.instance`: Static accessor for using the engine anywhere in the app
+- **Auto-Initialization**: Eliminated the need to manually call `RustLib.init()`
+
+### Changed
+- **API Exports**: Hides low-level Rust API by default to improve IDE auto-completion relevance
+- **Documentation**: Updated all guides and examples to use the new `MobileRag` singleton pattern
+
 ## 0.5.0
 
 ### Added

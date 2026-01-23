@@ -54,13 +54,10 @@ flutter:
 import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
 Future<void> initializeRAG() async {
-  // Initialize in just 3 lines!
-  await RustLib.init();
-  final rag = await RagEngine.initialize(
-    config: RagConfig.fromAssets(
-      tokenizerAsset: 'assets/tokenizer.json',
-      modelAsset: 'assets/model.onnx',
-    ),
+  // Initialize in just 1 line!
+  await MobileRag.initialize(
+    tokenizerAsset: 'assets/tokenizer.json',
+    modelAsset: 'assets/model.onnx',
   );
 }
 ```
@@ -71,17 +68,17 @@ Future<void> initializeRAG() async {
 
 ```dart
 // Add text
-await rag.addDocument(
+await MobileRag.instance.addDocument(
   'Flutter is Google\'s UI toolkit for building beautiful apps.',
 );
 
 // Add PDF/DOCX
 final bytes = await File('document.pdf').readAsBytes();
 final text = await extractTextFromDocument(fileBytes: bytes.toList());
-await rag.addDocument(text, filePath: 'document.pdf');
+await MobileRag.instance.addDocument(text, filePath: 'document.pdf');
 
 // Rebuild index (important!)
-await rag.rebuildIndex();
+await MobileRag.instance.rebuildIndex();
 ```
 
 ---
@@ -89,7 +86,7 @@ await rag.rebuildIndex();
 ## Step 5: Search
 
 ```dart
-final result = await rag.search(
+final result = await MobileRag.instance.search(
   'What is Flutter?',
   topK: 5,
   tokenBudget: 2000,
@@ -117,26 +114,23 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Initialize
-  await RustLib.init();
-  final rag = await RagEngine.initialize(
-    config: RagConfig.fromAssets(
-      tokenizerAsset: 'assets/tokenizer.json',
-      modelAsset: 'assets/model.onnx',
-    ),
+  await MobileRag.initialize(
+    tokenizerAsset: 'assets/tokenizer.json',
+    modelAsset: 'assets/model.onnx',
   );
   
   // Add a document
-  await rag.addDocument(
+  await MobileRag.instance.addDocument(
     'Flutter is an open-source UI framework by Google.',
   );
-  await rag.rebuildIndex();
+  await MobileRag.instance.rebuildIndex();
   
   // Search
-  final result = await rag.search('What is Flutter?', topK: 3);
+  final result = await MobileRag.instance.search('What is Flutter?', topK: 3);
   print('Found ${result.chunks.length} results');
   print('Context: ${result.context.text}');
   
-  runApp(MyApp(rag: rag));
+  runApp(const MyApp());
 }
 ```
 

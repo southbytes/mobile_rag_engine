@@ -5,29 +5,18 @@ A complete on-device RAG (Retrieval-Augmented Generation) implementation.
 ## Quick Start
 
 ```dart
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 1. Initialize Rust library
-  await RustLib.init();
+  // 1. Initialize MobileRag (Singleton)
+  await MobileRag.initialize(
+    tokenizerAsset: 'assets/tokenizer.json',
+    modelAsset: 'assets/model.onnx',
+  );
   
-  // 2. Load tokenizer
-  final dir = await getApplicationDocumentsDirectory();
-  await initTokenizer(tokenizerPath: '${dir.path}/tokenizer.json');
-  
-  // 3. Load ONNX embedding model
-  final modelBytes = await rootBundle.load('assets/model.onnx');
-  await EmbeddingService.init(modelBytes.buffer.asUint8List());
-  
-  // 4. Initialize RAG service
-  final ragService = SourceRagService(dbPath: '${dir.path}/rag.db');
-  await ragService.init();
-  
-  runApp(MyApp(ragService: ragService));
+  runApp(const MyApp());
 }
 ```
 
@@ -35,7 +24,7 @@ void main() async {
 
 ```dart
 // Add a document with automatic chunking and embedding
-final result = await ragService.addSourceWithChunking(
+final result = await MobileRag.instance.addDocument(
   'Flutter is Google\'s UI toolkit for building beautiful apps...',
   onProgress: (done, total) => print('Embedding: $done/$total'),
 );
@@ -43,10 +32,10 @@ final result = await ragService.addSourceWithChunking(
 print('Created ${result.chunkCount} chunks');
 
 // Rebuild HNSW index after adding documents
-await ragService.rebuildIndex();
+await MobileRag.instance.rebuildIndex();
 ```
 
-## Advanced: PDF & DOCX Support
+## PDF & DOCX Support
 
 Can automatically extract text from PDF and DOCX files.
 
@@ -57,34 +46,33 @@ import 'dart:io';
 final file = File('path/to/document.pdf');
 final bytes = await file.readAsBytes();
 
-// explicit extraction
-final text = await extractTextFromPdf(bytes);
-
-// OR auto-detect format
-final text = await extractTextFromDocument(bytes);
+// extract text (using built-in parser)
+final text = await extractTextFromDocument(fileBytes: bytes.toList());
 
 // Then add to RAG
-await ragService.addSourceWithChunking(text, metadata: 'source: document.pdf');
+await MobileRag.instance.addDocument(
+  text, 
+  metadata: '{"source": "document.pdf"}',
+  filePath: 'document.pdf', // hints chunking strategy
+);
 ```
 
 ## Managing Documents
 
 ```dart
-// Remove a document by ID
-await ragService.removeSource(sourceId);
+// Remove a source by ID
+await MobileRag.instance.engine.removeSource(sourceId);
 
-// Get duplicate status when adding
-final result = await ragService.addSourceWithChunking(content);
-if (result.isDuplicate) {
-  print('Document already exists (ID: ${result.sourceId})');
-}
+// Check stats
+final stats = await MobileRag.instance.engine.getStats();
+print('Total sources: ${stats.sourceCount}');
 ```
 
 ## Semantic Search
 
 ```dart
 // Search for relevant chunks
-final searchResult = await ragService.search(
+final searchResult = await MobileRag.instance.search(
   'How to build mobile apps?',
   topK: 5,
   tokenBudget: 2000,
@@ -95,20 +83,24 @@ print('Found ${searchResult.chunks.length} chunks');
 print('Context tokens: ${searchResult.context.estimatedTokens}');
 
 // Format prompt for LLM
-final prompt = ragService.formatPrompt(
+final prompt = MobileRag.instance.formatPrompt(
   'How to build mobile apps?',
   searchResult,
 );
 ```
 
-## Batch Embedding
+## Advanced Usage (Low-Level)
+
+For advanced scenarios, you can still access the underlying services:
 
 ```dart
-// Embed multiple texts efficiently
+// Batch embedding directly
 final embeddings = await EmbeddingService.embedBatch(
   ['Text 1', 'Text 2', 'Text 3'],
-  onProgress: (done, total) => print('Progress: $done/$total'),
 );
+
+// Manual Tokenizer initialization
+await initTokenizer(tokenizerPath: 'path/to/tokenizer.json');
 ```
 
 ## Performance

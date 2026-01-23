@@ -93,31 +93,43 @@ curl -L -o tokenizer.json "https://huggingface.co/BAAI/bge-m3/resolve/main/token
 
 ## Quick Start
 
-Initialize the engine and start searching in just a few lines of code:
+Initialize the engine once in your `main()` function:
 
 ```dart
 import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
 void main() async {
-  // 1. Initialize (just 3 lines!)
-  await RustLib.init();
-  final rag = await RagEngine.initialize(
-    config: RagConfig.fromAssets(
-      tokenizerAsset: 'assets/tokenizer.json',
-      modelAsset: 'assets/model.onnx',
-    ),
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // 1. Initialize (Just 1 step!)
+  await MobileRag.initialize(
+    tokenizerAsset: 'assets/tokenizer.json',
+    modelAsset: 'assets/model.onnx',
   );
 
-  // 2. Add Documents (auto-chunked & embedded)
-  await rag.addDocument('Flutter is a UI toolkit for building apps.');
-  await rag.rebuildIndex();
+  runApp(const MyApp());
+}
+```
 
-  // 3. Search with LLM-ready context
-  final result = await rag.search('What is Flutter?', tokenBudget: 2000);
-  print(result.context.text); // Ready to send to LLM
+Then use it anywhere in your app:
 
-  // Optional: Format as prompt
-  final prompt = rag.formatPrompt('What is Flutter?', result);
+```dart
+class MySearchScreen extends StatelessWidget {
+  Future<void> _search() async {
+    // 2. Add Documents (auto-chunked & embedded)
+    await MobileRag.instance.addDocument(
+      'Flutter is a UI toolkit for building apps.',
+    );
+    await MobileRag.instance.rebuildIndex();
+  
+    // 3. Search with LLM-ready context
+    final result = await MobileRag.instance.search(
+      'What is Flutter?', 
+      tokenBudget: 2000,
+    );
+    
+    print(result.context.text); // Ready to send to LLM
+  }
 }
 ```
 
@@ -134,7 +146,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
-Future<void> importDocument(RagEngine rag) async {
+Future<void> importDocument() async {
   // Pick file
   final result = await FilePicker.platform.pickFiles(
     type: FileType.custom,
@@ -147,8 +159,8 @@ Future<void> importDocument(RagEngine rag) async {
   final text = await extractTextFromDocument(fileBytes: bytes.toList());
 
   // Add to RAG with auto-chunking
-  await rag.addDocument(text, filePath: result.files.single.path);
-  await rag.rebuildIndex();
+  await MobileRag.instance.addDocument(text, filePath: result.files.single.path);
+  await MobileRag.instance.rebuildIndex();
 }
 ```
 

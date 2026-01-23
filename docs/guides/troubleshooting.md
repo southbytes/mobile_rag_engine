@@ -93,13 +93,14 @@ Exception: Vector dimension mismatch (expected 1024, got 384)
 **Cause:** Mixing embeddings from different models
 
 **Solution:**
-1. Delete all documents and re-embed with the new model
-2. Or continue using the same model
+1. Delete the database file and restart
+2. Or delete all sources manually if you handle DB path:
 
 ```dart
-// Clear existing data and start fresh
-await ragService.clearAll();
-await ragService.rebuildIndex();
+// Clear existing data by removing DB file
+final dbPath = MobileRag.instance.dbPath;
+// ... delete file at dbPath ...
+await MobileRag.initialize(...); // Re-initialize
 ```
 
 ---
@@ -114,7 +115,7 @@ Exception: Failed to search HNSW index
 **Solution:**
 ```dart
 // Rebuild the index
-await ragService.rebuildIndex();
+await MobileRag.instance.rebuildIndex();
 ```
 
 ---
@@ -135,7 +136,7 @@ await ragService.rebuildIndex();
 
 2. **Process in chunks**:
    ```dart
-   await ragService.addSourceWithChunking(
+   await MobileRag.instance.addDocument(
      text,
      onProgress: (done, total) => print('Progress: $done/$total'),
    );

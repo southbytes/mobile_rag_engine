@@ -82,14 +82,14 @@ optimum-cli export onnx --model sentence-transformers/YOUR_MODEL ./output
 
 Rebuild the HNSW index:
 ```dart
-await ragService.rebuildIndex();
+await MobileRag.instance.rebuildIndex();
 ```
 
 ### Q: Memory usage is high
 
 - **Limit document count**: 10K+ may cause degradation
 - **Use INT8 models**: 50% memory savings
-- **Rebuild index periodically**: Call `rebuildIndex()`
+- **Rebuild index periodically**: Call `MobileRag.instance.rebuildIndex()`
 
 ---
 
@@ -101,10 +101,10 @@ await ragService.rebuildIndex();
 
 ```dart
 // 1. RAG search
-final searchResult = await ragService.search(query, topK: 5);
+final searchResult = await MobileRag.instance.search(query, topK: 5);
 
 // 2. Format prompt
-final prompt = ragService.formatPrompt(query, searchResult);
+final prompt = MobileRag.instance.formatPrompt(query, searchResult);
 
 // 3. Send to LLM (e.g., Gemini, OpenAI, etc.)
 final response = await yourLlmService.generate(prompt);

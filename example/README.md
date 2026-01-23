@@ -7,22 +7,26 @@ This example demonstrates the `mobile_rag_engine` package with the simplified `R
 ```dart
 import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
-// 1. Initialize (just 3 lines!)
-await RustLib.init();
-final rag = await RagEngine.initialize(
-  config: RagConfig.fromAssets(
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // 1. Initialize (just 1 line!)
+  await MobileRag.initialize(
     tokenizerAsset: 'assets/tokenizer.json',
     modelAsset: 'assets/model.onnx',
-  ),
-  onProgress: (status) => print(status),
-);
+  );
+  
+  runApp(const MyApp());
+}
+
+// Later in your app:
 
 // 2. Add documents
-await rag.addDocument('Your document text here');
-await rag.rebuildIndex();
+await MobileRag.instance.addDocument('Your document text here');
+await MobileRag.instance.rebuildIndex();
 
 // 3. Search
-final result = await rag.search('query', tokenBudget: 2000);
+final result = await MobileRag.instance.search('query', tokenBudget: 2000);
 print(result.context.text);
 ```
 
