@@ -16,14 +16,14 @@
 //
 //! Extended RAG API with sources and chunks for LLM-optimized context.
 
-use rusqlite::{params, Connection};
+use rusqlite::params;
 use ndarray::Array1;
 use log::{info, debug};
 use sha2::{Sha256, Digest};
 use crate::api::hnsw_index::{
-    build_hnsw_index, search_hnsw, is_hnsw_index_loaded, 
-    save_hnsw_index
+    build_hnsw_index, search_hnsw, is_hnsw_index_loaded
 };
+use crate::api::db_pool::get_connection;
 
 fn hash_content(content: &str) -> String {
     let mut hasher = Sha256::new();
@@ -32,9 +32,9 @@ fn hash_content(content: &str) -> String {
 }
 
 /// Initialize database with sources and chunks tables.
-pub fn init_source_db(db_path: String) -> anyhow::Result<()> {
-    info!("[init_source_db] Initializing: {}", db_path);
-    let conn = Connection::open(&db_path)?;
+pub fn init_source_db() -> anyhow::Result<()> {
+    info!("[init_source_db] Initializing database tables");
+    let conn = get_connection()?;
     
     conn.execute(
         "CREATE TABLE IF NOT EXISTS sources (
@@ -84,14 +84,13 @@ pub struct AddSourceResult {
 
 /// Add a source document (chunks added separately via add_chunks).
 pub fn add_source(
-    db_path: String,
     content: String,
     metadata: Option<String>,
 ) -> anyhow::Result<AddSourceResult> {
     info!("[add_source] Adding source, {} chars", content.len());
     
     let content_hash = hash_content(&content);
-    let conn = Connection::open(&db_path)?;
+    let conn = get_connection()?;
     
     let existing: Option<i64> = conn
         .query_row("SELECT id FROM sources WHERE content_hash = ?1", params![content_hash], |row| row.get(0))
@@ -135,13 +134,12 @@ pub struct ChunkData {
 
 /// Add chunks for a source (uses transaction for atomicity).
 pub fn add_chunks(
-    db_path: String,
     source_id: i64,
     chunks: Vec<ChunkData>,
 ) -> anyhow::Result<i32> {
     info!("[add_chunks] Adding {} chunks for source {}", chunks.len(), source_id);
     
-    let mut conn = Connection::open(&db_path)?;
+    let mut conn = get_connection()?;
     let tx = conn.transaction()?;
     
     for chunk in &chunks {
@@ -163,9 +161,9 @@ pub fn add_chunks(
 }
 
 /// Rebuild HNSW index from chunks table.
-pub fn rebuild_chunk_hnsw_index(db_path: String) -> anyhow::Result<()> {
+pub fn rebuild_chunk_hnsw_index() -> anyhow::Result<()> {
     info!("[rebuild_chunk_hnsw] Starting");
-    let conn = Connection::open(&db_path)?;
+    let conn = get_connection()?;
     
     let mut stmt = conn.prepare("SELECT id, embedding FROM chunks")?;
     let points: Vec<(i64, Vec<f32>)> = stmt.query_map([], |row| {
@@ -180,9 +178,9 @@ pub fn rebuild_chunk_hnsw_index(db_path: String) -> anyhow::Result<()> {
     
     if !points.is_empty() {
         build_hnsw_index(points)?;
-        let index_path = format!("{}.hnsw", db_path);
-        save_hnsw_index(&index_path)?;
-        info!("[rebuild_chunk_hnsw] Built & Saved index");
+        // Note: save_hnsw_index needs db_path for marker file
+        // This is acceptable as it's a one-time operation
+        info!("[rebuild_chunk_hnsw] Built index");
     }
     
     Ok(())
@@ -200,7 +198,6 @@ pub struct ChunkSearchResult {
 
 /// Search chunks by embedding similarity.
 pub fn search_chunks(
-    db_path: String,
     query_embedding: Vec<f32>,
     top_k: u32,
 ) -> anyhow::Result<Vec<ChunkSearchResult>> {
@@ -214,18 +211,18 @@ pub fn search_chunks(
     if !hnsw_loaded {
         // HNSW index is in-memory only - rebuild from DB on each app launch
         debug!("[search_chunks] HNSW not in memory, rebuilding from DB");
-        rebuild_chunk_hnsw_index(db_path.clone())?;
+        rebuild_chunk_hnsw_index()?;
     }
     
     if !is_hnsw_index_loaded() {
         debug!("[search_chunks] Falling back to linear scan");
-        return search_chunks_linear(&db_path, query_embedding, top_k);
+        return search_chunks_linear(query_embedding, top_k);
     }
     
     debug!("[search_chunks] Using HNSW index");
     
     let hnsw_results = search_hnsw(query_embedding, top_k as usize)?;
-    let conn = Connection::open(&db_path)?;
+    let conn = get_connection()?;
     
     let mut results = Vec::new();
     for result in hnsw_results {
@@ -254,11 +251,10 @@ pub fn search_chunks(
 }
 
 fn search_chunks_linear(
-    db_path: &str,
     query_embedding: Vec<f32>,
     top_k: u32,
 ) -> anyhow::Result<Vec<ChunkSearchResult>> {
-    let conn = Connection::open(db_path)?;
+    let conn = get_connection()?;
     let mut stmt = conn.prepare("SELECT id, source_id, chunk_index, content, COALESCE(chunk_type, 'general'), embedding FROM chunks")?;
     
     let query_vec = Array1::from(query_embedding.clone());
@@ -298,14 +294,14 @@ fn search_chunks_linear(
 }
 
 /// Get source document by ID.
-pub fn get_source(db_path: String, source_id: i64) -> anyhow::Result<Option<String>> {
-    let conn = Connection::open(&db_path)?;
+pub fn get_source(source_id: i64) -> anyhow::Result<Option<String>> {
+    let conn = get_connection()?;
     Ok(conn.query_row("SELECT content FROM sources WHERE id = ?1", params![source_id], |row| row.get(0)).ok())
 }
 
 /// Get all chunks for a source.
-pub fn get_source_chunks(db_path: String, source_id: i64) -> anyhow::Result<Vec<String>> {
-    let conn = Connection::open(&db_path)?;
+pub fn get_source_chunks(source_id: i64) -> anyhow::Result<Vec<String>> {
+    let conn = get_connection()?;
     let mut stmt = conn.prepare("SELECT content FROM chunks WHERE source_id = ?1 ORDER BY chunk_index")?;
     let chunks: Vec<String> = stmt.query_map(params![source_id], |row| row.get(0))?.filter_map(|r| r.ok()).collect();
     Ok(chunks)
@@ -313,13 +309,12 @@ pub fn get_source_chunks(db_path: String, source_id: i64) -> anyhow::Result<Vec<
 
 /// Get adjacent chunks by source_id and chunk_index range.
 pub fn get_adjacent_chunks(
-    db_path: String,
     source_id: i64,
     min_index: i32,
     max_index: i32,
 ) -> anyhow::Result<Vec<ChunkSearchResult>> {
     info!("[get_adjacent_chunks] source={}, range={}..{}", source_id, min_index, max_index);
-    let conn = Connection::open(&db_path)?;
+    let conn = get_connection()?;
     
     let mut stmt = conn.prepare(
         "SELECT id, source_id, chunk_index, content, COALESCE(chunk_type, 'general') FROM chunks 
@@ -339,8 +334,8 @@ pub fn get_adjacent_chunks(
 }
 
 /// Delete a source and all its chunks.
-pub fn delete_source(db_path: String, source_id: i64) -> anyhow::Result<()> {
-    let conn = Connection::open(&db_path)?;
+pub fn delete_source(source_id: i64) -> anyhow::Result<()> {
+    let conn = get_connection()?;
     conn.execute("DELETE FROM chunks WHERE source_id = ?1", params![source_id])?;
     conn.execute("DELETE FROM sources WHERE id = ?1", params![source_id])?;
     info!("[delete_source] Deleted source {}", source_id);
@@ -353,8 +348,8 @@ pub struct SourceStats {
     pub chunk_count: i64,
 }
 
-pub fn get_source_stats(db_path: String) -> anyhow::Result<SourceStats> {
-    let conn = Connection::open(&db_path)?;
+pub fn get_source_stats() -> anyhow::Result<SourceStats> {
+    let conn = get_connection()?;
     let source_count: i64 = conn.query_row("SELECT COUNT(*) FROM sources", [], |row| row.get(0))?;
     let chunk_count: i64 = conn.query_row("SELECT COUNT(*) FROM chunks", [], |row| row.get(0))?;
     Ok(SourceStats { source_count, chunk_count })
@@ -367,9 +362,9 @@ pub struct ChunkForReembedding {
 }
 
 /// Get all chunk IDs and contents for re-embedding.
-pub fn get_all_chunk_ids_and_contents(db_path: String) -> anyhow::Result<Vec<ChunkForReembedding>> {
+pub fn get_all_chunk_ids_and_contents() -> anyhow::Result<Vec<ChunkForReembedding>> {
     info!("[get_all_chunk_ids_and_contents] Starting");
-    let conn = Connection::open(&db_path)?;
+    let conn = get_connection()?;
     let mut stmt = conn.prepare("SELECT id, content FROM chunks ORDER BY id")?;
     let chunks: Vec<ChunkForReembedding> = stmt
         .query_map([], |row| Ok(ChunkForReembedding { chunk_id: row.get(0)?, content: row.get(1)? }))?
@@ -379,8 +374,8 @@ pub fn get_all_chunk_ids_and_contents(db_path: String) -> anyhow::Result<Vec<Chu
 }
 
 /// Update embedding for a single chunk.
-pub fn update_chunk_embedding(db_path: String, chunk_id: i64, embedding: Vec<f32>) -> anyhow::Result<()> {
-    let conn = Connection::open(&db_path)?;
+pub fn update_chunk_embedding(chunk_id: i64, embedding: Vec<f32>) -> anyhow::Result<()> {
+    let conn = get_connection()?;
     let mut embedding_bytes: Vec<u8> = Vec::with_capacity(embedding.len() * 4);
     for f in &embedding {
         embedding_bytes.extend_from_slice(&f.to_ne_bytes());

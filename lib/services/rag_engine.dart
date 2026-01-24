@@ -33,6 +33,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../src/rust/api/tokenizer.dart';
 import '../src/rust/api/source_rag.dart' show SourceStats;
+import '../src/rust/api/db_pool.dart';
 import 'embedding_service.dart';
 import 'rag_config.dart';
 import 'source_rag_service.dart';
@@ -119,7 +120,11 @@ class RagEngine {
     final modelBytes = await rootBundle.load(config.modelAsset);
     await EmbeddingService.init(modelBytes.buffer.asUint8List());
 
-    // 4. Initialize RAG service
+    // 4. Initialize database connection pool
+    onProgress?.call('Initializing connection pool...');
+    await initDbPool(dbPath: dbPath, maxSize: 4);
+
+    // 5. Initialize RAG service
     onProgress?.call('Initializing database...');
     final ragService = SourceRagService(
       dbPath: dbPath,
@@ -267,8 +272,9 @@ class RagEngine {
 
   /// Dispose of resources.
   ///
-  /// Call this when done using the engine to release the ONNX session.
+  /// Call this when done using the engine to release resources.
   static void dispose() {
     EmbeddingService.dispose();
+    closeDbPool();
   }
 }

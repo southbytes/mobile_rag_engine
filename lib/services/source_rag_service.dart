@@ -83,7 +83,7 @@ class SourceRagService {
 
   /// Initialize the source database.
   Future<void> init() async {
-    await initSourceDb(dbPath: dbPath);
+    await initSourceDb();
   }
 
   /// Try to load cached HNSW index.
@@ -130,11 +130,7 @@ class SourceRagService {
     void Function(int done, int total)? onProgress,
   }) async {
     // 1. Add source document
-    final sourceResult = await addSource(
-      dbPath: dbPath,
-      content: content,
-      metadata: metadata,
-    );
+    final sourceResult = await addSource(content: content, metadata: metadata);
 
     if (sourceResult.isDuplicate) {
       return SourceAddResult(
@@ -214,11 +210,7 @@ class SourceRagService {
     }
 
     // 4. Store chunks
-    await addChunks(
-      dbPath: dbPath,
-      sourceId: sourceResult.sourceId,
-      chunks: chunkDataList,
-    );
+    await addChunks(sourceId: sourceResult.sourceId, chunks: chunkDataList);
 
     return SourceAddResult(
       sourceId: sourceResult.sourceId.toInt(),
@@ -231,7 +223,7 @@ class SourceRagService {
 
   /// Rebuild the HNSW index after adding sources.
   Future<void> rebuildIndex() async {
-    await rebuildChunkHnswIndex(dbPath: dbPath);
+    await rebuildChunkHnswIndex();
   }
 
   /// Regenerate embeddings for all existing chunks using the current model.
@@ -240,7 +232,7 @@ class SourceRagService {
     void Function(int done, int total)? onProgress,
   }) async {
     // 1. Get all chunk IDs and contents
-    final chunks = await getAllChunkIdsAndContents(dbPath: dbPath);
+    final chunks = await getAllChunkIdsAndContents();
     print(
       '[regenerateAllEmbeddings] Found ${chunks.length} chunks to re-embed',
     );
@@ -252,7 +244,6 @@ class SourceRagService {
 
       // 3. Update in DB
       await updateChunkEmbedding(
-        dbPath: dbPath,
         chunkId: chunk.chunkId,
         embedding: Float32List.fromList(embedding),
       );
@@ -301,11 +292,7 @@ class SourceRagService {
     );
 
     // 2. Search chunks
-    var chunks = await searchChunks(
-      dbPath: dbPath,
-      queryEmbedding: queryEmbedding,
-      topK: topK,
-    );
+    var chunks = await searchChunks(queryEmbedding: queryEmbedding, topK: topK);
 
     // 3. Filter to single source FIRST (before adjacent expansion)
     // Pass the original query for text matching
@@ -428,7 +415,6 @@ class SourceRagService {
       final maxIndex = chunk.chunkIndex + adjacentCount;
 
       final adjacent = await getAdjacentChunks(
-        dbPath: dbPath,
         sourceId: chunk.sourceId,
         minIndex: minIndex,
         maxIndex: maxIndex,
@@ -455,12 +441,12 @@ class SourceRagService {
 
   /// Get the original source document for a chunk.
   Future<String?> getSourceForChunk(ChunkSearchResult chunk) async {
-    return await getSource(dbPath: dbPath, sourceId: chunk.sourceId);
+    return await getSource(sourceId: chunk.sourceId);
   }
 
   /// Get statistics about stored sources and chunks.
   Future<SourceStats> getStats() async {
-    return await getSourceStats(dbPath: dbPath);
+    return await getSourceStats();
   }
 
   /// Format search results as an LLM prompt.
@@ -473,7 +459,7 @@ class SourceRagService {
 
   /// Remove a source and all its chunks from the database.
   Future<void> removeSource(int sourceId) async {
-    await deleteSource(dbPath: dbPath, sourceId: sourceId);
+    await deleteSource(sourceId: sourceId);
     // Note: HNSW index is not automatically updated.
     // It's recommended to call rebuildIndex() if many sources are deleted.
   }

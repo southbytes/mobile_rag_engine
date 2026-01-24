@@ -10,103 +10,75 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
 
 /// Initialize database with sources and chunks tables.
-Future<void> initSourceDb({required String dbPath}) =>
-    RustLib.instance.api.crateApiSourceRagInitSourceDb(dbPath: dbPath);
+Future<void> initSourceDb() =>
+    RustLib.instance.api.crateApiSourceRagInitSourceDb();
 
 /// Add a source document (chunks added separately via add_chunks).
 Future<AddSourceResult> addSource({
-  required String dbPath,
   required String content,
   String? metadata,
 }) => RustLib.instance.api.crateApiSourceRagAddSource(
-  dbPath: dbPath,
   content: content,
   metadata: metadata,
 );
 
 /// Add chunks for a source (uses transaction for atomicity).
 Future<int> addChunks({
-  required String dbPath,
   required PlatformInt64 sourceId,
   required List<ChunkData> chunks,
 }) => RustLib.instance.api.crateApiSourceRagAddChunks(
-  dbPath: dbPath,
   sourceId: sourceId,
   chunks: chunks,
 );
 
 /// Rebuild HNSW index from chunks table.
-Future<void> rebuildChunkHnswIndex({required String dbPath}) =>
-    RustLib.instance.api.crateApiSourceRagRebuildChunkHnswIndex(dbPath: dbPath);
+Future<void> rebuildChunkHnswIndex() =>
+    RustLib.instance.api.crateApiSourceRagRebuildChunkHnswIndex();
 
 /// Search chunks by embedding similarity.
 Future<List<ChunkSearchResult>> searchChunks({
-  required String dbPath,
   required List<double> queryEmbedding,
   required int topK,
 }) => RustLib.instance.api.crateApiSourceRagSearchChunks(
-  dbPath: dbPath,
   queryEmbedding: queryEmbedding,
   topK: topK,
 );
 
 /// Get source document by ID.
-Future<String?> getSource({
-  required String dbPath,
-  required PlatformInt64 sourceId,
-}) => RustLib.instance.api.crateApiSourceRagGetSource(
-  dbPath: dbPath,
-  sourceId: sourceId,
-);
+Future<String?> getSource({required PlatformInt64 sourceId}) =>
+    RustLib.instance.api.crateApiSourceRagGetSource(sourceId: sourceId);
 
 /// Get all chunks for a source.
-Future<List<String>> getSourceChunks({
-  required String dbPath,
-  required PlatformInt64 sourceId,
-}) => RustLib.instance.api.crateApiSourceRagGetSourceChunks(
-  dbPath: dbPath,
-  sourceId: sourceId,
-);
+Future<List<String>> getSourceChunks({required PlatformInt64 sourceId}) =>
+    RustLib.instance.api.crateApiSourceRagGetSourceChunks(sourceId: sourceId);
 
 /// Get adjacent chunks by source_id and chunk_index range.
 Future<List<ChunkSearchResult>> getAdjacentChunks({
-  required String dbPath,
   required PlatformInt64 sourceId,
   required int minIndex,
   required int maxIndex,
 }) => RustLib.instance.api.crateApiSourceRagGetAdjacentChunks(
-  dbPath: dbPath,
   sourceId: sourceId,
   minIndex: minIndex,
   maxIndex: maxIndex,
 );
 
 /// Delete a source and all its chunks.
-Future<void> deleteSource({
-  required String dbPath,
-  required PlatformInt64 sourceId,
-}) => RustLib.instance.api.crateApiSourceRagDeleteSource(
-  dbPath: dbPath,
-  sourceId: sourceId,
-);
+Future<void> deleteSource({required PlatformInt64 sourceId}) =>
+    RustLib.instance.api.crateApiSourceRagDeleteSource(sourceId: sourceId);
 
-Future<SourceStats> getSourceStats({required String dbPath}) =>
-    RustLib.instance.api.crateApiSourceRagGetSourceStats(dbPath: dbPath);
+Future<SourceStats> getSourceStats() =>
+    RustLib.instance.api.crateApiSourceRagGetSourceStats();
 
 /// Get all chunk IDs and contents for re-embedding.
-Future<List<ChunkForReembedding>> getAllChunkIdsAndContents({
-  required String dbPath,
-}) => RustLib.instance.api.crateApiSourceRagGetAllChunkIdsAndContents(
-  dbPath: dbPath,
-);
+Future<List<ChunkForReembedding>> getAllChunkIdsAndContents() =>
+    RustLib.instance.api.crateApiSourceRagGetAllChunkIdsAndContents();
 
 /// Update embedding for a single chunk.
 Future<void> updateChunkEmbedding({
-  required String dbPath,
   required PlatformInt64 chunkId,
   required List<double> embedding,
 }) => RustLib.instance.api.crateApiSourceRagUpdateChunkEmbedding(
-  dbPath: dbPath,
   chunkId: chunkId,
   embedding: embedding,
 );

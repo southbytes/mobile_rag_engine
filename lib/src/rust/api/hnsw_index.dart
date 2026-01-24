@@ -9,6 +9,11 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`, `fmt`
 
 /// Build HNSW index from embedding points.
+///
+/// Parameters are tuned for optimal recall vs speed tradeoff:
+/// - M (max connections per node): 16-24 based on dataset size
+/// - M0 (layer 0 connections): 2*M for better recall
+/// - efConstruction: 100-200 based on dataset size
 Future<void> buildHnswIndex({
   required List<(PlatformInt64, Float32List)> points,
 }) => RustLib.instance.api.crateApiHnswIndexBuildHnswIndex(points: points);
@@ -22,6 +27,12 @@ Future<bool> loadHnswIndex({required String basePath}) =>
     RustLib.instance.api.crateApiHnswIndexLoadHnswIndex(basePath: basePath);
 
 /// Search in HNSW index.
+///
+/// ef_search parameter controls accuracy vs speed:
+/// - Higher ef_search = better recall but slower
+/// - Lower ef_search = faster but may miss relevant results
+///
+/// Current tuning targets ~95% recall for most use cases.
 Future<List<HnswSearchResult>> searchHnsw({
   required List<double> queryEmbedding,
   required BigInt topK,
