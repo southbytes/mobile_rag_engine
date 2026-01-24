@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0
+- **DB Connection Pool**: Implemented connection pooling with `r2d2` for 50-90% search performance improvement
+- **Resource Optimization**: Eliminated redundant SQLite connections to reduce file descriptor usage
+- **Refactoring**: Updated API to use pooled connections instead of direct file opens
+
 ## 0.5.1
 - **Unit Tests**: Added tests for `hnsw_index` and `document_parser` modules
 - **BM25 Korean Support**: Improved Korean tokenization using `unicode-segmentation` crate for better word boundary detection

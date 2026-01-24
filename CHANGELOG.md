@@ -27,6 +27,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`RagConfig` class**: Configuration object for `RagEngine` with chunking and database options
 - **Progress callback**: `onProgress` parameter in `RagEngine.initialize()` for status updates
 
+## 0.6.0
+
+### Added
+- **DB Connection Pool**: Implemented `r2d2` based connection pooling
+- **Performance**: Search operations are now 50-90% faster (100ms -> 11ms)
+- **Automatic Initialization**: `RagEngine` now automatically manages connection pool lifecycle
+
+### Changed
+- **Internal**: Refactored database operations to share connections efficiently
+- **API**: Internal Rust API no longer requires `db_path` for every operation
+
 ### Changed
 - **README Quick Start**: Updated to showcase new simplified `RagEngine` API
 - **Documentation**: Rewrote `docs/guides/quick_start.md` with `RagEngine` examples

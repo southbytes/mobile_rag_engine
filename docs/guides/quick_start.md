@@ -16,7 +16,7 @@ Get started with `mobile_rag_engine` in 5 minutes.
 ```yaml
 # pubspec.yaml
 dependencies:
-  mobile_rag_engine: ^0.4.3
+  mobile_rag_engine:
 ```
 
 ```bash
