@@ -17,7 +17,7 @@ This package is automatically included as a dependency of `mobile_rag_engine`. Y
 
 ```yaml
 dependencies:
-  mobile_rag_engine: ^0.3.0
+  mobile_rag_engine:
 ```
 
 ## Requirements
@@ -40,7 +40,7 @@ No additional requirements - binaries are downloaded automatically.
 | iOS | arm64 | ✅ |
 | iOS Simulator | arm64, x86_64 | ✅ |
 | macOS | arm64, x86_64 | ✅ |
-| Android | arm64-v8a, armeabi-v7a, x86, x86_64 | ✅ |
+| Android | arm64-v8a, armeabi-v7a, x86 | ✅ |
 | Linux | x86_64 | 🚧 Coming soon |
 | Windows | x86_64 | 🚧 Coming soon |
 

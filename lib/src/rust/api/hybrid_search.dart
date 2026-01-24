@@ -11,13 +11,11 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 /// Perform hybrid search combining vector and keyword search.
 Future<List<HybridSearchResult>> searchHybrid({
-  required String dbPath,
   required String queryText,
   required List<double> queryEmbedding,
   required int topK,
   RrfConfig? config,
 }) => RustLib.instance.api.crateApiHybridSearchSearchHybrid(
-  dbPath: dbPath,
   queryText: queryText,
   queryEmbedding: queryEmbedding,
   topK: topK,
@@ -26,12 +24,10 @@ Future<List<HybridSearchResult>> searchHybrid({
 
 /// Simplified hybrid search returning content strings only.
 Future<List<String>> searchHybridSimple({
-  required String dbPath,
   required String queryText,
   required List<double> queryEmbedding,
   required int topK,
 }) => RustLib.instance.api.crateApiHybridSearchSearchHybridSimple(
-  dbPath: dbPath,
   queryText: queryText,
   queryEmbedding: queryEmbedding,
   topK: topK,
@@ -39,14 +35,12 @@ Future<List<String>> searchHybridSimple({
 
 /// Search with custom weights (vector_weight + bm25_weight = 1.0 recommended).
 Future<List<HybridSearchResult>> searchHybridWeighted({
-  required String dbPath,
   required String queryText,
   required List<double> queryEmbedding,
   required int topK,
   required double vectorWeight,
   required double bm25Weight,
 }) => RustLib.instance.api.crateApiHybridSearchSearchHybridWeighted(
-  dbPath: dbPath,
   queryText: queryText,
   queryEmbedding: queryEmbedding,
   topK: topK,

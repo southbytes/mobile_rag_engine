@@ -24,6 +24,7 @@ use sha2::{Sha256, Digest};
 use crate::api::hnsw_index::{build_hnsw_index, search_hnsw, is_hnsw_index_loaded, clear_hnsw_index};
 use crate::api::bm25_search::{bm25_add_document, bm25_add_documents, bm25_clear_index};
 use crate::api::incremental_index::{incremental_add, clear_buffer};
+use crate::api::db_pool::{get_connection};
 
 fn truncate_str(s: &str, max_chars: usize) -> &str {
     match s.char_indices().nth(max_chars) {
@@ -58,9 +59,9 @@ pub fn calculate_cosine_similarity(vec_a: Vec<f32>, vec_b: Vec<f32>) -> f64 {
 }
 
 /// Initialize database with docs table.
-pub fn init_db(db_path: String) -> anyhow::Result<()> {
-    info!("[init_db] DB path: {}", db_path);
-    let conn = Connection::open(&db_path)?;
+pub fn init_db() -> anyhow::Result<()> {
+    info!("[init_db] Initializing database tables");
+    let conn = get_connection()?;
     
     conn.execute(
         "CREATE TABLE IF NOT EXISTS docs (
@@ -110,9 +111,9 @@ fn rebuild_hnsw_index_internal(conn: &Connection) -> anyhow::Result<()> {
 }
 
 /// Rebuild HNSW index.
-pub fn rebuild_hnsw_index(db_path: String) -> anyhow::Result<()> {
+pub fn rebuild_hnsw_index() -> anyhow::Result<()> {
     info!("[rebuild_hnsw] Starting index rebuild");
-    let conn = Connection::open(&db_path)?;
+    let conn = get_connection()?;
     rebuild_hnsw_index_internal(&conn)?;
     info!("[rebuild_hnsw] Index rebuild complete");
     Ok(())
@@ -129,9 +130,9 @@ fn rebuild_bm25_index_internal(conn: &Connection) -> anyhow::Result<()> {
 }
 
 /// Rebuild BM25 index.
-pub fn rebuild_bm25_index(db_path: String) -> anyhow::Result<()> {
+pub fn rebuild_bm25_index() -> anyhow::Result<()> {
     info!("[rebuild_bm25] Starting index rebuild");
-    let conn = Connection::open(&db_path)?;
+    let conn = get_connection()?;
     bm25_clear_index();
     rebuild_bm25_index_internal(&conn)?;
     info!("[rebuild_bm25] Index rebuild complete");
@@ -145,8 +146,9 @@ pub struct AddDocumentResult {
     pub message: String,
 }
 
+
 /// Add document with embedding vector (with deduplication).
-pub fn add_document(db_path: String, content: String, embedding: Vec<f32>) -> anyhow::Result<AddDocumentResult> {
+pub fn add_document(content: String, embedding: Vec<f32>) -> anyhow::Result<AddDocumentResult> {
     info!("[add_document] Saving document");
     debug!("[add_document] content length: {} chars, embedding dims: {}", content.chars().count(), embedding.len());
     
@@ -154,9 +156,9 @@ pub fn add_document(db_path: String, content: String, embedding: Vec<f32>) -> an
         error!("[add_document] Embedding is empty!");
         return Ok(AddDocumentResult { success: false, is_duplicate: false, message: "Embedding vector is empty".to_string() });
     }
-    
+
     let content_hash = calculate_content_hash(&content);
-    let conn = Connection::open(&db_path)?;
+    let conn = get_connection()?;
     
     let existing: Option<i64> = conn.query_row("SELECT id FROM docs WHERE content_hash = ?1", params![content_hash], |row| row.get(0)).ok();
     
@@ -179,38 +181,38 @@ pub fn add_document(db_path: String, content: String, embedding: Vec<f32>) -> an
 }
 
 /// Legacy add_document for backward compatibility.
-pub fn add_document_simple(db_path: String, content: String, embedding: Vec<f32>) -> anyhow::Result<()> {
-    let result = add_document(db_path, content, embedding)?;
+pub fn add_document_simple(content: String, embedding: Vec<f32>) -> anyhow::Result<()> {
+    let result = add_document(content, embedding)?;
     if result.success { Ok(()) } else { Err(anyhow::anyhow!(result.message)) }
 }
 
 /// Similarity-based search (uses HNSW).
-pub fn search_similar(db_path: String, query_embedding: Vec<f32>, top_k: u32) -> anyhow::Result<Vec<String>> {
+pub fn search_similar(query_embedding: Vec<f32>, top_k: u32) -> anyhow::Result<Vec<String>> {
     info!("[search] Starting search, query dims: {}, top_k: {}", query_embedding.len(), top_k);
     
     if query_embedding.is_empty() { return Err(anyhow::anyhow!("Query embedding is empty")); }
     
     if is_hnsw_index_loaded() {
         info!("[search] Using HNSW index");
-        return search_with_hnsw(&db_path, query_embedding, top_k);
+        return search_with_hnsw(query_embedding, top_k);
     }
     
     info!("[search] No HNSW index, attempting to build...");
-    let conn = Connection::open(&db_path)?;
+    let conn = get_connection()?;
     
     if let Ok(()) = rebuild_hnsw_index_internal(&conn) {
-        if is_hnsw_index_loaded() { return search_with_hnsw(&db_path, query_embedding, top_k); }
+        if is_hnsw_index_loaded() { return search_with_hnsw(query_embedding, top_k); }
     }
     
     info!("[search] Using Linear Scan (no HNSW index)");
-    search_with_linear_scan(&db_path, query_embedding, top_k)
+    search_with_linear_scan(query_embedding, top_k)
 }
 
-fn search_with_hnsw(db_path: &str, query_embedding: Vec<f32>, top_k: u32) -> anyhow::Result<Vec<String>> {
+fn search_with_hnsw(query_embedding: Vec<f32>, top_k: u32) -> anyhow::Result<Vec<String>> {
     let hnsw_results = search_hnsw(query_embedding, top_k as usize)?;
     if hnsw_results.is_empty() { return Ok(Vec::new()); }
     
-    let conn = Connection::open(db_path)?;
+    let conn = get_connection()?;
     let mut results: Vec<String> = Vec::new();
     
     for result in hnsw_results {
@@ -225,8 +227,8 @@ fn search_with_hnsw(db_path: &str, query_embedding: Vec<f32>, top_k: u32) -> any
     Ok(results)
 }
 
-fn search_with_linear_scan(db_path: &str, query_embedding: Vec<f32>, top_k: u32) -> anyhow::Result<Vec<String>> {
-    let conn = Connection::open(db_path)?;
+fn search_with_linear_scan(query_embedding: Vec<f32>, top_k: u32) -> anyhow::Result<Vec<String>> {
+    let conn = get_connection()?;
     let mut stmt = conn.prepare("SELECT content, embedding FROM docs")?;
     
     let query_vec = Array1::from(query_embedding.clone());
@@ -262,14 +264,14 @@ fn search_with_linear_scan(db_path: &str, query_embedding: Vec<f32>, top_k: u32)
 }
 
 /// Get document count.
-pub fn get_document_count(db_path: String) -> anyhow::Result<i64> {
-    let conn = Connection::open(&db_path)?;
+pub fn get_document_count() -> anyhow::Result<i64> {
+    let conn = get_connection()?;
     Ok(conn.query_row("SELECT COUNT(*) FROM docs", [], |row| row.get(0))?)
 }
 
 /// Clear all documents.
-pub fn clear_all_documents(db_path: String) -> anyhow::Result<()> {
-    let conn = Connection::open(&db_path)?;
+pub fn clear_all_documents() -> anyhow::Result<()> {
+    let conn = get_connection()?;
     conn.execute("DELETE FROM docs", [])?;
     clear_hnsw_index();
     bm25_clear_index();

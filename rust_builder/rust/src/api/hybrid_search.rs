@@ -18,9 +18,10 @@
 
 use std::collections::HashMap;
 use log::{info, debug};
-use rusqlite::{params, Connection};
+use rusqlite::params;
 use crate::api::hnsw_index::{search_hnsw, is_hnsw_index_loaded};
 use crate::api::bm25_search::{bm25_search, Bm25SearchResult};
+use crate::api::db_pool::{get_connection};
 
 #[derive(Debug, Clone)]
 pub struct HybridSearchResult {
@@ -46,7 +47,6 @@ fn rrf_score(rank: usize, k: u32) -> f64 { 1.0 / (k as f64 + rank as f64) }
 
 /// Perform hybrid search combining vector and keyword search.
 pub fn search_hybrid(
-    db_path: String,
     query_text: String,
     query_embedding: Vec<f32>,
     top_k: u32,
@@ -98,7 +98,8 @@ pub fn search_hybrid(
     rrf_scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
     rrf_scores.truncate(top_k as usize);
     
-    let conn = Connection::open(&db_path)?;
+    
+    let conn = get_connection()?;
     let mut results: Vec<HybridSearchResult> = Vec::new();
     
     for (doc_id, score, vec_rank, bm25_rank) in rrf_scores {
@@ -116,13 +117,12 @@ pub fn search_hybrid(
 }
 
 /// Simplified hybrid search returning content strings only.
-pub fn search_hybrid_simple(db_path: String, query_text: String, query_embedding: Vec<f32>, top_k: u32) -> anyhow::Result<Vec<String>> {
-    Ok(search_hybrid(db_path, query_text, query_embedding, top_k, None)?.into_iter().map(|r| r.content).collect())
+pub fn search_hybrid_simple(query_text: String, query_embedding: Vec<f32>, top_k: u32) -> anyhow::Result<Vec<String>> {
+    Ok(search_hybrid(query_text, query_embedding, top_k, None)?.into_iter().map(|r| r.content).collect())
 }
 
 /// Search with custom weights (vector_weight + bm25_weight = 1.0 recommended).
 pub fn search_hybrid_weighted(
-    db_path: String,
     query_text: String,
     query_embedding: Vec<f32>,
     top_k: u32,
@@ -130,7 +130,7 @@ pub fn search_hybrid_weighted(
     bm25_weight: f64,
 ) -> anyhow::Result<Vec<HybridSearchResult>> {
     let config = RrfConfig { k: 60, vector_weight: vector_weight.clamp(0.0, 1.0), bm25_weight: bm25_weight.clamp(0.0, 1.0) };
-    search_hybrid(db_path, query_text, query_embedding, top_k, Some(config))
+    search_hybrid(query_text, query_embedding, top_k, Some(config))
 }
 
 #[cfg(test)]

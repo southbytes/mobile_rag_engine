@@ -105,18 +105,14 @@ fn wire__crate__api__simple_rag__add_document_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_db_path = <String>::sse_decode(&mut deserializer);
             let api_content = <String>::sse_decode(&mut deserializer);
             let api_embedding = <Vec<f32>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
-                        let output_ok = crate::api::simple_rag::add_document(
-                            api_db_path,
-                            api_content,
-                            api_embedding,
-                        )?;
+                        let output_ok =
+                            crate::api::simple_rag::add_document(api_content, api_embedding)?;
                         Ok(output_ok)
                     })(),
                 )
@@ -146,7 +142,6 @@ fn wire__crate__api__simple_rag__add_document_simple_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_db_path = <String>::sse_decode(&mut deserializer);
             let api_content = <String>::sse_decode(&mut deserializer);
             let api_embedding = <Vec<f32>>::sse_decode(&mut deserializer);
             deserializer.end();
@@ -154,7 +149,6 @@ fn wire__crate__api__simple_rag__add_document_simple_impl(
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
                         let output_ok = crate::api::simple_rag::add_document_simple(
-                            api_db_path,
                             api_content,
                             api_embedding,
                         )?;
@@ -602,12 +596,11 @@ fn wire__crate__api__simple_rag__clear_all_documents_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_db_path = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
-                        let output_ok = crate::api::simple_rag::clear_all_documents(api_db_path)?;
+                        let output_ok = crate::api::simple_rag::clear_all_documents()?;
                         Ok(output_ok)
                     })(),
                 )
@@ -1203,12 +1196,11 @@ fn wire__crate__api__simple_rag__get_document_count_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_db_path = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
-                        let output_ok = crate::api::simple_rag::get_document_count(api_db_path)?;
+                        let output_ok = crate::api::simple_rag::get_document_count()?;
                         Ok(output_ok)
                     })(),
                 )
@@ -1614,12 +1606,11 @@ fn wire__crate__api__simple_rag__init_db_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_db_path = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
-                        let output_ok = crate::api::simple_rag::init_db(api_db_path)?;
+                        let output_ok = crate::api::simple_rag::init_db()?;
                         Ok(output_ok)
                     })(),
                 )
@@ -2018,12 +2009,11 @@ fn wire__crate__api__simple_rag__rebuild_bm25_index_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_db_path = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
-                        let output_ok = crate::api::simple_rag::rebuild_bm25_index(api_db_path)?;
+                        let output_ok = crate::api::simple_rag::rebuild_bm25_index()?;
                         Ok(output_ok)
                     })(),
                 )
@@ -2087,12 +2077,11 @@ fn wire__crate__api__simple_rag__rebuild_hnsw_index_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_db_path = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
-                        let output_ok = crate::api::simple_rag::rebuild_hnsw_index(api_db_path)?;
+                        let output_ok = crate::api::simple_rag::rebuild_hnsw_index()?;
                         Ok(output_ok)
                     })(),
                 )
@@ -2264,7 +2253,6 @@ fn wire__crate__api__hybrid_search__search_hybrid_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_db_path = <String>::sse_decode(&mut deserializer);
             let api_query_text = <String>::sse_decode(&mut deserializer);
             let api_query_embedding = <Vec<f32>>::sse_decode(&mut deserializer);
             let api_top_k = <u32>::sse_decode(&mut deserializer);
@@ -2275,7 +2263,6 @@ fn wire__crate__api__hybrid_search__search_hybrid_impl(
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
                         let output_ok = crate::api::hybrid_search::search_hybrid(
-                            api_db_path,
                             api_query_text,
                             api_query_embedding,
                             api_top_k,
@@ -2310,7 +2297,6 @@ fn wire__crate__api__hybrid_search__search_hybrid_simple_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_db_path = <String>::sse_decode(&mut deserializer);
             let api_query_text = <String>::sse_decode(&mut deserializer);
             let api_query_embedding = <Vec<f32>>::sse_decode(&mut deserializer);
             let api_top_k = <u32>::sse_decode(&mut deserializer);
@@ -2319,7 +2305,6 @@ fn wire__crate__api__hybrid_search__search_hybrid_simple_impl(
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
                         let output_ok = crate::api::hybrid_search::search_hybrid_simple(
-                            api_db_path,
                             api_query_text,
                             api_query_embedding,
                             api_top_k,
@@ -2353,7 +2338,6 @@ fn wire__crate__api__hybrid_search__search_hybrid_weighted_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_db_path = <String>::sse_decode(&mut deserializer);
             let api_query_text = <String>::sse_decode(&mut deserializer);
             let api_query_embedding = <Vec<f32>>::sse_decode(&mut deserializer);
             let api_top_k = <u32>::sse_decode(&mut deserializer);
@@ -2364,7 +2348,6 @@ fn wire__crate__api__hybrid_search__search_hybrid_weighted_impl(
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
                         let output_ok = crate::api::hybrid_search::search_hybrid_weighted(
-                            api_db_path,
                             api_query_text,
                             api_query_embedding,
                             api_top_k,
@@ -2400,18 +2383,14 @@ fn wire__crate__api__simple_rag__search_similar_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_db_path = <String>::sse_decode(&mut deserializer);
             let api_query_embedding = <Vec<f32>>::sse_decode(&mut deserializer);
             let api_top_k = <u32>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
-                        let output_ok = crate::api::simple_rag::search_similar(
-                            api_db_path,
-                            api_query_embedding,
-                            api_top_k,
-                        )?;
+                        let output_ok =
+                            crate::api::simple_rag::search_similar(api_query_embedding, api_top_k)?;
                         Ok(output_ok)
                     })(),
                 )

@@ -73,8 +73,28 @@ pub fn init_db_pool(db_path: String, max_size: u32) -> Result<()> {
         .connection_timeout(std::time::Duration::from_secs(5))
         .build(manager)?;
     
-    DB_POOL.get_or_init(|| RwLock::new(Some(pool)));
-    info!("[db_pool] Connection pool initialized successfully");
+    // Support re-initialization
+    if let Some(lock) = DB_POOL.get() {
+        let mut guard = lock.write().unwrap();
+        *guard = Some(pool);
+        info!("[db_pool] Connection pool updated/re-initialized");
+    } else {
+        // Try to initialize for the first time
+        // Handle race condition if multiple threads try to init simultaneously
+        let lock = RwLock::new(Some(pool));
+        if let Err(params) = DB_POOL.set(lock) {
+            // Initialization failed because it was just initialized by another thread.
+            // Retrieve our pool and update the existing lock.
+            let my_pool = params.into_inner().unwrap().unwrap();
+            let existing_lock = DB_POOL.get().unwrap();
+            let mut guard = existing_lock.write().unwrap();
+            *guard = Some(my_pool);
+            info!("[db_pool] Connection pool updated (race condition handled)");
+        } else {
+            info!("[db_pool] Connection pool initialized successfully");
+        }
+    }
+    
     Ok(())
 }
 

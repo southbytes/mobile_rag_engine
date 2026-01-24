@@ -491,7 +491,6 @@ class SourceRagService {
 
     // 2. Perform hybrid search with RRF fusion
     final results = await hybrid.searchHybridWeighted(
-      dbPath: dbPath,
       queryText: query,
       queryEmbedding: queryEmbedding,
       topK: topK,

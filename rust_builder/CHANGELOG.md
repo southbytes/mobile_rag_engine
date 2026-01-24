@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1
+
+- Updated README to remove specific version constraints in examples.
+- Updated Supported Platforms documentation.
+
 ## 0.6.0
 - **DB Connection Pool**: Implemented connection pooling with `r2d2` for 50-90% search performance improvement
 - **Resource Optimization**: Eliminated redundant SQLite connections to reduce file descriptor usage

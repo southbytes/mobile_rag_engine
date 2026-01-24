@@ -95,13 +95,11 @@ abstract class RustLibApi extends BaseApi {
   });
 
   Future<AddDocumentResult> crateApiSimpleRagAddDocument({
-    required String dbPath,
     required String content,
     required List<double> embedding,
   });
 
   Future<void> crateApiSimpleRagAddDocumentSimple({
-    required String dbPath,
     required String content,
     required List<double> embedding,
   });
@@ -150,7 +148,7 @@ abstract class RustLibApi extends BaseApi {
 
   ChunkType crateApiSemanticChunkerClassifyChunk({required String text});
 
-  Future<void> crateApiSimpleRagClearAllDocuments({required String dbPath});
+  Future<void> crateApiSimpleRagClearAllDocuments();
 
   Future<void> crateApiIncrementalIndexClearBuffer();
 
@@ -207,9 +205,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<BufferStats> crateApiIncrementalIndexGetBufferStats();
 
-  Future<PlatformInt64> crateApiSimpleRagGetDocumentCount({
-    required String dbPath,
-  });
+  Future<PlatformInt64> crateApiSimpleRagGetDocumentCount();
 
   Future<(int, int, int)?> crateApiDbPoolGetPoolStats();
 
@@ -246,7 +242,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateApiSimpleInitApp();
 
-  Future<void> crateApiSimpleRagInitDb({required String dbPath});
+  Future<void> crateApiSimpleRagInitDb();
 
   Future<void> crateApiDbPoolInitDbPool({
     required String dbPath,
@@ -276,11 +272,11 @@ abstract class RustLibApi extends BaseApi {
 
   UserIntent crateApiUserIntentParseUserIntent({required String input});
 
-  Future<void> crateApiSimpleRagRebuildBm25Index({required String dbPath});
+  Future<void> crateApiSimpleRagRebuildBm25Index();
 
   Future<void> crateApiSourceRagRebuildChunkHnswIndex();
 
-  Future<void> crateApiSimpleRagRebuildHnswIndex({required String dbPath});
+  Future<void> crateApiSimpleRagRebuildHnswIndex();
 
   Future<RrfConfig> crateApiHybridSearchRrfConfigDefault();
 
@@ -297,7 +293,6 @@ abstract class RustLibApi extends BaseApi {
   });
 
   Future<List<HybridSearchResult>> crateApiHybridSearchSearchHybrid({
-    required String dbPath,
     required String queryText,
     required List<double> queryEmbedding,
     required int topK,
@@ -305,14 +300,12 @@ abstract class RustLibApi extends BaseApi {
   });
 
   Future<List<String>> crateApiHybridSearchSearchHybridSimple({
-    required String dbPath,
     required String queryText,
     required List<double> queryEmbedding,
     required int topK,
   });
 
   Future<List<HybridSearchResult>> crateApiHybridSearchSearchHybridWeighted({
-    required String dbPath,
     required String queryText,
     required List<double> queryEmbedding,
     required int topK,
@@ -321,7 +314,6 @@ abstract class RustLibApi extends BaseApi {
   });
 
   Future<List<String>> crateApiSimpleRagSearchSimilar({
-    required String dbPath,
     required List<double> queryEmbedding,
     required int topK,
   });
@@ -408,7 +400,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @override
   Future<AddDocumentResult> crateApiSimpleRagAddDocument({
-    required String dbPath,
     required String content,
     required List<double> embedding,
   }) {
@@ -416,7 +407,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
           sse_encode_String(content, serializer);
           sse_encode_list_prim_f_32_loose(embedding, serializer);
           pdeCallFfi(
@@ -431,7 +421,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiSimpleRagAddDocumentConstMeta,
-        argValues: [dbPath, content, embedding],
+        argValues: [content, embedding],
         apiImpl: this,
       ),
     );
@@ -440,12 +430,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiSimpleRagAddDocumentConstMeta =>
       const TaskConstMeta(
         debugName: "add_document",
-        argNames: ["dbPath", "content", "embedding"],
+        argNames: ["content", "embedding"],
       );
 
   @override
   Future<void> crateApiSimpleRagAddDocumentSimple({
-    required String dbPath,
     required String content,
     required List<double> embedding,
   }) {
@@ -453,7 +442,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
           sse_encode_String(content, serializer);
           sse_encode_list_prim_f_32_loose(embedding, serializer);
           pdeCallFfi(
@@ -468,7 +456,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiSimpleRagAddDocumentSimpleConstMeta,
-        argValues: [dbPath, content, embedding],
+        argValues: [content, embedding],
         apiImpl: this,
       ),
     );
@@ -477,7 +465,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiSimpleRagAddDocumentSimpleConstMeta =>
       const TaskConstMeta(
         debugName: "add_document_simple",
-        argNames: ["dbPath", "content", "embedding"],
+        argNames: ["content", "embedding"],
       );
 
   @override
@@ -845,12 +833,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "classify_chunk", argNames: ["text"]);
 
   @override
-  Future<void> crateApiSimpleRagClearAllDocuments({required String dbPath}) {
+  Future<void> crateApiSimpleRagClearAllDocuments() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -863,17 +850,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiSimpleRagClearAllDocumentsConstMeta,
-        argValues: [dbPath],
+        argValues: [],
         apiImpl: this,
       ),
     );
   }
 
   TaskConstMeta get kCrateApiSimpleRagClearAllDocumentsConstMeta =>
-      const TaskConstMeta(
-        debugName: "clear_all_documents",
-        argNames: ["dbPath"],
-      );
+      const TaskConstMeta(debugName: "clear_all_documents", argNames: []);
 
   @override
   Future<void> crateApiIncrementalIndexClearBuffer() {
@@ -1371,14 +1355,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "get_buffer_stats", argNames: []);
 
   @override
-  Future<PlatformInt64> crateApiSimpleRagGetDocumentCount({
-    required String dbPath,
-  }) {
+  Future<PlatformInt64> crateApiSimpleRagGetDocumentCount() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -1391,17 +1372,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiSimpleRagGetDocumentCountConstMeta,
-        argValues: [dbPath],
+        argValues: [],
         apiImpl: this,
       ),
     );
   }
 
   TaskConstMeta get kCrateApiSimpleRagGetDocumentCountConstMeta =>
-      const TaskConstMeta(
-        debugName: "get_document_count",
-        argNames: ["dbPath"],
-      );
+      const TaskConstMeta(debugName: "get_document_count", argNames: []);
 
   @override
   Future<(int, int, int)?> crateApiDbPoolGetPoolStats() {
@@ -1727,12 +1705,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "init_app", argNames: []);
 
   @override
-  Future<void> crateApiSimpleRagInitDb({required String dbPath}) {
+  Future<void> crateApiSimpleRagInitDb() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -1745,14 +1722,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiSimpleRagInitDbConstMeta,
-        argValues: [dbPath],
+        argValues: [],
         apiImpl: this,
       ),
     );
   }
 
   TaskConstMeta get kCrateApiSimpleRagInitDbConstMeta =>
-      const TaskConstMeta(debugName: "init_db", argNames: ["dbPath"]);
+      const TaskConstMeta(debugName: "init_db", argNames: []);
 
   @override
   Future<void> crateApiDbPoolInitDbPool({
@@ -2059,12 +2036,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "parse_user_intent", argNames: ["input"]);
 
   @override
-  Future<void> crateApiSimpleRagRebuildBm25Index({required String dbPath}) {
+  Future<void> crateApiSimpleRagRebuildBm25Index() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -2077,17 +2053,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiSimpleRagRebuildBm25IndexConstMeta,
-        argValues: [dbPath],
+        argValues: [],
         apiImpl: this,
       ),
     );
   }
 
   TaskConstMeta get kCrateApiSimpleRagRebuildBm25IndexConstMeta =>
-      const TaskConstMeta(
-        debugName: "rebuild_bm25_index",
-        argNames: ["dbPath"],
-      );
+      const TaskConstMeta(debugName: "rebuild_bm25_index", argNames: []);
 
   @override
   Future<void> crateApiSourceRagRebuildChunkHnswIndex() {
@@ -2117,12 +2090,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "rebuild_chunk_hnsw_index", argNames: []);
 
   @override
-  Future<void> crateApiSimpleRagRebuildHnswIndex({required String dbPath}) {
+  Future<void> crateApiSimpleRagRebuildHnswIndex() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -2135,17 +2107,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiSimpleRagRebuildHnswIndexConstMeta,
-        argValues: [dbPath],
+        argValues: [],
         apiImpl: this,
       ),
     );
   }
 
   TaskConstMeta get kCrateApiSimpleRagRebuildHnswIndexConstMeta =>
-      const TaskConstMeta(
-        debugName: "rebuild_hnsw_index",
-        argNames: ["dbPath"],
-      );
+      const TaskConstMeta(debugName: "rebuild_hnsw_index", argNames: []);
 
   @override
   Future<RrfConfig> crateApiHybridSearchRrfConfigDefault() {
@@ -2274,7 +2243,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @override
   Future<List<HybridSearchResult>> crateApiHybridSearchSearchHybrid({
-    required String dbPath,
     required String queryText,
     required List<double> queryEmbedding,
     required int topK,
@@ -2284,7 +2252,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
           sse_encode_String(queryText, serializer);
           sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
           sse_encode_u_32(topK, serializer);
@@ -2301,7 +2268,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiHybridSearchSearchHybridConstMeta,
-        argValues: [dbPath, queryText, queryEmbedding, topK, config],
+        argValues: [queryText, queryEmbedding, topK, config],
         apiImpl: this,
       ),
     );
@@ -2310,12 +2277,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiHybridSearchSearchHybridConstMeta =>
       const TaskConstMeta(
         debugName: "search_hybrid",
-        argNames: ["dbPath", "queryText", "queryEmbedding", "topK", "config"],
+        argNames: ["queryText", "queryEmbedding", "topK", "config"],
       );
 
   @override
   Future<List<String>> crateApiHybridSearchSearchHybridSimple({
-    required String dbPath,
     required String queryText,
     required List<double> queryEmbedding,
     required int topK,
@@ -2324,7 +2290,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
           sse_encode_String(queryText, serializer);
           sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
           sse_encode_u_32(topK, serializer);
@@ -2340,7 +2305,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiHybridSearchSearchHybridSimpleConstMeta,
-        argValues: [dbPath, queryText, queryEmbedding, topK],
+        argValues: [queryText, queryEmbedding, topK],
         apiImpl: this,
       ),
     );
@@ -2349,12 +2314,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiHybridSearchSearchHybridSimpleConstMeta =>
       const TaskConstMeta(
         debugName: "search_hybrid_simple",
-        argNames: ["dbPath", "queryText", "queryEmbedding", "topK"],
+        argNames: ["queryText", "queryEmbedding", "topK"],
       );
 
   @override
   Future<List<HybridSearchResult>> crateApiHybridSearchSearchHybridWeighted({
-    required String dbPath,
     required String queryText,
     required List<double> queryEmbedding,
     required int topK,
@@ -2365,7 +2329,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
           sse_encode_String(queryText, serializer);
           sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
           sse_encode_u_32(topK, serializer);
@@ -2383,14 +2346,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiHybridSearchSearchHybridWeightedConstMeta,
-        argValues: [
-          dbPath,
-          queryText,
-          queryEmbedding,
-          topK,
-          vectorWeight,
-          bm25Weight,
-        ],
+        argValues: [queryText, queryEmbedding, topK, vectorWeight, bm25Weight],
         apiImpl: this,
       ),
     );
@@ -2400,7 +2356,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(
         debugName: "search_hybrid_weighted",
         argNames: [
-          "dbPath",
           "queryText",
           "queryEmbedding",
           "topK",
@@ -2411,7 +2366,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @override
   Future<List<String>> crateApiSimpleRagSearchSimilar({
-    required String dbPath,
     required List<double> queryEmbedding,
     required int topK,
   }) {
@@ -2419,7 +2373,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(dbPath, serializer);
           sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
           sse_encode_u_32(topK, serializer);
           pdeCallFfi(
@@ -2434,7 +2387,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiSimpleRagSearchSimilarConstMeta,
-        argValues: [dbPath, queryEmbedding, topK],
+        argValues: [queryEmbedding, topK],
         apiImpl: this,
       ),
     );
@@ -2443,7 +2396,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiSimpleRagSearchSimilarConstMeta =>
       const TaskConstMeta(
         debugName: "search_similar",
-        argNames: ["dbPath", "queryEmbedding", "topK"],
+        argNames: ["queryEmbedding", "topK"],
       );
 
   @override

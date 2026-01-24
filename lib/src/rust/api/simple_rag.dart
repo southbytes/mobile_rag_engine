@@ -19,57 +19,50 @@ double calculateCosineSimilarity({
 );
 
 /// Initialize database with docs table.
-Future<void> initDb({required String dbPath}) =>
-    RustLib.instance.api.crateApiSimpleRagInitDb(dbPath: dbPath);
+Future<void> initDb() => RustLib.instance.api.crateApiSimpleRagInitDb();
 
 /// Rebuild HNSW index.
-Future<void> rebuildHnswIndex({required String dbPath}) =>
-    RustLib.instance.api.crateApiSimpleRagRebuildHnswIndex(dbPath: dbPath);
+Future<void> rebuildHnswIndex() =>
+    RustLib.instance.api.crateApiSimpleRagRebuildHnswIndex();
 
 /// Rebuild BM25 index.
-Future<void> rebuildBm25Index({required String dbPath}) =>
-    RustLib.instance.api.crateApiSimpleRagRebuildBm25Index(dbPath: dbPath);
+Future<void> rebuildBm25Index() =>
+    RustLib.instance.api.crateApiSimpleRagRebuildBm25Index();
 
 /// Add document with embedding vector (with deduplication).
 Future<AddDocumentResult> addDocument({
-  required String dbPath,
   required String content,
   required List<double> embedding,
 }) => RustLib.instance.api.crateApiSimpleRagAddDocument(
-  dbPath: dbPath,
   content: content,
   embedding: embedding,
 );
 
 /// Legacy add_document for backward compatibility.
 Future<void> addDocumentSimple({
-  required String dbPath,
   required String content,
   required List<double> embedding,
 }) => RustLib.instance.api.crateApiSimpleRagAddDocumentSimple(
-  dbPath: dbPath,
   content: content,
   embedding: embedding,
 );
 
 /// Similarity-based search (uses HNSW).
 Future<List<String>> searchSimilar({
-  required String dbPath,
   required List<double> queryEmbedding,
   required int topK,
 }) => RustLib.instance.api.crateApiSimpleRagSearchSimilar(
-  dbPath: dbPath,
   queryEmbedding: queryEmbedding,
   topK: topK,
 );
 
 /// Get document count.
-Future<PlatformInt64> getDocumentCount({required String dbPath}) =>
-    RustLib.instance.api.crateApiSimpleRagGetDocumentCount(dbPath: dbPath);
+Future<PlatformInt64> getDocumentCount() =>
+    RustLib.instance.api.crateApiSimpleRagGetDocumentCount();
 
 /// Clear all documents.
-Future<void> clearAllDocuments({required String dbPath}) =>
-    RustLib.instance.api.crateApiSimpleRagClearAllDocuments(dbPath: dbPath);
+Future<void> clearAllDocuments() =>
+    RustLib.instance.api.crateApiSimpleRagClearAllDocuments();
 
 class AddDocumentResult {
   final bool success;

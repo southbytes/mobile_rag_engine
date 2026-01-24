@@ -2,6 +2,7 @@
 import 'package:mobile_rag_engine/services/embedding_service.dart';
 import 'package:mobile_rag_engine/src/rust/api/tokenizer.dart';
 import 'package:mobile_rag_engine/src/rust/api/simple_rag.dart';
+import 'package:mobile_rag_engine/src/rust/api/db_pool.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
@@ -127,11 +128,7 @@ class BenchmarkService {
     return benchmark(
       'HNSW Search ($docCount docs)',
       () async {
-        await searchSimilar(
-          dbPath: dbPath,
-          queryEmbedding: queryEmbedding,
-          topK: 3,
-        );
+        await searchSimilar(queryEmbedding: queryEmbedding, topK: 3);
       },
       iterations: iterations,
       category: BenchmarkCategory.rust,
@@ -215,7 +212,10 @@ class BenchmarkService {
     // 3. Search benchmark data preparation
     final testDbPath =
         "${(await getApplicationDocumentsDirectory()).path}/benchmark_db.sqlite";
-    await initDb(dbPath: testDbPath);
+
+    // Initialize pool with test DB
+    await initDbPool(dbPath: testDbPath, maxSize: 5);
+    await initDb();
 
     // Sample documents (20 texts x 5 = 100 documents)
     final sampleTexts = [
@@ -245,16 +245,12 @@ class BenchmarkService {
     for (var i = 0; i < 5; i++) {
       for (final text in sampleTexts) {
         final emb = await EmbeddingService.embed(text);
-        await addDocument(
-          dbPath: testDbPath,
-          content: "$text ($i)",
-          embedding: emb,
-        );
+        await addDocument(content: "$text ($i)", embedding: emb);
       }
     }
 
     // Rebuild HNSW index after adding documents
-    await rebuildHnswIndex(dbPath: testDbPath);
+    await rebuildHnswIndex();
 
     onProgress?.call("Running search benchmark...");
 
@@ -264,6 +260,7 @@ class BenchmarkService {
     results.add(await benchmarkSearch(testDbPath, queryEmb, 100));
 
     // Cleanup
+    await closeDbPool();
     await File(testDbPath).delete();
 
     onProgress?.call("Benchmark complete!");
