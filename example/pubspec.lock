@@ -291,10 +291,10 @@ packages:
     dependency: transitive
     description:
       name: rag_engine_flutter
-      sha256: fc136307e371eff5951f38a59b7c21baa2c9947d73272205aa5d4c613b9f0efb
+      sha256: "5adabf021359a2a2e7e125eeb13dfb4695e3b4b4d10bf1cdba3314814a429ced"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.1"
+    version: "0.6.0"
   sky_engine:
     dependency: transitive
     description: flutter
