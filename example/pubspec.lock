@@ -290,10 +290,11 @@ packages:
   rag_engine_flutter:
     dependency: transitive
     description:
-      path: "../rust_builder"
-      relative: true
-    source: path
-    version: "0.6.0"
+      name: rag_engine_flutter
+      sha256: fc136307e371eff5951f38a59b7c21baa2c9947d73272205aa5d4c613b9f0efb
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.1"
   sky_engine:
     dependency: transitive
     description: flutter
