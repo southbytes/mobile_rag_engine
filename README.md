@@ -73,7 +73,7 @@ Data never leaves the user's device. Perfect for privacy-focused apps (journals,
 
 ```yaml
 dependencies:
-  mobile_rag_engine: ^0.4.3
+  mobile_rag_engine:
 ```
 
 ### 2. Download Model Files

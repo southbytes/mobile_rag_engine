@@ -5,28 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.5.3
-
-### Added
-- **Singleton Pattern**: Introduced `MobileRag` class for simplified, global access to the engine
-  - `MobileRag.initialize()`: Single-line initialization that handles Rust FFI, Config, and Database
-  - `MobileRag.instance`: Static accessor for using the engine anywhere in the app
-- **Auto-Initialization**: Eliminated the need to manually call `RustLib.init()`
-
-### Changed
-- **API Exports**: Hides low-level Rust API by default to improve IDE auto-completion relevance
-- **Documentation**: Updated all guides and examples to use the new `MobileRag` singleton pattern
-
-## 0.5.0
-
-### Added
-- **`RagEngine` class**: New unified API that simplifies initialization from ~40 lines to ~3 lines
-  - `RagEngine.initialize()` handles tokenizer, ONNX model, and database setup automatically
-  - `RagConfig.fromAssets()` for convenient asset-based configuration
-  - Delegates to `SourceRagService` internally, maintaining full functionality
-- **`RagConfig` class**: Configuration object for `RagEngine` with chunking and database options
-- **Progress callback**: `onProgress` parameter in `RagEngine.initialize()` for status updates
-
 ## 0.6.0
 
 ### Added
@@ -37,8 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Internal**: Refactored database operations to share connections efficiently
 - **API**: Internal Rust API no longer requires `db_path` for every operation
-
-### Changed
 - **README Quick Start**: Updated to showcase new simplified `RagEngine` API
 - **Documentation**: Rewrote `docs/guides/quick_start.md` with `RagEngine` examples
 - **Example app**: Refactored `main.dart` to use `RagEngine` instead of manual initialization
@@ -65,6 +41,29 @@ final rag = await RagEngine.initialize(
   ),
 );
 ```
+
+## 0.5.3
+
+### Added
+- **Singleton Pattern**: Introduced `MobileRag` class for simplified, global access to the engine
+  - `MobileRag.initialize()`: Single-line initialization that handles Rust FFI, Config, and Database
+  - `MobileRag.instance`: Static accessor for using the engine anywhere in the app
+- **Auto-Initialization**: Eliminated the need to manually call `RustLib.init()`
+
+### Changed
+- **API Exports**: Hides low-level Rust API by default to improve IDE auto-completion relevance
+- **Documentation**: Updated all guides and examples to use the new `MobileRag` singleton pattern
+
+## 0.5.0
+
+### Added
+- **`RagEngine` class**: New unified API that simplifies initialization from ~40 lines to ~3 lines
+  - `RagEngine.initialize()` handles tokenizer, ONNX model, and database setup automatically
+  - `RagEngine.initialize()` handles tokenizer, ONNX model, and database setup automatically
+  - `RagConfig.fromAssets()` for convenient asset-based configuration
+  - Delegates to `SourceRagService` internally, maintaining full functionality
+- **`RagConfig` class**: Configuration object for `RagEngine` with chunking and database options
+- **Progress callback**: `onProgress` parameter in `RagEngine.initialize()` for status updates
 
 ## 0.4.4
 
