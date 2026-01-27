@@ -18,9 +18,9 @@
 
 use std::collections::HashMap;
 use log::{info, debug};
-use rusqlite::params;
+
 use crate::api::hnsw_index::{search_hnsw, is_hnsw_index_loaded};
-use crate::api::bm25_search::{bm25_search, Bm25SearchResult};
+use crate::api::bm25_search::{bm25_search};
 use crate::api::db_pool::{get_connection};
 
 #[derive(Debug, Clone)]
@@ -57,14 +57,27 @@ pub fn search_hybrid(
     
     let candidate_k = (top_k * 2) as usize;
     
-    let vector_results = if is_hnsw_index_loaded() {
-        search_hnsw(query_embedding, candidate_k)?
-    } else {
-        debug!("[hybrid] HNSW index not loaded, skipping vector search");
-        vec![]
-    };
-    
-    let bm25_results: Vec<Bm25SearchResult> = bm25_search(query_text.clone(), candidate_k as u32);
+    // 1. Parallel Execution: Run Vector and BM25 search simultaneously
+    let (vector_results, bm25_results) = std::thread::scope(|s| {
+        let handle_vec = s.spawn(|| {
+            if is_hnsw_index_loaded() {
+                search_hnsw(query_embedding, candidate_k).unwrap_or_else(|e| {
+                    log::error!("[hybrid] Vector search failed: {}", e);
+                    vec![]
+                })
+            } else {
+                debug!("[hybrid] HNSW index not loaded, skipping vector search");
+                vec![]
+            }
+        });
+
+        let handle_bm25 = s.spawn(|| {
+            bm25_search(query_text, candidate_k as u32)
+        });
+
+        (handle_vec.join().unwrap(), handle_bm25.join().unwrap())
+    });
+
     info!("[hybrid] Vector results: {}, BM25 results: {}", vector_results.len(), bm25_results.len());
     
     let mut vector_ranks: HashMap<i64, usize> = HashMap::new();
@@ -83,7 +96,7 @@ pub fn search_hybrid(
     
     if all_doc_ids.is_empty() { return Ok(vec![]); }
     
-    let mut rrf_scores: Vec<(i64, f64, u32, u32)> = Vec::new();
+    let mut rrf_scores: Vec<(i64, f64, u32, u32)> = Vec::with_capacity(all_doc_ids.len());
     for doc_id in &all_doc_ids {
         let vec_rank = vector_ranks.get(doc_id).copied();
         let bm25_rank = bm25_ranks.get(doc_id).copied();
@@ -98,16 +111,50 @@ pub fn search_hybrid(
     rrf_scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
     rrf_scores.truncate(top_k as usize);
     
+    // 2. Batch DB Fetch: Get all content in one query (Fix N+1 problem)
+    if rrf_scores.is_empty() { return Ok(vec![]); }
+
+    let target_ids: Vec<String> = rrf_scores.iter().map(|(id, _, _, _)| id.to_string()).collect();
+    let id_list = target_ids.join(",");
     
     let conn = get_connection()?;
-    let mut results: Vec<HybridSearchResult> = Vec::new();
+    let mut content_map: HashMap<i64, String> = HashMap::new();
+    
+    // First try docs table
+    let query_docs = format!("SELECT id, content FROM docs WHERE id IN ({})", id_list);
+    let mut stmt = conn.prepare(&query_docs)?;
+    let found_docs = stmt.query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))?;
+    
+    for row in found_docs {
+        if let Ok((id, content)) = row {
+            content_map.insert(id, content);
+        }
+    }
+
+    // If missing, try chunks table (for hybrid search on chunks)
+    // Only query for IDs we haven't found yet
+    let missing_ids: Vec<String> = rrf_scores.iter()
+        .filter(|(id, _, _, _)| !content_map.contains_key(id))
+        .map(|(id, _, _, _)| id.to_string())
+        .collect();
+
+    if !missing_ids.is_empty() {
+        let missing_list = missing_ids.join(",");
+        let query_chunks = format!("SELECT id, content FROM chunks WHERE id IN ({})", missing_list);
+        if let Ok(mut stmt) = conn.prepare(&query_chunks) {
+            let found_chunks = stmt.query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))?;
+            for row in found_chunks {
+                if let Ok((id, content)) = row {
+                    content_map.insert(id, content);
+                }
+            }
+        }
+    }
+
+    let mut results: Vec<HybridSearchResult> = Vec::with_capacity(rrf_scores.len());
     
     for (doc_id, score, vec_rank, bm25_rank) in rrf_scores {
-        let content: Option<String> = conn.query_row("SELECT content FROM docs WHERE id = ?1", params![doc_id], |row| row.get(0))
-            .ok()
-            .or_else(|| conn.query_row("SELECT content FROM chunks WHERE id = ?1", params![doc_id], |row| row.get(0)).ok());
-        
-        if let Some(content) = content {
+        if let Some(content) = content_map.remove(&doc_id) { // remove to take ownership
             results.push(HybridSearchResult { doc_id, content, score, vector_rank: vec_rank, bm25_rank });
         }
     }
@@ -136,6 +183,11 @@ pub fn search_hybrid_weighted(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::api::db_pool::{init_db_pool, close_db_pool, get_connection};
+    use crate::api::simple_rag::init_db;
+    use crate::api::hnsw_index::{build_hnsw_index, clear_hnsw_index};
+    use crate::api::bm25_search::{bm25_add_document, bm25_clear_index};
+    use rusqlite::params;
 
     #[test]
     fn test_rrf_score() {
@@ -147,5 +199,70 @@ mod tests {
     fn test_rrf_config_default() {
         let config = RrfConfig::default();
         assert_eq!(config.k, 60);
+    }
+
+    #[test]
+    fn test_hybrid_search_integration() {
+        // 1. Setup
+        let db_path = std::env::temp_dir().join("test_hybrid_search.db");
+        let _ = std::fs::remove_file(&db_path); // Ensure clean state
+        
+        // Initialize pool with 1 connection to avoid locking issues in test
+        init_db_pool(db_path.to_str().unwrap().to_string(), 1).unwrap();
+        
+        // Create tables
+        init_db().unwrap();
+        
+        // Clear indices
+        clear_hnsw_index();
+        bm25_clear_index();
+
+        // 2. Add Data
+        {
+            let conn = get_connection().unwrap();
+            // We use dummy embedding blobs for DB, as search_hybrid uses HNSW index for vectors
+            let dummy_blob = vec![0u8; 4]; 
+            
+            conn.execute("INSERT INTO docs (id, content, content_hash, embedding) VALUES (1, 'Apple iPhone is great', 'h1', ?1)", params![dummy_blob]).unwrap();
+            conn.execute("INSERT INTO docs (id, content, content_hash, embedding) VALUES (2, 'Banana is a yellow fruit', 'h2', ?1)", params![dummy_blob]).unwrap();
+            conn.execute("INSERT INTO docs (id, content, content_hash, embedding) VALUES (3, 'Apple pie recipe', 'h3', ?1)", params![dummy_blob]).unwrap();
+        }
+
+        // 3. Populate Indices
+        // Vector: 
+        // Doc 1 (Apple): [1, 0]
+        // Doc 2 (Banana): [0, 1]
+        // Doc 3 (Apple): [0.9, 0.1]
+        let points = vec![
+            (1, vec![1.0, 0.0]),
+            (2, vec![0.0, 1.0]),
+            (3, vec![0.9, 0.1]),
+        ];
+        build_hnsw_index(points).unwrap();
+
+        // BM25
+        bm25_add_document(1, "Apple iPhone is great".to_string());
+        bm25_add_document(2, "Banana is a yellow fruit".to_string());
+        bm25_add_document(3, "Apple pie recipe".to_string());
+
+        // 4. Test Search
+        // Query: "Apple" with vector [1, 0]
+        // Should return Doc 1 and Doc 3 as top results
+        let results = search_hybrid(
+            "Apple".to_string(), 
+            vec![1.0, 0.0], 
+            2, 
+            None
+        ).unwrap();
+
+        // Verify results
+        assert_eq!(results.len(), 2);
+        // Doc 1 should match both Vector and BM25 'Apple'
+        assert!(results.iter().any(|r| r.doc_id == 1)); 
+        assert!(results.iter().any(|r| r.doc_id == 3));
+
+        // 5. Cleanup
+        close_db_pool();
+        let _ = std::fs::remove_file(db_path);
     }
 }
