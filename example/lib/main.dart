@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:mobile_rag_engine/mobile_rag_engine.dart';
+import 'package:mobile_rag_engine/src/rust/api/hybrid_search.dart' as hybrid;
 
 import 'screens/benchmark_screen.dart';
 import 'screens/quality_test_screen.dart';
@@ -35,7 +36,8 @@ class _MyAppState extends State<MyApp> {
 
   final TextEditingController _docController = TextEditingController();
   final TextEditingController _queryController = TextEditingController();
-  List<String> _searchResults = [];
+  // Store full hybrid results
+  List<hybrid.HybridSearchResult> _searchResults = [];
   int _topK = 5; // Adjustable topK for search
 
   @override
@@ -105,26 +107,18 @@ class _MyAppState extends State<MyApp> {
 
     setState(() {
       _isLoading = true;
-      _status = "Searching chunks...";
+      _status = "Searching chunks (Hybrid)...";
     });
 
     try {
-      // Search using RagEngine (searches chunks, not full documents)
-      final ragResult = await MobileRag.instance.search(
-        query,
-        topK: _topK,
-        tokenBudget: 2000,
-      );
-
-      // Extract chunk contents for display
-      final results = ragResult.chunks.map((c) => c.content).toList();
+      // Use Hybrid Search for enriched results (Vector + BM25 + Metadata)
+      final results = await MobileRag.instance.searchHybrid(query, topK: _topK);
 
       setState(() {
         _searchResults = results;
         _status =
             "✅ Search complete!\n"
-            "Found ${ragResult.chunks.length} relevant chunks\n"
-            "Context: ${ragResult.context.estimatedTokens} tokens used";
+            "Found ${results.length} relevant chunks (Hybrid Search)";
         _isLoading = false;
       });
     } catch (e) {
@@ -415,19 +409,47 @@ class _MyAppState extends State<MyApp> {
                 // Search results
                 if (_searchResults.isNotEmpty) ...[
                   const Text(
-                    'Search Results:',
+                    'Search Results (Hybrid):',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  ...List.generate(
-                    _searchResults.length,
-                    (i) => Card(
+                  ...List.generate(_searchResults.length, (i) {
+                    final r = _searchResults[i];
+                    return Card(
                       child: ListTile(
-                        leading: CircleAvatar(child: Text('${i + 1}')),
-                        title: Text(_searchResults[i]),
+                        leading: CircleAvatar(
+                          child: Text('${i + 1}'),
+                          backgroundColor: Colors.blue.shade100,
+                        ),
+                        title: Text(
+                          r.content,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 4),
+                            Text(
+                              "Score: ${r.score.toStringAsFixed(4)} (Vec: ${r.vectorRank}, BM25: ${r.bm25Rank})",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              "Source ID: ${r.sourceId} | Meta: ${r.metadata ?? 'None'}",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        isThreeLine: true,
                       ),
-                    ),
-                  ),
+                    );
+                  }),
                 ],
 
                 const Divider(height: 40),

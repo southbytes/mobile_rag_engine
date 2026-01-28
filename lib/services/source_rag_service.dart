@@ -526,11 +526,12 @@ class SourceRagService {
         .map(
           (r) => ChunkSearchResult(
             chunkId: r.docId,
-            sourceId: r.docId, // Same as chunk ID for simple docs
+            sourceId: r.sourceId, // Correctly map from HybridSearchResult
             content: r.content,
             chunkIndex: 0,
             chunkType: 'general', // Hybrid search doesn't return chunk type
             similarity: r.score, // RRF score as similarity
+            metadata: r.metadata,
           ),
         )
         .toList();

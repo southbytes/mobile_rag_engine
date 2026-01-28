@@ -58,6 +58,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   RrfConfig dco_decode_box_autoadd_rrf_config(dynamic raw);
 
   @protected
+  SearchFilter dco_decode_box_autoadd_search_filter(dynamic raw);
+
+  @protected
   UserIntent dco_decode_box_autoadd_user_intent(dynamic raw);
 
   @protected
@@ -138,6 +141,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Float32List dco_decode_list_prim_f_32_strict(dynamic raw);
 
   @protected
+  Int64List dco_decode_list_prim_i_64_strict(dynamic raw);
+
+  @protected
   List<int> dco_decode_list_prim_u_32_loose(dynamic raw);
 
   @protected
@@ -174,6 +180,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   RrfConfig? dco_decode_opt_box_autoadd_rrf_config(dynamic raw);
 
   @protected
+  SearchFilter? dco_decode_opt_box_autoadd_search_filter(dynamic raw);
+
+  @protected
+  Int64List? dco_decode_opt_list_prim_i_64_strict(dynamic raw);
+
+  @protected
   ParsedIntent dco_decode_parsed_intent(dynamic raw);
 
   @protected
@@ -189,6 +201,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   RrfConfig dco_decode_rrf_config(dynamic raw);
+
+  @protected
+  SearchFilter dco_decode_search_filter(dynamic raw);
 
   @protected
   SemanticChunk dco_decode_semantic_chunk(dynamic raw);
@@ -249,6 +264,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   RrfConfig sse_decode_box_autoadd_rrf_config(SseDeserializer deserializer);
+
+  @protected
+  SearchFilter sse_decode_box_autoadd_search_filter(
+    SseDeserializer deserializer,
+  );
 
   @protected
   UserIntent sse_decode_box_autoadd_user_intent(SseDeserializer deserializer);
@@ -351,6 +371,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Float32List sse_decode_list_prim_f_32_strict(SseDeserializer deserializer);
 
   @protected
+  Int64List sse_decode_list_prim_i_64_strict(SseDeserializer deserializer);
+
+  @protected
   List<int> sse_decode_list_prim_u_32_loose(SseDeserializer deserializer);
 
   @protected
@@ -397,6 +420,14 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  SearchFilter? sse_decode_opt_box_autoadd_search_filter(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  Int64List? sse_decode_opt_list_prim_i_64_strict(SseDeserializer deserializer);
+
+  @protected
   ParsedIntent sse_decode_parsed_intent(SseDeserializer deserializer);
 
   @protected
@@ -416,6 +447,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   RrfConfig sse_decode_rrf_config(SseDeserializer deserializer);
+
+  @protected
+  SearchFilter sse_decode_search_filter(SseDeserializer deserializer);
 
   @protected
   SemanticChunk sse_decode_semantic_chunk(SseDeserializer deserializer);
@@ -489,6 +523,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_box_autoadd_rrf_config(
     RrfConfig self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_search_filter(
+    SearchFilter self,
     SseSerializer serializer,
   );
 
@@ -625,6 +665,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_prim_i_64_strict(
+    Int64List self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_prim_u_32_loose(
     List<int> self,
     SseSerializer serializer,
@@ -685,6 +731,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_opt_box_autoadd_search_filter(
+    SearchFilter? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_list_prim_i_64_strict(
+    Int64List? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_parsed_intent(ParsedIntent self, SseSerializer serializer);
 
   @protected
@@ -707,6 +765,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_rrf_config(RrfConfig self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_search_filter(SearchFilter self, SseSerializer serializer);
 
   @protected
   void sse_encode_semantic_chunk(SemanticChunk self, SseSerializer serializer);

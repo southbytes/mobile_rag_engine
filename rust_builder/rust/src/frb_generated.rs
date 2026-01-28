@@ -2258,6 +2258,8 @@ fn wire__crate__api__hybrid_search__search_hybrid_impl(
             let api_top_k = <u32>::sse_decode(&mut deserializer);
             let api_config =
                 <Option<crate::api::hybrid_search::RrfConfig>>::sse_decode(&mut deserializer);
+            let api_filter =
+                <Option<crate::api::hybrid_search::SearchFilter>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -2267,6 +2269,7 @@ fn wire__crate__api__hybrid_search__search_hybrid_impl(
                             api_query_embedding,
                             api_top_k,
                             api_config,
+                            api_filter,
                         )?;
                         Ok(output_ok)
                     })(),
@@ -2842,6 +2845,7 @@ impl SseDecode for crate::api::source_rag::ChunkSearchResult {
         let mut var_content = <String>::sse_decode(deserializer);
         let mut var_chunkType = <String>::sse_decode(deserializer);
         let mut var_similarity = <f64>::sse_decode(deserializer);
+        let mut var_metadata = <Option<String>>::sse_decode(deserializer);
         return crate::api::source_rag::ChunkSearchResult {
             chunk_id: var_chunkId,
             source_id: var_sourceId,
@@ -2849,6 +2853,7 @@ impl SseDecode for crate::api::source_rag::ChunkSearchResult {
             content: var_content,
             chunk_type: var_chunkType,
             similarity: var_similarity,
+            metadata: var_metadata,
         };
     }
 }
@@ -2955,12 +2960,16 @@ impl SseDecode for crate::api::hybrid_search::HybridSearchResult {
         let mut var_score = <f64>::sse_decode(deserializer);
         let mut var_vectorRank = <u32>::sse_decode(deserializer);
         let mut var_bm25Rank = <u32>::sse_decode(deserializer);
+        let mut var_sourceId = <i64>::sse_decode(deserializer);
+        let mut var_metadata = <Option<String>>::sse_decode(deserializer);
         return crate::api::hybrid_search::HybridSearchResult {
             doc_id: var_docId,
             content: var_content,
             score: var_score,
             vector_rank: var_vectorRank,
             bm25_rank: var_bm25Rank,
+            source_id: var_sourceId,
+            metadata: var_metadata,
         };
     }
 }
@@ -3115,6 +3124,18 @@ impl SseDecode for Vec<f32> {
     }
 }
 
+impl SseDecode for Vec<i64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<i64>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<u32> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3226,6 +3247,30 @@ impl SseDecode for Option<crate::api::hybrid_search::RrfConfig> {
     }
 }
 
+impl SseDecode for Option<crate::api::hybrid_search::SearchFilter> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::api::hybrid_search::SearchFilter>::sse_decode(
+                deserializer,
+            ));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<Vec<i64>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<Vec<i64>>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for crate::api::user_intent::ParsedIntent {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3280,6 +3325,18 @@ impl SseDecode for crate::api::hybrid_search::RrfConfig {
             k: var_k,
             vector_weight: var_vectorWeight,
             bm25_weight: var_bm25Weight,
+        };
+    }
+}
+
+impl SseDecode for crate::api::hybrid_search::SearchFilter {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_sourceIds = <Option<Vec<i64>>>::sse_decode(deserializer);
+        let mut var_metadataLike = <Option<String>>::sse_decode(deserializer);
+        return crate::api::hybrid_search::SearchFilter {
+            source_ids: var_sourceIds,
+            metadata_like: var_metadataLike,
         };
     }
 }
@@ -3857,6 +3914,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::source_rag::ChunkSearchResult
             self.content.into_into_dart().into_dart(),
             self.chunk_type.into_into_dart().into_dart(),
             self.similarity.into_into_dart().into_dart(),
+            self.metadata.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -3998,6 +4056,8 @@ impl flutter_rust_bridge::IntoDart for crate::api::hybrid_search::HybridSearchRe
             self.score.into_into_dart().into_dart(),
             self.vector_rank.into_into_dart().into_dart(),
             self.bm25_rank.into_into_dart().into_dart(),
+            self.source_id.into_into_dart().into_dart(),
+            self.metadata.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -4077,6 +4137,27 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::hybrid_search::RrfConfig>
     for crate::api::hybrid_search::RrfConfig
 {
     fn into_into_dart(self) -> crate::api::hybrid_search::RrfConfig {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::hybrid_search::SearchFilter {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.source_ids.into_into_dart().into_dart(),
+            self.metadata_like.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::hybrid_search::SearchFilter
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::hybrid_search::SearchFilter>
+    for crate::api::hybrid_search::SearchFilter
+{
+    fn into_into_dart(self) -> crate::api::hybrid_search::SearchFilter {
         self
     }
 }
@@ -4276,6 +4357,7 @@ impl SseEncode for crate::api::source_rag::ChunkSearchResult {
         <String>::sse_encode(self.content, serializer);
         <String>::sse_encode(self.chunk_type, serializer);
         <f64>::sse_encode(self.similarity, serializer);
+        <Option<String>>::sse_encode(self.metadata, serializer);
     }
 }
 
@@ -4361,6 +4443,8 @@ impl SseEncode for crate::api::hybrid_search::HybridSearchResult {
         <f64>::sse_encode(self.score, serializer);
         <u32>::sse_encode(self.vector_rank, serializer);
         <u32>::sse_encode(self.bm25_rank, serializer);
+        <i64>::sse_encode(self.source_id, serializer);
+        <Option<String>>::sse_encode(self.metadata, serializer);
     }
 }
 
@@ -4477,6 +4561,16 @@ impl SseEncode for Vec<f32> {
     }
 }
 
+impl SseEncode for Vec<i64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <i64>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<u32> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -4567,6 +4661,26 @@ impl SseEncode for Option<crate::api::hybrid_search::RrfConfig> {
     }
 }
 
+impl SseEncode for Option<crate::api::hybrid_search::SearchFilter> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::hybrid_search::SearchFilter>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<Vec<i64>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <Vec<i64>>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for crate::api::user_intent::ParsedIntent {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -4608,6 +4722,14 @@ impl SseEncode for crate::api::hybrid_search::RrfConfig {
         <u32>::sse_encode(self.k, serializer);
         <f64>::sse_encode(self.vector_weight, serializer);
         <f64>::sse_encode(self.bm25_weight, serializer);
+    }
+}
+
+impl SseEncode for crate::api::hybrid_search::SearchFilter {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Option<Vec<i64>>>::sse_encode(self.source_ids, serializer);
+        <Option<String>>::sse_encode(self.metadata_like, serializer);
     }
 }
 

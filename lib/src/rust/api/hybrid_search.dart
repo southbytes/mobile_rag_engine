@@ -7,7 +7,7 @@ import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `rrf_score`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `fmt`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`
 
 /// Perform hybrid search combining vector and keyword search.
 Future<List<HybridSearchResult>> searchHybrid({
@@ -15,11 +15,13 @@ Future<List<HybridSearchResult>> searchHybrid({
   required List<double> queryEmbedding,
   required int topK,
   RrfConfig? config,
+  SearchFilter? filter,
 }) => RustLib.instance.api.crateApiHybridSearchSearchHybrid(
   queryText: queryText,
   queryEmbedding: queryEmbedding,
   topK: topK,
   config: config,
+  filter: filter,
 );
 
 /// Simplified hybrid search returning content strings only.
@@ -54,6 +56,8 @@ class HybridSearchResult {
   final double score;
   final int vectorRank;
   final int bm25Rank;
+  final PlatformInt64 sourceId;
+  final String? metadata;
 
   const HybridSearchResult({
     required this.docId,
@@ -61,6 +65,8 @@ class HybridSearchResult {
     required this.score,
     required this.vectorRank,
     required this.bm25Rank,
+    required this.sourceId,
+    this.metadata,
   });
 
   @override
@@ -69,7 +75,9 @@ class HybridSearchResult {
       content.hashCode ^
       score.hashCode ^
       vectorRank.hashCode ^
-      bm25Rank.hashCode;
+      bm25Rank.hashCode ^
+      sourceId.hashCode ^
+      metadata.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -80,7 +88,9 @@ class HybridSearchResult {
           content == other.content &&
           score == other.score &&
           vectorRank == other.vectorRank &&
-          bm25Rank == other.bm25Rank;
+          bm25Rank == other.bm25Rank &&
+          sourceId == other.sourceId &&
+          metadata == other.metadata;
 }
 
 class RrfConfig {
@@ -108,4 +118,22 @@ class RrfConfig {
           k == other.k &&
           vectorWeight == other.vectorWeight &&
           bm25Weight == other.bm25Weight;
+}
+
+class SearchFilter {
+  final Int64List? sourceIds;
+  final String? metadataLike;
+
+  const SearchFilter({this.sourceIds, this.metadataLike});
+
+  @override
+  int get hashCode => sourceIds.hashCode ^ metadataLike.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SearchFilter &&
+          runtimeType == other.runtimeType &&
+          sourceIds == other.sourceIds &&
+          metadataLike == other.metadataLike;
 }

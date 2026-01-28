@@ -28,6 +28,7 @@ import 'services/rag_config.dart';
 import 'services/rag_engine.dart';
 import 'services/context_builder.dart';
 import 'services/source_rag_service.dart';
+import 'src/rust/api/hybrid_search.dart' as hybrid;
 
 /// Singleton facade for Mobile RAG Engine.
 ///
@@ -147,6 +148,36 @@ class MobileRag {
     strategy: strategy,
     adjacentChunks: adjacentChunks,
     singleSourceMode: singleSourceMode,
+  );
+
+  /// Hybrid search combining vector and keyword (BM25) search.
+  Future<List<hybrid.HybridSearchResult>> searchHybrid(
+    String query, {
+    int topK = 10,
+    double vectorWeight = 0.5,
+    double bm25Weight = 0.5,
+  }) => _engine!.searchHybrid(
+    query,
+    topK: topK,
+    vectorWeight: vectorWeight,
+    bm25Weight: bm25Weight,
+  );
+
+  /// Hybrid search with context assembly for LLM.
+  Future<RagSearchResult> searchHybridWithContext(
+    String query, {
+    int topK = 10,
+    int tokenBudget = 2000,
+    ContextStrategy strategy = ContextStrategy.relevanceFirst,
+    double vectorWeight = 0.5,
+    double bm25Weight = 0.5,
+  }) => _engine!.searchHybridWithContext(
+    query,
+    topK: topK,
+    tokenBudget: tokenBudget,
+    strategy: strategy,
+    vectorWeight: vectorWeight,
+    bm25Weight: bm25Weight,
   );
 
   /// Rebuild the HNSW index after adding documents.

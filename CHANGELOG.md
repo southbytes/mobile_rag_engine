@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.7.0
+
+### Added
+- **Hybrid Search API**: New `searchHybrid()` combining Vector and BM25 search for better accuracy.
+- **Context Assembly**: New `searchHybridWithContext()` generates optimized prompts for LLMs.
+- **Metadata Support**: `addDocument()` now accepts `metadata` (e.g., filenames, page numbers), which is preserved in search results.
+
+### Changed
+- **Prompt Format**: Converted LLM context format to use **XML tags** (`<document>...`) instead of text headers for better parsing by modern LLMs.
+- **Internal**: Updated to use `rag_engine_flutter` 0.7.0 with schema changes.
+
 ## 0.6.0
 
 ### Added

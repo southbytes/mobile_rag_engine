@@ -297,6 +297,7 @@ abstract class RustLibApi extends BaseApi {
     required List<double> queryEmbedding,
     required int topK,
     RrfConfig? config,
+    SearchFilter? filter,
   });
 
   Future<List<String>> crateApiHybridSearchSearchHybridSimple({
@@ -2247,6 +2248,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required List<double> queryEmbedding,
     required int topK,
     RrfConfig? config,
+    SearchFilter? filter,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -2256,6 +2258,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_list_prim_f_32_loose(queryEmbedding, serializer);
           sse_encode_u_32(topK, serializer);
           sse_encode_opt_box_autoadd_rrf_config(config, serializer);
+          sse_encode_opt_box_autoadd_search_filter(filter, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -2268,7 +2271,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiHybridSearchSearchHybridConstMeta,
-        argValues: [queryText, queryEmbedding, topK, config],
+        argValues: [queryText, queryEmbedding, topK, config, filter],
         apiImpl: this,
       ),
     );
@@ -2277,7 +2280,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiHybridSearchSearchHybridConstMeta =>
       const TaskConstMeta(
         debugName: "search_hybrid",
-        argNames: ["queryText", "queryEmbedding", "topK", "config"],
+        argNames: ["queryText", "queryEmbedding", "topK", "config", "filter"],
       );
 
   @override
@@ -2756,6 +2759,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  SearchFilter dco_decode_box_autoadd_search_filter(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_search_filter(raw);
+  }
+
+  @protected
   UserIntent dco_decode_box_autoadd_user_intent(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_user_intent(raw);
@@ -2806,8 +2815,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ChunkSearchResult dco_decode_chunk_search_result(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 6)
-      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
     return ChunkSearchResult(
       chunkId: dco_decode_i_64(arr[0]),
       sourceId: dco_decode_i_64(arr[1]),
@@ -2815,6 +2824,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       content: dco_decode_String(arr[3]),
       chunkType: dco_decode_String(arr[4]),
       similarity: dco_decode_f_64(arr[5]),
+      metadata: dco_decode_opt_String(arr[6]),
     );
   }
 
@@ -2896,14 +2906,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   HybridSearchResult dco_decode_hybrid_search_result(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 5)
-      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
     return HybridSearchResult(
       docId: dco_decode_i_64(arr[0]),
       content: dco_decode_String(arr[1]),
       score: dco_decode_f_64(arr[2]),
       vectorRank: dco_decode_u_32(arr[3]),
       bm25Rank: dco_decode_u_32(arr[4]),
+      sourceId: dco_decode_i_64(arr[5]),
+      metadata: dco_decode_opt_String(arr[6]),
     );
   }
 
@@ -2999,6 +3011,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  Int64List dco_decode_list_prim_i_64_strict(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dcoDecodeInt64List(raw);
+  }
+
+  @protected
   List<int> dco_decode_list_prim_u_32_loose(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as List<int>;
@@ -3074,6 +3092,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  SearchFilter? dco_decode_opt_box_autoadd_search_filter(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_search_filter(raw);
+  }
+
+  @protected
+  Int64List? dco_decode_opt_list_prim_i_64_strict(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_list_prim_i_64_strict(raw);
+  }
+
+  @protected
   ParsedIntent dco_decode_parsed_intent(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -3133,6 +3163,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       k: dco_decode_u_32(arr[0]),
       vectorWeight: dco_decode_f_64(arr[1]),
       bm25Weight: dco_decode_f_64(arr[2]),
+    );
+  }
+
+  @protected
+  SearchFilter dco_decode_search_filter(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return SearchFilter(
+      sourceIds: dco_decode_opt_list_prim_i_64_strict(arr[0]),
+      metadataLike: dco_decode_opt_String(arr[1]),
     );
   }
 
@@ -3314,6 +3356,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  SearchFilter sse_decode_box_autoadd_search_filter(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_search_filter(deserializer));
+  }
+
+  @protected
   UserIntent sse_decode_box_autoadd_user_intent(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_user_intent(deserializer));
@@ -3372,6 +3422,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_content = sse_decode_String(deserializer);
     var var_chunkType = sse_decode_String(deserializer);
     var var_similarity = sse_decode_f_64(deserializer);
+    var var_metadata = sse_decode_opt_String(deserializer);
     return ChunkSearchResult(
       chunkId: var_chunkId,
       sourceId: var_sourceId,
@@ -3379,6 +3430,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       content: var_content,
       chunkType: var_chunkType,
       similarity: var_similarity,
+      metadata: var_metadata,
     );
   }
 
@@ -3466,12 +3518,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_score = sse_decode_f_64(deserializer);
     var var_vectorRank = sse_decode_u_32(deserializer);
     var var_bm25Rank = sse_decode_u_32(deserializer);
+    var var_sourceId = sse_decode_i_64(deserializer);
+    var var_metadata = sse_decode_opt_String(deserializer);
     return HybridSearchResult(
       docId: var_docId,
       content: var_content,
       score: var_score,
       vectorRank: var_vectorRank,
       bm25Rank: var_bm25Rank,
+      sourceId: var_sourceId,
+      metadata: var_metadata,
     );
   }
 
@@ -3625,6 +3681,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  Int64List sse_decode_list_prim_i_64_strict(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var len_ = sse_decode_i_32(deserializer);
+    return deserializer.buffer.getInt64List(len_);
+  }
+
+  @protected
   List<int> sse_decode_list_prim_u_32_loose(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
@@ -3747,6 +3810,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  SearchFilter? sse_decode_opt_box_autoadd_search_filter(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_search_filter(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  Int64List? sse_decode_opt_list_prim_i_64_strict(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_list_prim_i_64_strict(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
   ParsedIntent sse_decode_parsed_intent(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_intentType = sse_decode_String(deserializer);
@@ -3802,6 +3891,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       k: var_k,
       vectorWeight: var_vectorWeight,
       bm25Weight: var_bm25Weight,
+    );
+  }
+
+  @protected
+  SearchFilter sse_decode_search_filter(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_sourceIds = sse_decode_opt_list_prim_i_64_strict(deserializer);
+    var var_metadataLike = sse_decode_opt_String(deserializer);
+    return SearchFilter(
+      sourceIds: var_sourceIds,
+      metadataLike: var_metadataLike,
     );
   }
 
@@ -3993,6 +4093,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_box_autoadd_search_filter(
+    SearchFilter self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_search_filter(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_user_intent(
     UserIntent self,
     SseSerializer serializer,
@@ -4042,6 +4151,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.content, serializer);
     sse_encode_String(self.chunkType, serializer);
     sse_encode_f_64(self.similarity, serializer);
+    sse_encode_opt_String(self.metadata, serializer);
   }
 
   @protected
@@ -4121,6 +4231,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_f_64(self.score, serializer);
     sse_encode_u_32(self.vectorRank, serializer);
     sse_encode_u_32(self.bm25Rank, serializer);
+    sse_encode_i_64(self.sourceId, serializer);
+    sse_encode_opt_String(self.metadata, serializer);
   }
 
   @protected
@@ -4262,6 +4374,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_prim_i_64_strict(
+    Int64List self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    serializer.buffer.putInt64List(self);
+  }
+
+  @protected
   void sse_encode_list_prim_u_32_loose(
     List<int> self,
     SseSerializer serializer,
@@ -4390,6 +4512,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_opt_box_autoadd_search_filter(
+    SearchFilter? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_search_filter(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_list_prim_i_64_strict(
+    Int64List? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_list_prim_i_64_strict(self, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_parsed_intent(ParsedIntent self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.intentType, serializer);
@@ -4435,6 +4583,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_u_32(self.k, serializer);
     sse_encode_f_64(self.vectorWeight, serializer);
     sse_encode_f_64(self.bm25Weight, serializer);
+  }
+
+  @protected
+  void sse_encode_search_filter(SearchFilter self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_opt_list_prim_i_64_strict(self.sourceIds, serializer);
+    sse_encode_opt_String(self.metadataLike, serializer);
   }
 
   @protected
