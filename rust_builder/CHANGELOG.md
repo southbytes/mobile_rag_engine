@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0
+
+- **Metadata Support**: Added `metadata` column to `sources` table and support in `HybridSearchResult`.
+- **Hybrid Search**: Enhanced `search_hybrid` with weighted scoring (Vector + BM25) and metadata retrieval.
+- **Prompt Optimization**: Search results now include metadata for better LLM context construction.
+
 ## 0.6.1
 
 - Updated README to remove specific version constraints in examples.

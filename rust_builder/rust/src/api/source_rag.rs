@@ -194,6 +194,7 @@ pub struct ChunkSearchResult {
     pub content: String,
     pub chunk_type: String,
     pub similarity: f64,
+    pub metadata: Option<String>,
 }
 
 /// Search chunks by embedding similarity.
@@ -226,15 +227,18 @@ pub fn search_chunks(
     
     let mut results = Vec::new();
     for result in hnsw_results {
-        let row: Option<(i64, i32, String, String)> = conn
+        let row: Option<(i64, i32, String, String, Option<String>)> = conn
             .query_row(
-                "SELECT source_id, chunk_index, content, COALESCE(chunk_type, 'general') FROM chunks WHERE id = ?1",
+                "SELECT c.source_id, c.chunk_index, c.content, COALESCE(c.chunk_type, 'general'), s.metadata 
+                 FROM chunks c
+                 LEFT JOIN sources s ON c.source_id = s.id
+                 WHERE c.id = ?1",
                 params![result.id],
-                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?)),
             )
             .ok();
         
-        if let Some((source_id, chunk_index, content, chunk_type)) = row {
+        if let Some((source_id, chunk_index, content, chunk_type, metadata)) = row {
             results.push(ChunkSearchResult {
                 chunk_id: result.id,
                 source_id,
@@ -242,6 +246,7 @@ pub fn search_chunks(
                 content,
                 chunk_type,
                 similarity: 1.0 - result.distance as f64,
+                metadata,
             });
         }
     }
@@ -255,19 +260,23 @@ fn search_chunks_linear(
     top_k: u32,
 ) -> anyhow::Result<Vec<ChunkSearchResult>> {
     let conn = get_connection()?;
-    let mut stmt = conn.prepare("SELECT id, source_id, chunk_index, content, COALESCE(chunk_type, 'general'), embedding FROM chunks")?;
+    let mut stmt = conn.prepare(
+        "SELECT c.id, c.source_id, c.chunk_index, c.content, COALESCE(c.chunk_type, 'general'), c.embedding, s.metadata 
+         FROM chunks c
+         LEFT JOIN sources s ON c.source_id = s.id"
+    )?;
     
     let query_vec = Array1::from(query_embedding.clone());
     let query_norm = query_vec.mapv(|x| x * x).sum().sqrt();
     
-    let mut candidates: Vec<(f64, i64, i64, i32, String, String)> = Vec::new();
+    let mut candidates: Vec<(f64, i64, i64, i32, String, String, Option<String>)> = Vec::new();
     
     let rows = stmt.query_map([], |row| {
-        Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get::<_, Vec<u8>>(5)?))
+        Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get::<_, Vec<u8>>(5)?, row.get(6)?))
     })?;
     
     for row in rows {
-        let (id, source_id, chunk_index, content, chunk_type, embedding_blob): (i64, i64, i32, String, String, Vec<u8>) = row?;
+        let (id, source_id, chunk_index, content, chunk_type, embedding_blob, metadata): (i64, i64, i32, String, String, Vec<u8>, Option<String>) = row?;
         
         let embedding: Vec<f32> = embedding_blob.chunks(4)
             .map(|chunk| f32::from_ne_bytes(chunk.try_into().unwrap()))
@@ -282,14 +291,14 @@ fn search_chunks_linear(
         let similarity = if query_norm == 0.0 || target_norm == 0.0 { 0.0 }
         else { (dot_product / (query_norm * target_norm)) as f64 };
         
-        candidates.push((similarity, id, source_id, chunk_index, content, chunk_type));
+        candidates.push((similarity, id, source_id, chunk_index, content, chunk_type, metadata));
     }
     
     candidates.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
     
     Ok(candidates.into_iter().take(top_k as usize)
-        .map(|(sim, id, source_id, chunk_index, content, chunk_type)| ChunkSearchResult {
-            chunk_id: id, source_id, chunk_index, content, chunk_type, similarity: sim,
+        .map(|(sim, id, source_id, chunk_index, content, chunk_type, metadata)| ChunkSearchResult {
+            chunk_id: id, source_id, chunk_index, content, chunk_type, similarity: sim, metadata,
         }).collect())
 }
 
@@ -317,8 +326,10 @@ pub fn get_adjacent_chunks(
     let conn = get_connection()?;
     
     let mut stmt = conn.prepare(
-        "SELECT id, source_id, chunk_index, content, COALESCE(chunk_type, 'general') FROM chunks 
-         WHERE source_id = ?1 AND chunk_index >= ?2 AND chunk_index <= ?3 ORDER BY chunk_index"
+        "SELECT c.id, c.source_id, c.chunk_index, c.content, COALESCE(c.chunk_type, 'general'), s.metadata 
+         FROM chunks c 
+         LEFT JOIN sources s ON c.source_id = s.id
+         WHERE c.source_id = ?1 AND c.chunk_index >= ?2 AND c.chunk_index <= ?3 ORDER BY c.chunk_index"
     )?;
     
     let chunks: Vec<ChunkSearchResult> = stmt
@@ -326,6 +337,7 @@ pub fn get_adjacent_chunks(
             Ok(ChunkSearchResult {
                 chunk_id: row.get(0)?, source_id: row.get(1)?, chunk_index: row.get(2)?,
                 content: row.get(3)?, chunk_type: row.get(4)?, similarity: 0.0,
+                metadata: row.get(5)?,
             })
         })?.filter_map(|r| r.ok()).collect();
     
@@ -382,4 +394,48 @@ pub fn update_chunk_embedding(chunk_id: i64, embedding: Vec<f32>) -> anyhow::Res
     }
     conn.execute("UPDATE chunks SET embedding = ?1 WHERE id = ?2", params![embedding_bytes, chunk_id])?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::api::db_pool::{init_db_pool, close_db_pool};
+    use crate::api::hnsw_index::clear_hnsw_index;
+
+    #[test]
+    fn test_metadata_retrieval() {
+        // 1. Setup
+        let db_path = std::env::temp_dir().join("test_metadata.db");
+        let _ = std::fs::remove_file(&db_path);
+        
+        init_db_pool(db_path.to_str().unwrap().to_string(), 1).unwrap();
+        init_source_db().unwrap();
+        clear_hnsw_index();
+
+        // 2. Add Source with Metadata
+        let metadata = r#"{"author": "Test Author", "year": 2025}"#;
+        let source_res = add_source("Test Content".to_string(), Some(metadata.to_string())).unwrap();
+        
+        let chunk = ChunkData {
+            content: "Test Chunk".to_string(),
+            chunk_index: 0,
+            start_pos: 0,
+            end_pos: 10,
+            chunk_type: "text".to_string(),
+            embedding: vec![1.0, 0.0, 0.0, 0.0], // 4 dims
+        };
+        add_chunks(source_res.source_id, vec![chunk]).unwrap();
+
+        // 3. Search (Linear Scan)
+        let results = search_chunks(vec![1.0, 0.0, 0.0, 0.0], 1).unwrap();
+
+        // 4. Verify Metadata
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].metadata, Some(metadata.to_string()));
+        assert_eq!(results[0].source_id, source_res.source_id);
+
+        // 5. Cleanup
+        close_db_pool();
+        let _ = std::fs::remove_file(db_path);
+    }
 }

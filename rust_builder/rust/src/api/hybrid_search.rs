@@ -24,12 +24,20 @@ use crate::api::bm25_search::{bm25_search};
 use crate::api::db_pool::{get_connection};
 
 #[derive(Debug, Clone)]
+pub struct SearchFilter {
+    pub source_ids: Option<Vec<i64>>,
+    pub metadata_like: Option<String>, // SQL LIKE pattern
+}
+
+#[derive(Debug, Clone)]
 pub struct HybridSearchResult {
     pub doc_id: i64,
     pub content: String,
     pub score: f64,
     pub vector_rank: u32,
     pub bm25_rank: u32,
+    pub source_id: i64,
+    pub metadata: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -51,14 +59,17 @@ pub fn search_hybrid(
     query_embedding: Vec<f32>,
     top_k: u32,
     config: Option<RrfConfig>,
+    filter: Option<SearchFilter>,
 ) -> anyhow::Result<Vec<HybridSearchResult>> {
     let config = config.unwrap_or_default();
     info!("[hybrid] Starting hybrid search, top_k: {}", top_k);
     
-    let candidate_k = (top_k * 2) as usize;
+    // Fetch more candidates if filtering is active to maintain recall
+    let multiplier = if filter.is_some() { 4 } else { 2 };
+    let candidate_k = (top_k * multiplier) as usize;
     
     // 1. Parallel Execution: Run Vector and BM25 search simultaneously
-    let (vector_results, bm25_results) = std::thread::scope(|s| {
+    let (mut vector_results, mut bm25_results) = std::thread::scope(|s| {
         let handle_vec = s.spawn(|| {
             if is_hnsw_index_loaded() {
                 search_hnsw(query_embedding, candidate_k).unwrap_or_else(|e| {
@@ -78,8 +89,62 @@ pub fn search_hybrid(
         (handle_vec.join().unwrap(), handle_bm25.join().unwrap())
     });
 
-    info!("[hybrid] Vector results: {}, BM25 results: {}", vector_results.len(), bm25_results.len());
+    info!("[hybrid] Raw candidates - Vector: {}, BM25: {}", vector_results.len(), bm25_results.len());
+
+    // 2. Pre-Ranking Filtering (DB Check)
+    if let Some(f) = &filter {
+         let mut all_doc_ids: Vec<i64> = vector_results.iter().map(|r| r.id)
+            .chain(bm25_results.iter().map(|r| r.doc_id))
+            .collect();
+         all_doc_ids.sort();
+         all_doc_ids.dedup();
+
+         if !all_doc_ids.is_empty() {
+             let conn = get_connection()?;
+             let id_list = all_doc_ids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
+             
+             let mut sql_conditions = Vec::new();
+             sql_conditions.push(format!("c.id IN ({})", id_list));
+
+             if let Some(sids) = &f.source_ids {
+                 if !sids.is_empty() {
+                     let sids_str = sids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
+                     sql_conditions.push(format!("c.source_id IN ({})", sids_str));
+                 }
+             }
+
+             if let Some(pattern) = &f.metadata_like {
+                 // Requires JOIN
+                 sql_conditions.push(format!("s.metadata LIKE '{}'", pattern.replace("'", "''")));
+             }
+
+             // We only support filtering on chunks/sources tables. 
+             // Simple RAG (docs table) results will be EXCLUDED if filtering is applied (as they don't have source_id).
+             // This is acceptable as filtering implies advanced Source RAG usage.
+             
+             let query = format!(
+                 "SELECT c.id FROM chunks c 
+                  LEFT JOIN sources s ON c.source_id = s.id 
+                  WHERE {}", 
+                 sql_conditions.join(" AND ")
+             );
+
+             debug!("[hybrid] Filter query: {}", query);
+             
+             let mut stmt = conn.prepare(&query)?;
+             let valid_ids: std::collections::HashSet<i64> = stmt.query_map([], |row| row.get(0))?
+                 .filter_map(|r| r.ok())
+                 .collect();
+             
+             info!("[hybrid] Filter maintained {}/{} candidates", valid_ids.len(), all_doc_ids.len());
+
+             // Filter results
+             vector_results.retain(|r| valid_ids.contains(&r.id));
+             bm25_results.retain(|r| valid_ids.contains(&r.doc_id));
+         }
+    }
     
+    // 3. RRF Ranking
     let mut vector_ranks: HashMap<i64, usize> = HashMap::new();
     for (rank, result) in vector_results.iter().enumerate() {
         vector_ranks.insert(result.id, rank + 1);
@@ -111,28 +176,33 @@ pub fn search_hybrid(
     rrf_scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
     rrf_scores.truncate(top_k as usize);
     
-    // 2. Batch DB Fetch: Get all content in one query (Fix N+1 problem)
+    // 4. Batch Content Fetch
     if rrf_scores.is_empty() { return Ok(vec![]); }
 
     let target_ids: Vec<String> = rrf_scores.iter().map(|(id, _, _, _)| id.to_string()).collect();
     let id_list = target_ids.join(",");
     
     let conn = get_connection()?;
-    let mut content_map: HashMap<i64, String> = HashMap::new();
+    // Map: id -> (content, source_id, metadata)
+    let mut content_map: HashMap<i64, (String, i64, Option<String>)> = HashMap::new();
     
-    // First try docs table
-    let query_docs = format!("SELECT id, content FROM docs WHERE id IN ({})", id_list);
-    let mut stmt = conn.prepare(&query_docs)?;
-    let found_docs = stmt.query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))?;
-    
-    for row in found_docs {
-        if let Ok((id, content)) = row {
-            content_map.insert(id, content);
+    // First try docs table (Simple RAG) - assume source_id=id, metadata=None
+    // BUT if filter was active, we likely filtered these out.
+    if filter.is_none() {
+        let query_docs = format!("SELECT id, content FROM docs WHERE id IN ({})", id_list);
+        if let Ok(mut stmt) = conn.prepare(&query_docs) {
+            let found_docs = stmt.query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)));
+            if let Ok(rows) = found_docs {
+                for row in rows {
+                     if let Ok((id, content)) = row {
+                        content_map.insert(id, (content, id, None));
+                    }
+                }
+            }
         }
     }
-
-    // If missing, try chunks table (for hybrid search on chunks)
-    // Only query for IDs we haven't found yet
+    
+    // If missing, try chunks table
     let missing_ids: Vec<String> = rrf_scores.iter()
         .filter(|(id, _, _, _)| !content_map.contains_key(id))
         .map(|(id, _, _, _)| id.to_string())
@@ -140,12 +210,27 @@ pub fn search_hybrid(
 
     if !missing_ids.is_empty() {
         let missing_list = missing_ids.join(",");
-        let query_chunks = format!("SELECT id, content FROM chunks WHERE id IN ({})", missing_list);
+        let query_chunks = format!(
+            "SELECT c.id, c.content, c.source_id, s.metadata 
+             FROM chunks c 
+             LEFT JOIN sources s ON c.source_id = s.id 
+             WHERE c.id IN ({})", 
+            missing_list
+        );
+        
         if let Ok(mut stmt) = conn.prepare(&query_chunks) {
-            let found_chunks = stmt.query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))?;
+            let found_chunks = stmt.query_map([], |row| {
+                Ok((
+                    row.get::<_, i64>(0)?, 
+                    row.get::<_, String>(1)?,
+                    row.get::<_, i64>(2)?,
+                    row.get::<_, Option<String>>(3)?
+                ))
+            })?;
+            
             for row in found_chunks {
-                if let Ok((id, content)) = row {
-                    content_map.insert(id, content);
+                if let Ok((id, content, source_id, metadata)) = row {
+                    content_map.insert(id, (content, source_id, metadata));
                 }
             }
         }
@@ -154,8 +239,16 @@ pub fn search_hybrid(
     let mut results: Vec<HybridSearchResult> = Vec::with_capacity(rrf_scores.len());
     
     for (doc_id, score, vec_rank, bm25_rank) in rrf_scores {
-        if let Some(content) = content_map.remove(&doc_id) { // remove to take ownership
-            results.push(HybridSearchResult { doc_id, content, score, vector_rank: vec_rank, bm25_rank });
+        if let Some((content, source_id, metadata)) = content_map.remove(&doc_id) { 
+            results.push(HybridSearchResult { 
+                doc_id, 
+                content, 
+                score, 
+                vector_rank: vec_rank, 
+                bm25_rank,
+                source_id,
+                metadata
+            });
         }
     }
     
@@ -165,7 +258,7 @@ pub fn search_hybrid(
 
 /// Simplified hybrid search returning content strings only.
 pub fn search_hybrid_simple(query_text: String, query_embedding: Vec<f32>, top_k: u32) -> anyhow::Result<Vec<String>> {
-    Ok(search_hybrid(query_text, query_embedding, top_k, None)?.into_iter().map(|r| r.content).collect())
+    Ok(search_hybrid(query_text, query_embedding, top_k, None, None)?.into_iter().map(|r| r.content).collect())
 }
 
 /// Search with custom weights (vector_weight + bm25_weight = 1.0 recommended).
@@ -177,7 +270,7 @@ pub fn search_hybrid_weighted(
     bm25_weight: f64,
 ) -> anyhow::Result<Vec<HybridSearchResult>> {
     let config = RrfConfig { k: 60, vector_weight: vector_weight.clamp(0.0, 1.0), bm25_weight: bm25_weight.clamp(0.0, 1.0) };
-    search_hybrid(query_text, query_embedding, top_k, Some(config))
+    search_hybrid(query_text, query_embedding, top_k, Some(config), None)
 }
 
 #[cfg(test)]
@@ -252,7 +345,8 @@ mod tests {
             "Apple".to_string(), 
             vec![1.0, 0.0], 
             2, 
-            None
+            None,
+            None // No filter
         ).unwrap();
 
         // Verify results
