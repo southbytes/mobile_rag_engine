@@ -470,10 +470,9 @@ packages:
   rag_engine_flutter:
     dependency: "direct main"
     description:
-      name: rag_engine_flutter
-      sha256: "64e5edd7855a1cd5722d1af5659c3e790f0772d10423f5a5f68064aace59ad82"
-      url: "https://pub.dev"
-    source: hosted
+      path: rust_builder
+      relative: true
+    source: path
     version: "0.6.1"
   shelf:
     dependency: transitive

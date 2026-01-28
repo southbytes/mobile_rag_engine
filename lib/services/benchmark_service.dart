@@ -3,6 +3,7 @@ import 'package:mobile_rag_engine/services/embedding_service.dart';
 import 'package:mobile_rag_engine/src/rust/api/tokenizer.dart';
 import 'package:mobile_rag_engine/src/rust/api/simple_rag.dart';
 import 'package:mobile_rag_engine/src/rust/api/db_pool.dart';
+import 'package:mobile_rag_engine/src/rust/api/hybrid_search.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
@@ -135,6 +136,28 @@ class BenchmarkService {
     );
   }
 
+  /// Hybrid Search benchmark
+  static Future<BenchmarkResult> benchmarkHybridSearch(
+    String dbPath,
+    String queryText,
+    List<double> queryEmbedding,
+    int docCount, {
+    int iterations = 20,
+  }) async {
+    return benchmark(
+      'Hybrid Search ($docCount docs)',
+      () async {
+        await searchHybridSimple(
+          queryText: queryText,
+          queryEmbedding: queryEmbedding,
+          topK: 3,
+        );
+      },
+      iterations: iterations,
+      category: BenchmarkCategory.rust,
+    );
+  }
+
   /// Run full benchmark suite
   static Future<List<BenchmarkResult>> runFullBenchmark({
     required String dbPath,
@@ -259,9 +282,18 @@ class BenchmarkService {
     // Search benchmark (100 documents)
     results.add(await benchmarkSearch(testDbPath, queryEmb, 100));
 
+    // Hybrid Search benchmark
+    results.add(
+      await benchmarkHybridSearch(testDbPath, "fruit", queryEmb, 100),
+    );
+
     // Cleanup
     await closeDbPool();
     await File(testDbPath).delete();
+
+    // RESTORE main DB connection (Critical fix)
+    // Re-initialize the global pool with the original app database path
+    await initDbPool(dbPath: dbPath, maxSize: 4);
 
     onProgress?.call("Benchmark complete!");
 

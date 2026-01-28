@@ -24,6 +24,14 @@
 - **Trade-offs**: +25MB binary size (Korean dictionary)
 - **API**: Same as `mobile_rag_engine`, drop-in replacement
 
+### Prompt Engineering & Robustness
+- **Priority**: Low
+- **Complexity**: Low
+- **Description**: Improvements for metadata handling in LLM prompts
+- **Features**:
+  - **Metadata Token Budget**: Include metadata length in `ContextBuilder`'s token calculation to prevent truncation
+  - **Safety**: Wrap XML content in `CDATA` or escape special characters to handle complex metadata values safely
+
 ---
 
 ## ✅ Completed Features

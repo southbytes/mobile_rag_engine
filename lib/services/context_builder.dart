@@ -177,12 +177,29 @@ class ContextBuilder {
 
     for (final entry in bySource.entries) {
       if (!isFirst) {
-        buffer.write('\n\n========== DIFFERENT DOCUMENT ==========\n\n');
+        buffer.write('\n');
       }
-      if (!skipHeaders) {
-        buffer.write('=== Document ${entry.key} ===\n\n');
+
+      final sourceId = entry.key;
+      final chunks = entry.value;
+
+      // Open document tag
+      buffer.write('<document id="$sourceId">\n');
+
+      // Add metadata if available
+      final firstChunk = chunks.first;
+      if (firstChunk.metadata != null) {
+        buffer.write('  <metadata>${firstChunk.metadata}</metadata>\n');
       }
-      buffer.write(entry.value.map((c) => c.content).join('\n\n'));
+
+      // Add content
+      buffer.write('  <content>\n');
+      buffer.write(chunks.map((c) => c.content).join('\n\n'));
+      buffer.write('\n  </content>\n');
+
+      // Close document tag
+      buffer.write('</document>\n');
+
       isFirst = false;
     }
 

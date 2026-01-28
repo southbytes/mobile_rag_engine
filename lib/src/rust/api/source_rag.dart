@@ -178,6 +178,7 @@ class ChunkSearchResult {
   final String content;
   final String chunkType;
   final double similarity;
+  final String? metadata;
 
   const ChunkSearchResult({
     required this.chunkId,
@@ -186,6 +187,7 @@ class ChunkSearchResult {
     required this.content,
     required this.chunkType,
     required this.similarity,
+    this.metadata,
   });
 
   @override
@@ -195,7 +197,8 @@ class ChunkSearchResult {
       chunkIndex.hashCode ^
       content.hashCode ^
       chunkType.hashCode ^
-      similarity.hashCode;
+      similarity.hashCode ^
+      metadata.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -207,7 +210,8 @@ class ChunkSearchResult {
           chunkIndex == other.chunkIndex &&
           content == other.content &&
           chunkType == other.chunkType &&
-          similarity == other.similarity;
+          similarity == other.similarity &&
+          metadata == other.metadata;
 }
 
 class SourceStats {
