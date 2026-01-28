@@ -230,6 +230,18 @@ See [Model Setup Guide](https://github.com/dev07060/mobile_rag_engine/blob/main/
 
 ---
 
+## Sample App
+
+Check out the example application using this package. This desktop app demonstrates **full RAG pipeline integration with an LLM (Gemma 2B)** running locally on-device.
+
+[mobile-ondevice-rag-desktop](https://github.com/dev07060/mobile-ondevice-rag-desktop)
+
+<p align="center">
+  <img src="assets/readme-sources/sample_app.png" width="600" alt="Sample App Screenshot">
+</p>
+
+---
+
 ## Contributing
 
 Bug reports, feature requests, and PRs are all welcome!
