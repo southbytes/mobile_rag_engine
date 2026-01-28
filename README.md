@@ -237,7 +237,7 @@ Check out the example application using this package. This desktop app demonstra
 [mobile-ondevice-rag-desktop](https://github.com/dev07060/mobile-ondevice-rag-desktop)
 
 <p align="center">
-  <img src="assets/readme-sources/sample_app.png" width="600" alt="Sample App Screenshot">
+  <img src="https://raw.githubusercontent.com/dev07060/mobile_rag_engine/main/assets/readme-sources/sample_app.png" width="600" alt="Sample App Screenshot">
 </p>
 
 ---
