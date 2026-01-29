@@ -3,6 +3,9 @@
 *.env
 **/.env
 
+# AI Agent configuration (local only)
+.agent/
+
 # Miscellaneous
 *.class
 *.log

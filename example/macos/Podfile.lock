@@ -34,7 +34,7 @@ SPEC CHECKSUMS:
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
   onnxruntime: 922a85d3c9ed1b3c2b515ec903fc4d9b8f51d96b
   path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
-  rag_engine_flutter: df8f9905ee4a053f3ec3557a83b096c04917e337
+  rag_engine_flutter: f3ff6c918ac5bf62ff1aaf78d7fc4eb15ad8174a
 
 PODFILE CHECKSUM: 54d867c82ac51cbd61b565781b9fada492027009
 

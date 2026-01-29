@@ -4,6 +4,7 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import '../frb_generated.dart';
+import 'error.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `hash_content`, `search_chunks_linear`
@@ -34,6 +35,14 @@ Future<int> addChunks({
 /// Rebuild HNSW index from chunks table.
 Future<void> rebuildChunkHnswIndex() =>
     RustLib.instance.api.crateApiSourceRagRebuildChunkHnswIndex();
+
+/// Rebuild BM25 index from chunks table.
+Future<void> rebuildChunkBm25Index() =>
+    RustLib.instance.api.crateApiSourceRagRebuildChunkBm25Index();
+
+/// Check if BM25 index is loaded for chunks.
+Future<bool> isChunkBm25IndexLoaded() =>
+    RustLib.instance.api.crateApiSourceRagIsChunkBm25IndexLoaded();
 
 /// Search chunks by embedding similarity.
 Future<List<ChunkSearchResult>> searchChunks({

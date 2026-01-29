@@ -14,5 +14,8 @@ pub fn greet(name: String) -> String {
 /// Initialize FRB utilities.
 #[flutter_rust_bridge::frb(init)]
 pub fn init_app() {
+    // Initialize CombinedLogger (Dart Stream + Native Print)
+    let _ = crate::api::logger::init_logger();
+
     flutter_rust_bridge::setup_default_user_utils();
 }

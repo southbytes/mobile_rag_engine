@@ -22,6 +22,7 @@ use log::{info, debug};
 use crate::api::hnsw_index::{search_hnsw, is_hnsw_index_loaded};
 use crate::api::bm25_search::{bm25_search};
 use crate::api::db_pool::{get_connection};
+use crate::api::error::RagError;
 
 #[derive(Debug, Clone)]
 pub struct SearchFilter {
@@ -60,7 +61,7 @@ pub fn search_hybrid(
     top_k: u32,
     config: Option<RrfConfig>,
     filter: Option<SearchFilter>,
-) -> anyhow::Result<Vec<HybridSearchResult>> {
+) -> Result<Vec<HybridSearchResult>, RagError> {
     let config = config.unwrap_or_default();
     info!("[hybrid] Starting hybrid search, top_k: {}", top_k);
     
@@ -100,7 +101,7 @@ pub fn search_hybrid(
          all_doc_ids.dedup();
 
          if !all_doc_ids.is_empty() {
-             let conn = get_connection()?;
+             let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
              let id_list = all_doc_ids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
              
              let mut sql_conditions = Vec::new();
@@ -131,8 +132,9 @@ pub fn search_hybrid(
 
              debug!("[hybrid] Filter query: {}", query);
              
-             let mut stmt = conn.prepare(&query)?;
-             let valid_ids: std::collections::HashSet<i64> = stmt.query_map([], |row| row.get(0))?
+             let mut stmt = conn.prepare(&query).map_err(|e| RagError::DatabaseError(e.to_string()))?;
+             let valid_ids: std::collections::HashSet<i64> = stmt.query_map([], |row| row.get(0))
+                 .map_err(|e| RagError::DatabaseError(e.to_string()))?
                  .filter_map(|r| r.ok())
                  .collect();
              
@@ -182,7 +184,7 @@ pub fn search_hybrid(
     let target_ids: Vec<String> = rrf_scores.iter().map(|(id, _, _, _)| id.to_string()).collect();
     let id_list = target_ids.join(",");
     
-    let conn = get_connection()?;
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
     // Map: id -> (content, source_id, metadata)
     let mut content_map: HashMap<i64, (String, i64, Option<String>)> = HashMap::new();
     
@@ -226,11 +228,13 @@ pub fn search_hybrid(
                     row.get::<_, i64>(2)?,
                     row.get::<_, Option<String>>(3)?
                 ))
-            })?;
+            });
             
-            for row in found_chunks {
-                if let Ok((id, content, source_id, metadata)) = row {
-                    content_map.insert(id, (content, source_id, metadata));
+            if let Ok(results_iter) = found_chunks {
+                for row in results_iter {
+                    if let Ok((id, content, source_id, metadata)) = row {
+                        content_map.insert(id, (content, source_id, metadata));
+                    }
                 }
             }
         }
@@ -257,7 +261,7 @@ pub fn search_hybrid(
 }
 
 /// Simplified hybrid search returning content strings only.
-pub fn search_hybrid_simple(query_text: String, query_embedding: Vec<f32>, top_k: u32) -> anyhow::Result<Vec<String>> {
+pub fn search_hybrid_simple(query_text: String, query_embedding: Vec<f32>, top_k: u32) -> Result<Vec<String>, RagError> {
     Ok(search_hybrid(query_text, query_embedding, top_k, None, None)?.into_iter().map(|r| r.content).collect())
 }
 
@@ -268,7 +272,7 @@ pub fn search_hybrid_weighted(
     top_k: u32,
     vector_weight: f64,
     bm25_weight: f64,
-) -> anyhow::Result<Vec<HybridSearchResult>> {
+) -> Result<Vec<HybridSearchResult>, RagError> {
     let config = RrfConfig { k: 60, vector_weight: vector_weight.clamp(0.0, 1.0), bm25_weight: bm25_weight.clamp(0.0, 1.0) };
     search_hybrid(query_text, query_embedding, top_k, Some(config), None)
 }
