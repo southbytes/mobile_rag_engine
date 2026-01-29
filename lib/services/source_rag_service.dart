@@ -114,6 +114,11 @@ class SourceRagService {
 
       // 4. Initialize DB
       await initSourceDb();
+
+      // 5. Rebuild indexes for existing chunks (both are in-memory only)
+      // This is critical because neither HNSW nor BM25 indexes are persisted to disk
+      await rebuildChunkHnswIndex(); // Vector search
+      await rebuildChunkBm25Index(); // Keyword search
     } on RagError catch (e) {
       // Smart Error Handling integration
       print(
@@ -298,10 +303,13 @@ class SourceRagService {
     );
   }
 
-  /// Rebuild the HNSW index after adding sources.
+  /// Rebuild the HNSW and BM25 indexes after adding sources.
   Future<void> rebuildIndex() async {
     try {
+      // Rebuild HNSW for vector search
       await rebuildChunkHnswIndex();
+      // Rebuild BM25 for keyword search (critical for hybrid search!)
+      await rebuildChunkBm25Index();
     } on RagError catch (e) {
       e.when(
         databaseError: (msg) =>
@@ -310,7 +318,7 @@ class SourceRagService {
         modelLoadError: (_) {},
         invalidInput: (_) {},
         internalError: (msg) =>
-            print('[SmartError] Internal error rebuilding HNSW: $msg'),
+            print('[SmartError] Internal error rebuilding indexes: $msg'),
         unknown: (_) {},
       );
       rethrow;

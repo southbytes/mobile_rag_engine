@@ -23,6 +23,7 @@ use sha2::{Sha256, Digest};
 use crate::api::hnsw_index::{
     build_hnsw_index, search_hnsw, is_hnsw_index_loaded
 };
+use crate::api::bm25_search::{bm25_add_documents, bm25_clear_index, is_bm25_index_loaded};
 use crate::api::db_pool::get_connection;
 use crate::api::error::RagError;
 
@@ -190,6 +191,38 @@ pub fn rebuild_chunk_hnsw_index() -> Result<(), RagError> {
     }
     
     Ok(())
+}
+
+/// Rebuild BM25 index from chunks table.
+pub fn rebuild_chunk_bm25_index() -> Result<(), RagError> {
+    info!("[rebuild_chunk_bm25] Starting");
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    
+    // Clear existing BM25 index
+    bm25_clear_index();
+    
+    let mut stmt = conn.prepare("SELECT id, content FROM chunks")
+        .map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    
+    let docs: Vec<(i64, String)> = stmt.query_map([], |row| {
+        Ok((row.get(0)?, row.get(1)?))
+    })
+    .map_err(|e| RagError::DatabaseError(e.to_string()))?
+    .filter_map(|r| r.ok())
+    .collect();
+    
+    if !docs.is_empty() {
+        info!("[rebuild_chunk_bm25] Building index from {} chunks", docs.len());
+        bm25_add_documents(docs);
+    }
+    
+    info!("[rebuild_chunk_bm25] Complete");
+    Ok(())
+}
+
+/// Check if BM25 index is loaded for chunks.
+pub fn is_chunk_bm25_index_loaded() -> bool {
+    is_bm25_index_loaded()
 }
 
 #[derive(Debug, Clone)]

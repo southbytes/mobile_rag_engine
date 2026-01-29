@@ -36,6 +36,14 @@ Future<int> addChunks({
 Future<void> rebuildChunkHnswIndex() =>
     RustLib.instance.api.crateApiSourceRagRebuildChunkHnswIndex();
 
+/// Rebuild BM25 index from chunks table.
+Future<void> rebuildChunkBm25Index() =>
+    RustLib.instance.api.crateApiSourceRagRebuildChunkBm25Index();
+
+/// Check if BM25 index is loaded for chunks.
+Future<bool> isChunkBm25IndexLoaded() =>
+    RustLib.instance.api.crateApiSourceRagIsChunkBm25IndexLoaded();
+
 /// Search chunks by embedding similarity.
 Future<List<ChunkSearchResult>> searchChunks({
   required List<double> queryEmbedding,
