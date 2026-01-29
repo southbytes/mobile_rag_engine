@@ -14,13 +14,8 @@ pub fn greet(name: String) -> String {
 /// Initialize FRB utilities.
 #[flutter_rust_bridge::frb(init)]
 pub fn init_app() {
-    #[cfg(target_os = "android")]
-    android_logger::init_once(
-        android_logger::Config::default().with_max_level(log::LevelFilter::Debug),
-    );
-
-    #[cfg(target_os = "ios")]
-    let _ = oslog::OsLogger::new("com.example.rag_engine").init();
+    // Initialize CombinedLogger (Dart Stream + Native Print)
+    let _ = crate::api::logger::init_logger();
 
     flutter_rust_bridge::setup_default_user_utils();
 }

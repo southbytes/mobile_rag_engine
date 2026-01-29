@@ -1892,6 +1892,7 @@ dependencies = [
  "docx-lite",
  "flutter_rust_bridge",
  "hnsw_rs",
+ "lazy_static",
  "log",
  "ndarray",
  "once_cell",

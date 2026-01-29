@@ -19,3 +19,4 @@ pub mod user_intent;
 pub mod document_parser;
 pub mod db_pool;
 pub mod error;
+pub mod logger;

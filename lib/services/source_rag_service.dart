@@ -16,6 +16,9 @@ import '../src/rust/api/hybrid_search.dart' as hybrid;
 import '../src/rust/api/hnsw_index.dart' as hnsw;
 import 'context_builder.dart';
 import 'embedding_service.dart';
+import '../utils/error_utils.dart';
+import '../src/rust/api/logger.dart';
+import 'dart:async';
 
 extension RagErrorMessage on RagError {
   String get message => when(
@@ -90,31 +93,51 @@ class SourceRagService {
     this.overlapChars = 50,
   });
 
+  StreamSubscription<String>? _logSubscription;
+
   /// Get the HNSW index path (derived from dbPath)
   String get _indexPath => dbPath.replaceAll('.db', '_hnsw');
 
   /// Initialize the source database.
   Future<void> init() async {
     try {
+      // 1. Initialize Rust logger (idempotent)
+      await initLogger();
+
+      // 2. Close any existing log stream (both Dart and Rust side)
+      await _cleanupLogStream();
+
+      // 3. Start fresh log stream
+      _logSubscription = initLogStream().listen((log) {
+        print('[Rust] $log');
+      });
+
+      // 4. Initialize DB
       await initSourceDb();
     } on RagError catch (e) {
       // Smart Error Handling integration
-      e.when(
-        databaseError: (msg) {
-          print('[SmartError] Database initialization failed: $msg');
-          // Potential retry logic or fallback could go here
-        },
-        ioError: (msg) => print('[SmartError] IO integrity check failed: $msg'),
-        modelLoadError: (msg) =>
-            print('[SmartError] Model configuration invalid: $msg'),
-        invalidInput: (msg) =>
-            print('[SmartError] Configuration input invalid: $msg'),
-        internalError: (msg) =>
-            print('[SmartError] Internal system error: $msg'),
-        unknown: (msg) => print('[SmartError] Critical internal failure: $msg'),
+      print(
+        '[SmartError] ${e.userFriendlyMessage} (Tech: ${e.technicalMessage})',
       );
-      rethrow; // Propagate to UI for user feedback
+      rethrow;
     }
+  }
+
+  /// Clean up log stream resources (both Dart subscription and Rust sink).
+  Future<void> _cleanupLogStream() async {
+    await _logSubscription?.cancel();
+    _logSubscription = null;
+    try {
+      closeLogStream(); // Close Rust-side sink
+    } catch (_) {
+      // Ignore errors during cleanup
+    }
+  }
+
+  /// Dispose resources held by this service.
+  /// Call this when the service is no longer needed.
+  Future<void> dispose() async {
+    await _cleanupLogStream();
   }
 
   /// Try to load cached HNSW index.
