@@ -72,13 +72,10 @@ fn wire__crate__api__source_rag__add_chunks_impl(
                 <Vec<crate::api::source_rag::ChunkData>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok =
-                            crate::api::source_rag::add_chunks(api_source_id, api_chunks)?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::api::error::RagError>((move || {
+                    let output_ok = crate::api::source_rag::add_chunks(api_source_id, api_chunks)?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -185,13 +182,10 @@ fn wire__crate__api__source_rag__add_source_impl(
             let api_metadata = <Option<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok =
-                            crate::api::source_rag::add_source(api_content, api_metadata)?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::api::error::RagError>((move || {
+                    let output_ok = crate::api::source_rag::add_source(api_content, api_metadata)?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -878,12 +872,10 @@ fn wire__crate__api__source_rag__delete_source_impl(
             let api_source_id = <i64>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::api::source_rag::delete_source(api_source_id)?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::api::error::RagError>((move || {
+                    let output_ok = crate::api::source_rag::delete_source(api_source_id)?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -1060,16 +1052,14 @@ fn wire__crate__api__source_rag__get_adjacent_chunks_impl(
             let api_max_index = <i32>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::api::source_rag::get_adjacent_chunks(
-                            api_source_id,
-                            api_min_index,
-                            api_max_index,
-                        )?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::api::error::RagError>((move || {
+                    let output_ok = crate::api::source_rag::get_adjacent_chunks(
+                        api_source_id,
+                        api_min_index,
+                        api_max_index,
+                    )?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -1098,12 +1088,10 @@ fn wire__crate__api__source_rag__get_all_chunk_ids_and_contents_impl(
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::api::source_rag::get_all_chunk_ids_and_contents()?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::api::error::RagError>((move || {
+                    let output_ok = crate::api::source_rag::get_all_chunk_ids_and_contents()?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -1265,12 +1253,10 @@ fn wire__crate__api__source_rag__get_source_impl(
             let api_source_id = <i64>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::api::source_rag::get_source(api_source_id)?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::api::error::RagError>((move || {
+                    let output_ok = crate::api::source_rag::get_source(api_source_id)?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -1300,12 +1286,10 @@ fn wire__crate__api__source_rag__get_source_chunks_impl(
             let api_source_id = <i64>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::api::source_rag::get_source_chunks(api_source_id)?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::api::error::RagError>((move || {
+                    let output_ok = crate::api::source_rag::get_source_chunks(api_source_id)?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -1334,12 +1318,10 @@ fn wire__crate__api__source_rag__get_source_stats_impl(
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::api::source_rag::get_source_stats()?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::api::error::RagError>((move || {
+                    let output_ok = crate::api::source_rag::get_source_stats()?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -1679,12 +1661,10 @@ fn wire__crate__api__source_rag__init_source_db_impl(
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::api::source_rag::init_source_db()?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::api::error::RagError>((move || {
+                    let output_ok = crate::api::source_rag::init_source_db()?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -2045,12 +2025,10 @@ fn wire__crate__api__source_rag__rebuild_chunk_hnsw_index_impl(
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::api::source_rag::rebuild_chunk_hnsw_index()?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::api::error::RagError>((move || {
+                    let output_ok = crate::api::source_rag::rebuild_chunk_hnsw_index()?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -2183,13 +2161,11 @@ fn wire__crate__api__source_rag__search_chunks_impl(
             let api_top_k = <u32>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok =
-                            crate::api::source_rag::search_chunks(api_query_embedding, api_top_k)?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::api::error::RagError>((move || {
+                    let output_ok =
+                        crate::api::source_rag::search_chunks(api_query_embedding, api_top_k)?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -2262,18 +2238,16 @@ fn wire__crate__api__hybrid_search__search_hybrid_impl(
                 <Option<crate::api::hybrid_search::SearchFilter>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::api::hybrid_search::search_hybrid(
-                            api_query_text,
-                            api_query_embedding,
-                            api_top_k,
-                            api_config,
-                            api_filter,
-                        )?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::api::error::RagError>((move || {
+                    let output_ok = crate::api::hybrid_search::search_hybrid(
+                        api_query_text,
+                        api_query_embedding,
+                        api_top_k,
+                        api_config,
+                        api_filter,
+                    )?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -2305,16 +2279,14 @@ fn wire__crate__api__hybrid_search__search_hybrid_simple_impl(
             let api_top_k = <u32>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::api::hybrid_search::search_hybrid_simple(
-                            api_query_text,
-                            api_query_embedding,
-                            api_top_k,
-                        )?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::api::error::RagError>((move || {
+                    let output_ok = crate::api::hybrid_search::search_hybrid_simple(
+                        api_query_text,
+                        api_query_embedding,
+                        api_top_k,
+                    )?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -2348,18 +2320,16 @@ fn wire__crate__api__hybrid_search__search_hybrid_weighted_impl(
             let api_bm25_weight = <f64>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::api::hybrid_search::search_hybrid_weighted(
-                            api_query_text,
-                            api_query_embedding,
-                            api_top_k,
-                            api_vector_weight,
-                            api_bm25_weight,
-                        )?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::api::error::RagError>((move || {
+                    let output_ok = crate::api::hybrid_search::search_hybrid_weighted(
+                        api_query_text,
+                        api_query_embedding,
+                        api_top_k,
+                        api_vector_weight,
+                        api_bm25_weight,
+                    )?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -2639,15 +2609,13 @@ fn wire__crate__api__source_rag__update_chunk_embedding_impl(
             let api_embedding = <Vec<f32>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::api::source_rag::update_chunk_embedding(
-                            api_chunk_id,
-                            api_embedding,
-                        )?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::api::error::RagError>((move || {
+                    let output_ok = crate::api::source_rag::update_chunk_embedding(
+                        api_chunk_id,
+                        api_embedding,
+                    )?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -3284,6 +3252,42 @@ impl SseDecode for crate::api::user_intent::ParsedIntent {
             is_valid: var_isValid,
             error_message: var_errorMessage,
         };
+    }
+}
+
+impl SseDecode for crate::api::error::RagError {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut tag_ = <i32>::sse_decode(deserializer);
+        match tag_ {
+            0 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                return crate::api::error::RagError::DatabaseError(var_field0);
+            }
+            1 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                return crate::api::error::RagError::IoError(var_field0);
+            }
+            2 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                return crate::api::error::RagError::ModelLoadError(var_field0);
+            }
+            3 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                return crate::api::error::RagError::InvalidInput(var_field0);
+            }
+            4 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                return crate::api::error::RagError::InternalError(var_field0);
+            }
+            5 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                return crate::api::error::RagError::Unknown(var_field0);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
     }
 }
 
@@ -4119,6 +4123,42 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::user_intent::ParsedIntent>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::error::RagError {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            crate::api::error::RagError::DatabaseError(field0) => {
+                [0.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            crate::api::error::RagError::IoError(field0) => {
+                [1.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            crate::api::error::RagError::ModelLoadError(field0) => {
+                [2.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            crate::api::error::RagError::InvalidInput(field0) => {
+                [3.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            crate::api::error::RagError::InternalError(field0) => {
+                [4.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            crate::api::error::RagError::Unknown(field0) => {
+                [5.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::error::RagError {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::error::RagError>
+    for crate::api::error::RagError
+{
+    fn into_into_dart(self) -> crate::api::error::RagError {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::hybrid_search::RrfConfig {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -4688,6 +4728,41 @@ impl SseEncode for crate::api::user_intent::ParsedIntent {
         <String>::sse_encode(self.query, serializer);
         <bool>::sse_encode(self.is_valid, serializer);
         <Option<String>>::sse_encode(self.error_message, serializer);
+    }
+}
+
+impl SseEncode for crate::api::error::RagError {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        match self {
+            crate::api::error::RagError::DatabaseError(field0) => {
+                <i32>::sse_encode(0, serializer);
+                <String>::sse_encode(field0, serializer);
+            }
+            crate::api::error::RagError::IoError(field0) => {
+                <i32>::sse_encode(1, serializer);
+                <String>::sse_encode(field0, serializer);
+            }
+            crate::api::error::RagError::ModelLoadError(field0) => {
+                <i32>::sse_encode(2, serializer);
+                <String>::sse_encode(field0, serializer);
+            }
+            crate::api::error::RagError::InvalidInput(field0) => {
+                <i32>::sse_encode(3, serializer);
+                <String>::sse_encode(field0, serializer);
+            }
+            crate::api::error::RagError::InternalError(field0) => {
+                <i32>::sse_encode(4, serializer);
+                <String>::sse_encode(field0, serializer);
+            }
+            crate::api::error::RagError::Unknown(field0) => {
+                <i32>::sse_encode(5, serializer);
+                <String>::sse_encode(field0, serializer);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
     }
 }
 

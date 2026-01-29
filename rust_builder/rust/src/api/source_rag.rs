@@ -24,6 +24,7 @@ use crate::api::hnsw_index::{
     build_hnsw_index, search_hnsw, is_hnsw_index_loaded
 };
 use crate::api::db_pool::get_connection;
+use crate::api::error::RagError;
 
 fn hash_content(content: &str) -> String {
     let mut hasher = Sha256::new();
@@ -32,9 +33,9 @@ fn hash_content(content: &str) -> String {
 }
 
 /// Initialize database with sources and chunks tables.
-pub fn init_source_db() -> anyhow::Result<()> {
+pub fn init_source_db() -> Result<(), RagError> {
     info!("[init_source_db] Initializing database tables");
-    let conn = get_connection()?;
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
     conn.execute(
         "CREATE TABLE IF NOT EXISTS sources (
@@ -45,7 +46,7 @@ pub fn init_source_db() -> anyhow::Result<()> {
             created_at INTEGER DEFAULT (strftime('%s', 'now'))
         )",
         [],
-    )?;
+    ).map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
     conn.execute(
         "CREATE TABLE IF NOT EXISTS chunks (
@@ -60,15 +61,15 @@ pub fn init_source_db() -> anyhow::Result<()> {
             FOREIGN KEY (source_id) REFERENCES sources(id) ON DELETE CASCADE
         )",
         [],
-    )?;
+    ).map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
     let has_chunk_type: bool = conn.prepare("SELECT chunk_type FROM chunks LIMIT 1").is_ok();
     if !has_chunk_type {
         info!("[init_source_db] Migrating: adding chunk_type column");
-        conn.execute("ALTER TABLE chunks ADD COLUMN chunk_type TEXT DEFAULT 'general'", [])?;
+        conn.execute("ALTER TABLE chunks ADD COLUMN chunk_type TEXT DEFAULT 'general'", []).map_err(|e| RagError::DatabaseError(e.to_string()))?;
     }
     
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_chunks_source_id ON chunks(source_id)", [])?;
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_chunks_source_id ON chunks(source_id)", []).map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
     info!("[init_source_db] Tables created");
     Ok(())
@@ -86,11 +87,11 @@ pub struct AddSourceResult {
 pub fn add_source(
     content: String,
     metadata: Option<String>,
-) -> anyhow::Result<AddSourceResult> {
+) -> Result<AddSourceResult, RagError> {
     info!("[add_source] Adding source, {} chars", content.len());
     
     let content_hash = hash_content(&content);
-    let conn = get_connection()?;
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
     let existing: Option<i64> = conn
         .query_row("SELECT id FROM sources WHERE content_hash = ?1", params![content_hash], |row| row.get(0))
@@ -109,7 +110,7 @@ pub fn add_source(
     conn.execute(
         "INSERT INTO sources (content, content_hash, metadata) VALUES (?1, ?2, ?3)",
         params![content, content_hash, metadata],
-    )?;
+    ).map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
     let source_id = conn.last_insert_rowid();
     info!("[add_source] Created source: {}", source_id);
@@ -136,11 +137,11 @@ pub struct ChunkData {
 pub fn add_chunks(
     source_id: i64,
     chunks: Vec<ChunkData>,
-) -> anyhow::Result<i32> {
+) -> Result<i32, RagError> {
     info!("[add_chunks] Adding {} chunks for source {}", chunks.len(), source_id);
     
-    let mut conn = get_connection()?;
-    let tx = conn.transaction()?;
+    let mut conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    let tx = conn.transaction().map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
     for chunk in &chunks {
         let mut embedding_bytes: Vec<u8> = Vec::with_capacity(chunk.embedding.len() * 4);
@@ -152,20 +153,22 @@ pub fn add_chunks(
             "INSERT INTO chunks (source_id, chunk_index, content, start_pos, end_pos, chunk_type, embedding)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             params![source_id, chunk.chunk_index, chunk.content, chunk.start_pos, chunk.end_pos, chunk.chunk_type, embedding_bytes],
-        )?;
+        ).map_err(|e| RagError::DatabaseError(e.to_string()))?;
     }
     
-    tx.commit()?;
+    tx.commit().map_err(|e| RagError::DatabaseError(e.to_string()))?;
     info!("[add_chunks] Added {} chunks", chunks.len());
     Ok(chunks.len() as i32)
 }
 
 /// Rebuild HNSW index from chunks table.
-pub fn rebuild_chunk_hnsw_index() -> anyhow::Result<()> {
+pub fn rebuild_chunk_hnsw_index() -> Result<(), RagError> {
     info!("[rebuild_chunk_hnsw] Starting");
-    let conn = get_connection()?;
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
-    let mut stmt = conn.prepare("SELECT id, embedding FROM chunks")?;
+    let mut stmt = conn.prepare("SELECT id, embedding FROM chunks")
+        .map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    
     let points: Vec<(i64, Vec<f32>)> = stmt.query_map([], |row| {
         let id: i64 = row.get(0)?;
         let embedding_blob: Vec<u8> = row.get(1)?;
@@ -174,10 +177,13 @@ pub fn rebuild_chunk_hnsw_index() -> anyhow::Result<()> {
             embedding.push(f32::from_ne_bytes(chunk.try_into().unwrap()));
         }
         Ok((id, embedding))
-    })?.filter_map(|r| r.ok()).collect();
+    })
+    .map_err(|e| RagError::DatabaseError(e.to_string()))?
+    .filter_map(|r| r.ok())
+    .collect();
     
     if !points.is_empty() {
-        build_hnsw_index(points)?;
+        build_hnsw_index(points).map_err(|e| RagError::InternalError(e.to_string()))?;
         // Note: save_hnsw_index needs db_path for marker file
         // This is acceptable as it's a one-time operation
         info!("[rebuild_chunk_hnsw] Built index");
@@ -201,7 +207,7 @@ pub struct ChunkSearchResult {
 pub fn search_chunks(
     query_embedding: Vec<f32>,
     top_k: u32,
-) -> anyhow::Result<Vec<ChunkSearchResult>> {
+) -> Result<Vec<ChunkSearchResult>, RagError> {
     info!("[search_chunks] Searching, top_k={}", top_k);
     
     // HNSW index enabled - use O(log n) search when index is available
@@ -222,8 +228,9 @@ pub fn search_chunks(
     
     debug!("[search_chunks] Using HNSW index");
     
-    let hnsw_results = search_hnsw(query_embedding, top_k as usize)?;
-    let conn = get_connection()?;
+    let hnsw_results = search_hnsw(query_embedding, top_k as usize)
+        .map_err(|e| RagError::InternalError(e.to_string()))?;
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
     let mut results = Vec::new();
     for result in hnsw_results {
@@ -258,13 +265,13 @@ pub fn search_chunks(
 fn search_chunks_linear(
     query_embedding: Vec<f32>,
     top_k: u32,
-) -> anyhow::Result<Vec<ChunkSearchResult>> {
-    let conn = get_connection()?;
+) -> Result<Vec<ChunkSearchResult>, RagError> {
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
     let mut stmt = conn.prepare(
         "SELECT c.id, c.source_id, c.chunk_index, c.content, COALESCE(c.chunk_type, 'general'), c.embedding, s.metadata 
          FROM chunks c
          LEFT JOIN sources s ON c.source_id = s.id"
-    )?;
+    ).map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
     let query_vec = Array1::from(query_embedding.clone());
     let query_norm = query_vec.mapv(|x| x * x).sum().sqrt();
@@ -273,10 +280,10 @@ fn search_chunks_linear(
     
     let rows = stmt.query_map([], |row| {
         Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get::<_, Vec<u8>>(5)?, row.get(6)?))
-    })?;
+    }).map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
     for row in rows {
-        let (id, source_id, chunk_index, content, chunk_type, embedding_blob, metadata): (i64, i64, i32, String, String, Vec<u8>, Option<String>) = row?;
+        let (id, source_id, chunk_index, content, chunk_type, embedding_blob, metadata): (i64, i64, i32, String, String, Vec<u8>, Option<String>) = row.map_err(|e| RagError::DatabaseError(e.to_string()))?;
         
         let embedding: Vec<f32> = embedding_blob.chunks(4)
             .map(|chunk| f32::from_ne_bytes(chunk.try_into().unwrap()))
@@ -303,16 +310,19 @@ fn search_chunks_linear(
 }
 
 /// Get source document by ID.
-pub fn get_source(source_id: i64) -> anyhow::Result<Option<String>> {
-    let conn = get_connection()?;
+pub fn get_source(source_id: i64) -> Result<Option<String>, RagError> {
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
     Ok(conn.query_row("SELECT content FROM sources WHERE id = ?1", params![source_id], |row| row.get(0)).ok())
 }
 
 /// Get all chunks for a source.
-pub fn get_source_chunks(source_id: i64) -> anyhow::Result<Vec<String>> {
-    let conn = get_connection()?;
-    let mut stmt = conn.prepare("SELECT content FROM chunks WHERE source_id = ?1 ORDER BY chunk_index")?;
-    let chunks: Vec<String> = stmt.query_map(params![source_id], |row| row.get(0))?.filter_map(|r| r.ok()).collect();
+pub fn get_source_chunks(source_id: i64) -> Result<Vec<String>, RagError> {
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    let mut stmt = conn.prepare("SELECT content FROM chunks WHERE source_id = ?1 ORDER BY chunk_index")
+        .map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    let chunks: Vec<String> = stmt.query_map(params![source_id], |row| row.get(0))
+        .map_err(|e| RagError::DatabaseError(e.to_string()))?
+        .filter_map(|r| r.ok()).collect();
     Ok(chunks)
 }
 
@@ -321,16 +331,16 @@ pub fn get_adjacent_chunks(
     source_id: i64,
     min_index: i32,
     max_index: i32,
-) -> anyhow::Result<Vec<ChunkSearchResult>> {
+) -> Result<Vec<ChunkSearchResult>, RagError> {
     info!("[get_adjacent_chunks] source={}, range={}..{}", source_id, min_index, max_index);
-    let conn = get_connection()?;
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
     let mut stmt = conn.prepare(
         "SELECT c.id, c.source_id, c.chunk_index, c.content, COALESCE(c.chunk_type, 'general'), s.metadata 
          FROM chunks c 
          LEFT JOIN sources s ON c.source_id = s.id
          WHERE c.source_id = ?1 AND c.chunk_index >= ?2 AND c.chunk_index <= ?3 ORDER BY c.chunk_index"
-    )?;
+    ).map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
     let chunks: Vec<ChunkSearchResult> = stmt
         .query_map(params![source_id, min_index, max_index], |row| {
@@ -339,17 +349,21 @@ pub fn get_adjacent_chunks(
                 content: row.get(3)?, chunk_type: row.get(4)?, similarity: 0.0,
                 metadata: row.get(5)?,
             })
-        })?.filter_map(|r| r.ok()).collect();
+        })
+        .map_err(|e| RagError::DatabaseError(e.to_string()))?
+        .filter_map(|r| r.ok()).collect();
     
     info!("[get_adjacent_chunks] Found {} chunks", chunks.len());
     Ok(chunks)
 }
 
 /// Delete a source and all its chunks.
-pub fn delete_source(source_id: i64) -> anyhow::Result<()> {
-    let conn = get_connection()?;
-    conn.execute("DELETE FROM chunks WHERE source_id = ?1", params![source_id])?;
-    conn.execute("DELETE FROM sources WHERE id = ?1", params![source_id])?;
+pub fn delete_source(source_id: i64) -> Result<(), RagError> {
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    conn.execute("DELETE FROM chunks WHERE source_id = ?1", params![source_id])
+        .map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    conn.execute("DELETE FROM sources WHERE id = ?1", params![source_id])
+        .map_err(|e| RagError::DatabaseError(e.to_string()))?;
     info!("[delete_source] Deleted source {}", source_id);
     Ok(())
 }
@@ -360,10 +374,12 @@ pub struct SourceStats {
     pub chunk_count: i64,
 }
 
-pub fn get_source_stats() -> anyhow::Result<SourceStats> {
-    let conn = get_connection()?;
-    let source_count: i64 = conn.query_row("SELECT COUNT(*) FROM sources", [], |row| row.get(0))?;
-    let chunk_count: i64 = conn.query_row("SELECT COUNT(*) FROM chunks", [], |row| row.get(0))?;
+pub fn get_source_stats() -> Result<SourceStats, RagError> {
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    let source_count: i64 = conn.query_row("SELECT COUNT(*) FROM sources", [], |row| row.get(0))
+        .map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    let chunk_count: i64 = conn.query_row("SELECT COUNT(*) FROM chunks", [], |row| row.get(0))
+        .map_err(|e| RagError::DatabaseError(e.to_string()))?;
     Ok(SourceStats { source_count, chunk_count })
 }
 
@@ -374,25 +390,28 @@ pub struct ChunkForReembedding {
 }
 
 /// Get all chunk IDs and contents for re-embedding.
-pub fn get_all_chunk_ids_and_contents() -> anyhow::Result<Vec<ChunkForReembedding>> {
+pub fn get_all_chunk_ids_and_contents() -> Result<Vec<ChunkForReembedding>, RagError> {
     info!("[get_all_chunk_ids_and_contents] Starting");
-    let conn = get_connection()?;
-    let mut stmt = conn.prepare("SELECT id, content FROM chunks ORDER BY id")?;
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    let mut stmt = conn.prepare("SELECT id, content FROM chunks ORDER BY id")
+        .map_err(|e| RagError::DatabaseError(e.to_string()))?;
     let chunks: Vec<ChunkForReembedding> = stmt
-        .query_map([], |row| Ok(ChunkForReembedding { chunk_id: row.get(0)?, content: row.get(1)? }))?
+        .query_map([], |row| Ok(ChunkForReembedding { chunk_id: row.get(0)?, content: row.get(1)? }))
+        .map_err(|e| RagError::DatabaseError(e.to_string()))?
         .filter_map(|r| r.ok()).collect();
     info!("[get_all_chunk_ids_and_contents] Found {} chunks", chunks.len());
     Ok(chunks)
 }
 
 /// Update embedding for a single chunk.
-pub fn update_chunk_embedding(chunk_id: i64, embedding: Vec<f32>) -> anyhow::Result<()> {
-    let conn = get_connection()?;
+pub fn update_chunk_embedding(chunk_id: i64, embedding: Vec<f32>) -> Result<(), RagError> {
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
     let mut embedding_bytes: Vec<u8> = Vec::with_capacity(embedding.len() * 4);
     for f in &embedding {
         embedding_bytes.extend_from_slice(&f.to_ne_bytes());
     }
-    conn.execute("UPDATE chunks SET embedding = ?1 WHERE id = ?2", params![embedding_bytes, chunk_id])?;
+    conn.execute("UPDATE chunks SET embedding = ?1 WHERE id = ?2", params![embedding_bytes, chunk_id])
+        .map_err(|e| RagError::DatabaseError(e.to_string()))?;
     Ok(())
 }
 

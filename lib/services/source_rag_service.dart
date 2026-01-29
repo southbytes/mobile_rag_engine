@@ -9,12 +9,24 @@
 library;
 
 import 'dart:typed_data';
+import '../src/rust/api/error.dart';
 import '../src/rust/api/source_rag.dart';
 import '../src/rust/api/semantic_chunker.dart';
 import '../src/rust/api/hybrid_search.dart' as hybrid;
 import '../src/rust/api/hnsw_index.dart' as hnsw;
 import 'context_builder.dart';
 import 'embedding_service.dart';
+
+extension RagErrorMessage on RagError {
+  String get message => when(
+    databaseError: (msg) => msg,
+    ioError: (msg) => msg,
+    modelLoadError: (msg) => msg,
+    invalidInput: (msg) => msg,
+    internalError: (msg) => msg,
+    unknown: (msg) => msg,
+  );
+}
 
 /// Chunking strategy for document processing.
 enum ChunkingStrategy {
@@ -83,7 +95,26 @@ class SourceRagService {
 
   /// Initialize the source database.
   Future<void> init() async {
-    await initSourceDb();
+    try {
+      await initSourceDb();
+    } on RagError catch (e) {
+      // Smart Error Handling integration
+      e.when(
+        databaseError: (msg) {
+          print('[SmartError] Database initialization failed: $msg');
+          // Potential retry logic or fallback could go here
+        },
+        ioError: (msg) => print('[SmartError] IO integrity check failed: $msg'),
+        modelLoadError: (msg) =>
+            print('[SmartError] Model configuration invalid: $msg'),
+        invalidInput: (msg) =>
+            print('[SmartError] Configuration input invalid: $msg'),
+        internalError: (msg) =>
+            print('[SmartError] Internal system error: $msg'),
+        unknown: (msg) => print('[SmartError] Critical internal failure: $msg'),
+      );
+      rethrow; // Propagate to UI for user feedback
+    }
   }
 
   /// Try to load cached HNSW index.
@@ -130,7 +161,30 @@ class SourceRagService {
     void Function(int done, int total)? onProgress,
   }) async {
     // 1. Add source document
-    final sourceResult = await addSource(content: content, metadata: metadata);
+    late SourceAddResult sourceResult;
+    try {
+      final res = await addSource(content: content, metadata: metadata);
+      sourceResult = SourceAddResult(
+        sourceId: res.sourceId.toInt(),
+        isDuplicate: res.isDuplicate,
+        chunkCount: res.chunkCount,
+        message: res.message,
+      );
+    } on RagError catch (e) {
+      e.when(
+        databaseError: (msg) =>
+            print('[SmartError] Storage write failed: $msg'),
+        ioError: (msg) => print('[SmartError] IO error adding source: $msg'),
+        modelLoadError: (_) {},
+        invalidInput: (msg) =>
+            print('[SmartError] Invalid source content: $msg'),
+        internalError: (msg) =>
+            print('[SmartError] Internal error adding source: $msg'),
+        unknown: (msg) =>
+            print('[SmartError] Unknown error adding source: $msg'),
+      );
+      rethrow;
+    }
 
     if (sourceResult.isDuplicate) {
       return SourceAddResult(
@@ -223,7 +277,21 @@ class SourceRagService {
 
   /// Rebuild the HNSW index after adding sources.
   Future<void> rebuildIndex() async {
-    await rebuildChunkHnswIndex();
+    try {
+      await rebuildChunkHnswIndex();
+    } on RagError catch (e) {
+      e.when(
+        databaseError: (msg) =>
+            print('[SmartError] DB error rebuilding index: $msg'),
+        ioError: (msg) => print('[SmartError] IO error rebuilding index: $msg'),
+        modelLoadError: (_) {},
+        invalidInput: (_) {},
+        internalError: (msg) =>
+            print('[SmartError] Internal error rebuilding HNSW: $msg'),
+        unknown: (_) {},
+      );
+      rethrow;
+    }
   }
 
   /// Regenerate embeddings for all existing chunks using the current model.
@@ -292,7 +360,23 @@ class SourceRagService {
     );
 
     // 2. Search chunks
-    var chunks = await searchChunks(queryEmbedding: queryEmbedding, topK: topK);
+    late List<ChunkSearchResult> chunks;
+    try {
+      chunks = await searchChunks(queryEmbedding: queryEmbedding, topK: topK);
+    } on RagError catch (e) {
+      e.when(
+        databaseError: (msg) =>
+            print('[SmartError] Search failed (database): $msg'),
+        ioError: (msg) => print('[SmartError] Search IO error: $msg'),
+        modelLoadError: (_) {},
+        invalidInput: (msg) =>
+            print('[SmartError] Invalid search parameters: $msg'),
+        internalError: (msg) =>
+            print('[SmartError] Search engine failure: $msg'),
+        unknown: (msg) => print('[SmartError] Unknown search error: $msg'),
+      );
+      rethrow;
+    }
 
     // 3. Filter to single source FIRST (before adjacent expansion)
     // Pass the original query for text matching
@@ -414,11 +498,18 @@ class SourceRagService {
       final minIndex = (chunk.chunkIndex - adjacentCount).clamp(0, 999999);
       final maxIndex = chunk.chunkIndex + adjacentCount;
 
-      final adjacent = await getAdjacentChunks(
-        sourceId: chunk.sourceId,
-        minIndex: minIndex,
-        maxIndex: maxIndex,
-      );
+      List<ChunkSearchResult> adjacent = [];
+      try {
+        adjacent = await getAdjacentChunks(
+          sourceId: chunk.sourceId,
+          minIndex: minIndex,
+          maxIndex: maxIndex,
+        );
+      } on RagError catch (e) {
+        print('[SmartError] Failed to fetch adjacent chunks: ${e.message}');
+        // Non-critical, just continue without expansion
+        continue;
+      }
 
       for (final adj in adjacent) {
         final key = '${adj.sourceId}:${adj.chunkIndex}';
@@ -459,7 +550,12 @@ class SourceRagService {
 
   /// Remove a source and all its chunks from the database.
   Future<void> removeSource(int sourceId) async {
-    await deleteSource(sourceId: sourceId);
+    try {
+      await deleteSource(sourceId: sourceId);
+    } on RagError catch (e) {
+      print('[SmartError] Failed to remove source $sourceId: ${e.message}');
+      rethrow;
+    }
     // Note: HNSW index is not automatically updated.
     // It's recommended to call rebuildIndex() if many sources are deleted.
   }
@@ -490,13 +586,29 @@ class SourceRagService {
     final queryEmbedding = await EmbeddingService.embed(query);
 
     // 2. Perform hybrid search with RRF fusion
-    final results = await hybrid.searchHybridWeighted(
-      queryText: query,
-      queryEmbedding: queryEmbedding,
-      topK: topK,
-      vectorWeight: vectorWeight,
-      bm25Weight: bm25Weight,
-    );
+    late List<hybrid.HybridSearchResult> results;
+    try {
+      results = await hybrid.searchHybridWeighted(
+        queryText: query,
+        queryEmbedding: queryEmbedding,
+        topK: topK,
+        vectorWeight: vectorWeight,
+        bm25Weight: bm25Weight,
+      );
+    } on RagError catch (e) {
+      e.when(
+        databaseError: (msg) =>
+            print('[SmartError] Hybrid search DB error: $msg'),
+        ioError: (_) {},
+        modelLoadError: (_) {},
+        invalidInput: (_) {},
+        internalError: (msg) =>
+            print('[SmartError] Hybrid search engine error: $msg'),
+        unknown: (msg) =>
+            print('[SmartError] Hybrid search unknown error: $msg'),
+      );
+      rethrow;
+    }
 
     return results;
   }

@@ -10,6 +10,7 @@ import 'api/bm25_search.dart';
 import 'api/compression_utils.dart';
 import 'api/db_pool.dart';
 import 'api/document_parser.dart';
+import 'api/error.dart';
 import 'api/hnsw_index.dart';
 import 'api/hybrid_search.dart';
 import 'api/incremental_index.dart';
@@ -189,6 +190,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ParsedIntent dco_decode_parsed_intent(dynamic raw);
+
+  @protected
+  RagError dco_decode_rag_error(dynamic raw);
 
   @protected
   (PlatformInt64, Float32List) dco_decode_record_i_64_list_prim_f_32_strict(
@@ -431,6 +435,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ParsedIntent sse_decode_parsed_intent(SseDeserializer deserializer);
+
+  @protected
+  RagError sse_decode_rag_error(SseDeserializer deserializer);
 
   @protected
   (PlatformInt64, Float32List) sse_decode_record_i_64_list_prim_f_32_strict(
@@ -746,6 +753,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_parsed_intent(ParsedIntent self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_rag_error(RagError self, SseSerializer serializer);
 
   @protected
   void sse_encode_record_i_64_list_prim_f_32_strict(

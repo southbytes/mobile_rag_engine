@@ -7,6 +7,7 @@ import 'api/bm25_search.dart';
 import 'api/compression_utils.dart';
 import 'api/db_pool.dart';
 import 'api/document_parser.dart';
+import 'api/error.dart';
 import 'api/hnsw_index.dart';
 import 'api/hybrid_search.dart';
 import 'api/incremental_index.dart';
@@ -385,7 +386,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_i_32,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_rag_error,
         ),
         constMeta: kCrateApiSourceRagAddChunksConstMeta,
         argValues: [sourceId, chunks],
@@ -489,7 +490,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_add_source_result,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_rag_error,
         ),
         constMeta: kCrateApiSourceRagAddSourceConstMeta,
         argValues: [content, metadata],
@@ -1086,7 +1087,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_rag_error,
         ),
         constMeta: kCrateApiSourceRagDeleteSourceConstMeta,
         argValues: [sourceId],
@@ -1254,7 +1255,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_chunk_search_result,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_rag_error,
         ),
         constMeta: kCrateApiSourceRagGetAdjacentChunksConstMeta,
         argValues: [sourceId, minIndex, maxIndex],
@@ -1285,7 +1286,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_chunk_for_reembedding,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_rag_error,
         ),
         constMeta: kCrateApiSourceRagGetAllChunkIdsAndContentsConstMeta,
         argValues: [],
@@ -1427,7 +1428,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_opt_String,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_rag_error,
         ),
         constMeta: kCrateApiSourceRagGetSourceConstMeta,
         argValues: [sourceId],
@@ -1457,7 +1458,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_String,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_rag_error,
         ),
         constMeta: kCrateApiSourceRagGetSourceChunksConstMeta,
         argValues: [sourceId],
@@ -1487,7 +1488,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_source_stats,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_rag_error,
         ),
         constMeta: kCrateApiSourceRagGetSourceStatsConstMeta,
         argValues: [],
@@ -1781,7 +1782,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_rag_error,
         ),
         constMeta: kCrateApiSourceRagInitSourceDbConstMeta,
         argValues: [],
@@ -2078,7 +2079,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_rag_error,
         ),
         constMeta: kCrateApiSourceRagRebuildChunkHnswIndexConstMeta,
         argValues: [],
@@ -2192,7 +2193,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_chunk_search_result,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_rag_error,
         ),
         constMeta: kCrateApiSourceRagSearchChunksConstMeta,
         argValues: [queryEmbedding, topK],
@@ -2268,7 +2269,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_hybrid_search_result,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_rag_error,
         ),
         constMeta: kCrateApiHybridSearchSearchHybridConstMeta,
         argValues: [queryText, queryEmbedding, topK, config, filter],
@@ -2305,7 +2306,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_String,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_rag_error,
         ),
         constMeta: kCrateApiHybridSearchSearchHybridSimpleConstMeta,
         argValues: [queryText, queryEmbedding, topK],
@@ -2346,7 +2347,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_hybrid_search_result,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_rag_error,
         ),
         constMeta: kCrateApiHybridSearchSearchHybridWeightedConstMeta,
         argValues: [queryText, queryEmbedding, topK, vectorWeight, bm25Weight],
@@ -2602,7 +2603,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_rag_error,
         ),
         constMeta: kCrateApiSourceRagUpdateChunkEmbeddingConstMeta,
         argValues: [chunkId, embedding],
@@ -3115,6 +3116,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       isValid: dco_decode_bool(arr[2]),
       errorMessage: dco_decode_opt_String(arr[3]),
     );
+  }
+
+  @protected
+  RagError dco_decode_rag_error(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    switch (raw[0]) {
+      case 0:
+        return RagError_DatabaseError(dco_decode_String(raw[1]));
+      case 1:
+        return RagError_IoError(dco_decode_String(raw[1]));
+      case 2:
+        return RagError_ModelLoadError(dco_decode_String(raw[1]));
+      case 3:
+        return RagError_InvalidInput(dco_decode_String(raw[1]));
+      case 4:
+        return RagError_InternalError(dco_decode_String(raw[1]));
+      case 5:
+        return RagError_Unknown(dco_decode_String(raw[1]));
+      default:
+        throw Exception("unreachable");
+    }
   }
 
   @protected
@@ -3851,6 +3873,35 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RagError sse_decode_rag_error(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var tag_ = sse_decode_i_32(deserializer);
+    switch (tag_) {
+      case 0:
+        var var_field0 = sse_decode_String(deserializer);
+        return RagError_DatabaseError(var_field0);
+      case 1:
+        var var_field0 = sse_decode_String(deserializer);
+        return RagError_IoError(var_field0);
+      case 2:
+        var var_field0 = sse_decode_String(deserializer);
+        return RagError_ModelLoadError(var_field0);
+      case 3:
+        var var_field0 = sse_decode_String(deserializer);
+        return RagError_InvalidInput(var_field0);
+      case 4:
+        var var_field0 = sse_decode_String(deserializer);
+        return RagError_InternalError(var_field0);
+      case 5:
+        var var_field0 = sse_decode_String(deserializer);
+        return RagError_Unknown(var_field0);
+      default:
+        throw UnimplementedError('');
+    }
+  }
+
+  @protected
   (PlatformInt64, Float32List) sse_decode_record_i_64_list_prim_f_32_strict(
     SseDeserializer deserializer,
   ) {
@@ -4544,6 +4595,31 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.query, serializer);
     sse_encode_bool(self.isValid, serializer);
     sse_encode_opt_String(self.errorMessage, serializer);
+  }
+
+  @protected
+  void sse_encode_rag_error(RagError self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    switch (self) {
+      case RagError_DatabaseError(field0: final field0):
+        sse_encode_i_32(0, serializer);
+        sse_encode_String(field0, serializer);
+      case RagError_IoError(field0: final field0):
+        sse_encode_i_32(1, serializer);
+        sse_encode_String(field0, serializer);
+      case RagError_ModelLoadError(field0: final field0):
+        sse_encode_i_32(2, serializer);
+        sse_encode_String(field0, serializer);
+      case RagError_InvalidInput(field0: final field0):
+        sse_encode_i_32(3, serializer);
+        sse_encode_String(field0, serializer);
+      case RagError_InternalError(field0: final field0):
+        sse_encode_i_32(4, serializer);
+        sse_encode_String(field0, serializer);
+      case RagError_Unknown(field0: final field0):
+        sse_encode_i_32(5, serializer);
+        sse_encode_String(field0, serializer);
+    }
   }
 
   @protected
