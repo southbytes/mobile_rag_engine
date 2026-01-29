@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.7.5
+
+### Fixed
+- **BM25 Search**: Fixed critical bug where BM25 index was never built for Source RAG, causing Hybrid Search to only use Vector search.
+- **Hybrid Search Accuracy**: BM25 keyword matching now works correctly alongside Vector similarity search.
+
+### Changed
+- **Initialization**: Both HNSW and BM25 indexes are now rebuilt on app startup to ensure Hybrid Search works immediately.
+- **Index Rebuild**: `rebuildIndex()` now rebuilds both HNSW (vector) and BM25 (keyword) indexes.
+
+### Added
+- **`rebuildChunkBm25Index()`**: New low-level API for manually rebuilding BM25 index (internal use).
+
 ## 0.7.1
 
 ### Documentation

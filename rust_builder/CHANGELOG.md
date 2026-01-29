@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.5
+
+- **BM25 Index Fix**: Added `rebuild_chunk_bm25_index()` function to properly build BM25 index for Source RAG chunks.
+- **Hybrid Search Fix**: BM25 keyword search now correctly works alongside Vector similarity search.
+- **Initialization**: Both HNSW and BM25 indexes are now built during app initialization for existing chunks.
+
 ## 0.7.0
 
 - **Metadata Support**: Added `metadata` column to `sources` table and support in `HybridSearchResult`.
