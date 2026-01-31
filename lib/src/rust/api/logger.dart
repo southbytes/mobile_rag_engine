@@ -6,6 +6,7 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+// These functions are ignored because they are not marked as `pub`: `try_send_log_to_dart`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `CombinedLogger`, `DART_LOG_SINK`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `deref`, `enabled`, `flush`, `initialize`, `log`
 
@@ -27,8 +28,3 @@ Stream<String> initLogStream() =>
 /// Close the Dart log stream.
 /// Call this when disposing the log subscription to prevent memory leaks.
 void closeLogStream() => RustLib.instance.api.crateApiLoggerCloseLogStream();
-
-/// Helper to send a log message to Dart if the stream is active.
-/// Takes a reference to avoid unnecessary cloning when sink is not available.
-Future<void> sendLogToDart({required String msg}) =>
-    RustLib.instance.api.crateApiLoggerSendLogToDart(msg: msg);

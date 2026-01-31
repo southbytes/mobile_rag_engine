@@ -107,9 +107,9 @@ class SourceRagService {
       // 2. Close any existing log stream (both Dart and Rust side)
       await _cleanupLogStream();
 
-      // 3. Start fresh log stream
+      // 3. Start fresh log stream (logs already have [LEVEL] prefix)
       _logSubscription = initLogStream().listen((log) {
-        print('[Rust] $log');
+        print(log);
       });
 
       // 4. Initialize DB
