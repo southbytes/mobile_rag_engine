@@ -49,8 +49,8 @@ export 'services/context_builder.dart';
 export 'services/source_rag_service.dart';
 export 'services/embedding_service.dart';
 
-// Document parsing
-export 'services/document_parser.dart';
+// ✅ Document parsing (Restored original export for extractTextFromDocument)
+export 'src/rust/api/document_parser.dart';
 
 // ✅ Search Result Types (Essential for using search APIs)
 export 'src/rust/api/source_rag.dart'
@@ -59,8 +59,8 @@ export 'src/rust/api/source_rag.dart'
 // ✅ Hybrid Search Types
 export 'src/rust/api/hybrid_search.dart' show HybridSearchResult;
 
-// ✅ User Intent Types
-export 'services/intent_parser.dart';
+// ✅ User Intent Types (Direct export for parseIntent)
+export 'src/rust/api/user_intent.dart';
 
 // ✅ Error Types
 export 'src/rust/api/error.dart' show RagError;

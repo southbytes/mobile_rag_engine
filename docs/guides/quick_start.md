@@ -74,7 +74,7 @@ await MobileRag.instance.addDocument(
 
 // Add PDF/DOCX
 final bytes = await File('document.pdf').readAsBytes();
-final text = await extractTextFromDocument(fileBytes: bytes.toList());
+final text = await DocumentParser.parse(bytes.toList());
 await MobileRag.instance.addDocument(text, filePath: 'document.pdf');
 
 // Rebuild index (important!)
@@ -141,11 +141,9 @@ void main() async {
 For fine-grained control, you can still use the low-level APIs:
 
 ```dart
-// Manual initialization
-await initTokenizer(tokenizerPath: 'path/to/tokenizer.json');
-await EmbeddingService.init(modelBytes);
-final ragService = SourceRagService(dbPath: 'path/to/rag.db');
-await ragService.init();
+// Use services directly for custom flows
+final text = await DocumentParser.parsePdf(pdfBytes);
+final intent = IntentParser.classify('Summarize this');
 ```
 
 ---

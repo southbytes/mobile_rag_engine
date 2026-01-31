@@ -47,7 +47,7 @@ final file = File('path/to/document.pdf');
 final bytes = await file.readAsBytes();
 
 // extract text (using built-in parser)
-final text = await extractTextFromDocument(fileBytes: bytes.toList());
+final text = await DocumentParser.parse(bytes.toList());
 
 // Then add to RAG
 await MobileRag.instance.addDocument(
@@ -99,8 +99,11 @@ final embeddings = await EmbeddingService.embedBatch(
   ['Text 1', 'Text 2', 'Text 3'],
 );
 
-// Manual Tokenizer initialization
-await initTokenizer(tokenizerPath: 'path/to/tokenizer.json');
+// Parse user intent (low-level)
+final intent = IntentParser.classify('Summarize this document');
+if (intent is UserIntent_Summary) {
+  // Handle summary
+}
 ```
 
 ## Performance
