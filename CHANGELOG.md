@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.7.6
+
+### Fixed
+- **Duplicate Logs**: Fixed issue where Rust logs were printed twice (both to console and Dart stream).
+- **Log Format**: Simplified log format from `[Rust] [INFO] message` to `[INFO] message`.
+
+### Changed
+- **Logger**: Rust logger now only uses `println!` when Dart stream is not connected, avoiding duplicate output.
+
+---
+
 ## 0.7.5
 
 ### Fixed
