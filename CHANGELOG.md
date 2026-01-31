@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.7.8
+
+### Changed
+- **API Clean-up**: Refactored global functions into namespaced classes for better DX.
+  - `extractTextFrom*` → `DocumentParser.*`
+  - `parseUserIntent` → `IntentParser.classify`
+- **Error Handling**: Exported `RagError` class for proper error catching.
+- **Documentation**: 
+  - Updated `quick_start.md` and `example/example.md` to match the new API.
+  - Updated `mobile_rag_engine.dart` API usage examples.
+
 ## 0.7.6
 
 ### Fixed
