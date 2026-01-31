@@ -6,11 +6,11 @@ repository: https://github.com/dev07060/mobile_rag_engine
 issue_tracker: https://github.com/dev07060/mobile_rag_engine/issues
 
 topics:
-  - LLM
+  - llm
   - machine-learning
   - semantic-search
   - vector-database
-  - RAG
+  - rag
 
 environment:
   sdk: ^3.9.2
