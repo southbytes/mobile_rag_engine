@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.6
+
+- **Duplicate Logs Fix**: Logger now only uses `println!` when Dart stream is not connected, preventing duplicate output.
+- **Log Format**: Simplified log format to `[LEVEL] message` (removed redundant tags).
+
 ## 0.7.5
 
 - **BM25 Index Fix**: Added `rebuild_chunk_bm25_index()` function to properly build BM25 index for Source RAG chunks.

@@ -17,8 +17,6 @@ struct CombinedLogger;
 
 impl log::Log for CombinedLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        // Debug builds: show all logs up to Debug level
-        // Release builds: show only Info and above
         #[cfg(debug_assertions)]
         {
             metadata.level() <= Level::Debug
@@ -33,26 +31,11 @@ impl log::Log for CombinedLogger {
         if self.enabled(record.metadata()) {
             let msg = format!("[{}] {}", record.level(), record.args());
             
-            // 1. Send to Dart Stream (only if sink is available)
-            send_log_to_dart(&msg);
+            // Try to send to Dart stream first
+            let sent_to_dart = try_send_log_to_dart(&msg);
             
-            // 2. Platform native logging - always provide fallback output
-            #[cfg(target_os = "android")]
-            {
-                // Android: println fallback (captured by Flutter debug console)
-                // For production logcat integration, consider android_logger crate
-                println!("{}", msg);
-            }
-            
-            #[cfg(target_os = "ios")]
-            {
-                // iOS: println captured by Flutter debug console
-                println!("{}", msg);
-            }
-            
-            #[cfg(not(any(target_os = "android", target_os = "ios")))]
-            {
-                // Desktop: standard output
+            // Only use println if Dart stream is NOT connected (avoid duplication)
+            if !sent_to_dart {
                 println!("{}", msg);
             }
         }
@@ -60,6 +43,7 @@ impl log::Log for CombinedLogger {
 
     fn flush(&self) {}
 }
+
 
 static LOGGER: CombinedLogger = CombinedLogger;
 
@@ -110,20 +94,22 @@ pub fn close_log_stream() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Helper to send a log message to Dart if the stream is active.
-/// Takes a reference to avoid unnecessary cloning when sink is not available.
-pub fn send_log_to_dart(msg: &str) {
+/// Try to send a log message to Dart if the stream is active.
+/// Returns true if sent, false otherwise.
+fn try_send_log_to_dart(msg: &str) -> bool {
     match DART_LOG_SINK.read() {
         Ok(guard) => {
             if let Some(sink) = &*guard {
-                // Only clone when we actually have a sink to send to
                 let _ = sink.add(msg.to_string());
+                true
+            } else {
+                false
             }
         }
         Err(_) => {
-            // RwLock is poisoned - only warn in debug builds
             #[cfg(debug_assertions)]
-            eprintln!("[WARNING] Dart log sink lock is poisoned, log message dropped");
+            eprintln!("[WARNING] Dart log sink lock is poisoned");
+            false
         }
     }
 }
