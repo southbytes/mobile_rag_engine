@@ -8,9 +8,6 @@
 /// ```dart
 /// import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 ///
-/// ```dart
-/// import 'package:mobile_rag_engine/mobile_rag_engine.dart';
-///
 /// void main() async {
 ///   WidgetsFlutterBinding.ensureInitialized();
 ///
@@ -38,10 +35,7 @@
 /// For fine-grained control, use the individual services directly:
 ///
 /// ```dart
-/// await initTokenizer(tokenizerPath: 'path/to/tokenizer.json');
-/// await EmbeddingService.init(modelBytes);
-/// final rag = SourceRagService(dbPath: 'path/to/rag.db');
-/// await rag.init();
+/// await MobileRag.initialize(...) // Preferred
 /// ```
 library;
 
@@ -55,8 +49,21 @@ export 'services/context_builder.dart';
 export 'services/source_rag_service.dart';
 export 'services/embedding_service.dart';
 
-// Document parsing (commonly used)
-export 'src/rust/api/document_parser.dart';
+// Document parsing
+export 'services/document_parser.dart';
+
+// ✅ Search Result Types (Essential for using search APIs)
+export 'src/rust/api/source_rag.dart'
+    show ChunkSearchResult, SourceStats, AddSourceResult, ChunkData;
+
+// ✅ Hybrid Search Types
+export 'src/rust/api/hybrid_search.dart' show HybridSearchResult;
+
+// ✅ User Intent Types
+export 'services/intent_parser.dart';
+
+// ✅ Error Types
+export 'src/rust/api/error.dart' show RagError;
 
 // Note: Low-level Rust exports are hidden by default for better DX.
 // If you need them, import 'package:mobile_rag_engine/src/rust/api/...' directly.

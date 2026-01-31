@@ -177,9 +177,7 @@ class _MyAppState extends State<MyApp> {
         final bytes = await File(filePath).readAsBytes();
         setState(() => _status = "Extracting text from ${file.name}...");
 
-        extractedText = await extractTextFromDocument(
-          fileBytes: bytes.toList(),
-        );
+        extractedText = await DocumentParser.parse(bytes.toList());
       }
 
       if (extractedText.isEmpty) {

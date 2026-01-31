@@ -40,17 +40,6 @@ enum ChunkingStrategy {
   markdown,
 }
 
-/// Detect the appropriate chunking strategy based on file extension.
-ChunkingStrategy detectChunkingStrategy(String? filePath) {
-  if (filePath == null) return ChunkingStrategy.recursive;
-
-  final ext = filePath.split('.').lastOrNull?.toLowerCase() ?? '';
-  return switch (ext) {
-    'md' || 'markdown' => ChunkingStrategy.markdown,
-    _ => ChunkingStrategy.recursive,
-  };
-}
-
 /// Result of adding a source document with automatic chunking.
 class SourceAddResult {
   final int sourceId;
@@ -92,6 +81,17 @@ class SourceRagService {
     this.maxChunkChars = 500,
     this.overlapChars = 50,
   });
+
+  /// Detect the appropriate chunking strategy based on file extension.
+  static ChunkingStrategy detectChunkingStrategy(String? filePath) {
+    if (filePath == null) return ChunkingStrategy.recursive;
+
+    final ext = filePath.split('.').lastOrNull?.toLowerCase() ?? '';
+    return switch (ext) {
+      'md' || 'markdown' => ChunkingStrategy.markdown,
+      _ => ChunkingStrategy.recursive,
+    };
+  }
 
   StreamSubscription<String>? _logSubscription;
 
