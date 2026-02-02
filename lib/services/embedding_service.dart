@@ -43,8 +43,9 @@ class EmbeddingService {
     final attentionMaskData = Int64List.fromList(
       attentionMask.map((e) => e.toInt()).toList(),
     );
-    // BGE-m3 / many modern embedding models do not use token_type_ids
-    // Passing it to a model that doesn't expect it causes an ONNX runtime error.
+    // ko-sroberta (RoBERTa-based) requires token_type_ids (all zeros)
+    // BGE-m3 and others do not. We must support both dynamically.
+    final tokenTypeIdsData = Int64List.fromList(List<int>.filled(seqLen, 0));
 
     final shape = [1, seqLen];
 
@@ -56,16 +57,68 @@ class EmbeddingService {
       attentionMaskData,
       shape,
     );
-
-    // 4. Run inference
-    final inputs = {
-      'input_ids': inputIdsTensor,
-      'attention_mask': attentionMaskTensor,
-      // 'token_type_ids' removed
-    };
+    final tokenTypeIdsTensor = OrtValueTensor.createTensorWithDataList(
+      tokenTypeIdsData,
+      shape,
+    );
 
     final runOptions = OrtRunOptions();
-    final outputs = await _session!.runAsync(runOptions, inputs);
+    List<OrtValue?>? outputs;
+
+    try {
+      // Logic to determine if we should supply token_type_ids
+      if (_requiresTokenTypeIds == true) {
+        // Known to require it
+        final inputs = {
+          'input_ids': inputIdsTensor,
+          'attention_mask': attentionMaskTensor,
+          'token_type_ids': tokenTypeIdsTensor,
+        };
+        outputs = await _session!.runAsync(runOptions, inputs);
+      } else if (_requiresTokenTypeIds == false) {
+        // Known to NOT require it
+        final inputs = {
+          'input_ids': inputIdsTensor,
+          'attention_mask': attentionMaskTensor,
+        };
+        outputs = await _session!.runAsync(runOptions, inputs);
+      } else {
+        // Status unknown: Probe (Start with assumption: most inputs key-strict)
+        // Try WITH token_type_ids first (Safe for RoBERTa, might fail for BGE-M3)
+        try {
+          final inputs = {
+            'input_ids': inputIdsTensor,
+            'attention_mask': attentionMaskTensor,
+            'token_type_ids': tokenTypeIdsTensor,
+          };
+          outputs = await _session!.runAsync(runOptions, inputs);
+          // If success, remember it requirements
+          _requiresTokenTypeIds = true;
+          if (debugMode) {
+            print('[DEBUG] Detected model requires token_type_ids: true');
+          }
+        } catch (e) {
+          if (debugMode) print('[DEBUG] Probe with token_type_ids failed: $e');
+          // If failed, try WITHOUT
+          final inputs = {
+            'input_ids': inputIdsTensor,
+            'attention_mask': attentionMaskTensor,
+          };
+          outputs = await _session!.runAsync(runOptions, inputs);
+          // If success, remember it
+          _requiresTokenTypeIds = false;
+          if (debugMode) {
+            print('[DEBUG] Detected model requires token_type_ids: false');
+          }
+        }
+      }
+    } finally {
+      // 6. Release resources
+      inputIdsTensor.release();
+      attentionMaskTensor.release();
+      tokenTypeIdsTensor.release();
+      runOptions.release();
+    } // outputs release is handled after extraction
 
     // 5. Extract results and apply mean pooling
     final outputTensor = outputs?[0];
@@ -120,16 +173,17 @@ class EmbeddingService {
       embedding = outputData.map((e) => (e as num).toDouble()).toList();
     }
 
-    // 6. Release resources
-    inputIdsTensor.release();
-    attentionMaskTensor.release();
-    runOptions.release();
+    // Release outputs
     for (final output in outputs ?? []) {
       output?.release();
     }
 
     return embedding;
   }
+
+  /// Whether the current session typically expects token_type_ids
+  /// Computed dynamically on first run.
+  static bool? _requiresTokenTypeIds;
 
   /// Batch embed multiple texts (sequential processing)
   ///
