@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:mobile_rag_engine/mobile_rag_engine.dart';
-import 'package:mobile_rag_engine/src/rust/api/hybrid_search.dart' as hybrid;
 
 import 'screens/benchmark_screen.dart';
 import 'screens/quality_test_screen.dart';
@@ -37,7 +36,7 @@ class _MyAppState extends State<MyApp> {
   final TextEditingController _docController = TextEditingController();
   final TextEditingController _queryController = TextEditingController();
   // Store full hybrid results
-  List<hybrid.HybridSearchResult> _searchResults = [];
+  List<HybridSearchResult> _searchResults = [];
   int _topK = 5; // Adjustable topK for search
 
   @override
@@ -416,8 +415,8 @@ class _MyAppState extends State<MyApp> {
                     return Card(
                       child: ListTile(
                         leading: CircleAvatar(
-                          child: Text('${i + 1}'),
                           backgroundColor: Colors.blue.shade100,
+                          child: Text('${i + 1}'),
                         ),
                         title: Text(
                           r.content,
@@ -458,12 +457,21 @@ class _MyAppState extends State<MyApp> {
                       ? () async {
                           setState(() => _isLoading = true);
                           try {
+                            // Demo samples for Hybrid Search presentation
+                            // These samples showcase Vector vs BM25 strengths
                             final samples = [
-                              "Apple is a red fruit.",
-                              "Banana is yellow and sweet.",
-                              "Tesla is an electric car company.",
-                              "Apple is a company that makes iPhones.",
-                              "Orange is a fruit rich in vitamin C.",
+                              // Group 1: "Apple" - same keyword, different meanings (tests semantic understanding)
+                              "Apple 사과는 비타민이 풍부한 과일로, 하루에 하나씩 먹으면 건강에 좋다고 알려져 있습니다.",
+                              "Apple Inc.는 아이폰, 맥북, 아이패드 등을 만드는 미국의 IT 기업입니다. 스티브 잡스가 설립했습니다.",
+                              // Group 2: Similar meaning, different keywords (tests semantic similarity)
+                              "스마트폰 배터리 수명을 연장하려면 완전 방전을 피하고, 20-80% 사이를 유지하는 것이 좋습니다.",
+                              "휴대폰 충전 시 고속 충전보다 일반 충전이 배터리 건강에 더 좋다는 연구 결과가 있습니다.",
+                              // Group 3: Technical documents (tests BM25 with specific terms)
+                              "HNSW 알고리즘은 그래프 기반 ANN 검색 방식으로, 계층적 구조를 통해 효율적인 벡터 검색을 제공합니다.",
+                              "BM25는 TF-IDF를 개선한 키워드 검색 알고리즘으로, 문서 길이 정규화가 특징입니다.",
+                              // Group 4: Miscellaneous for diversity
+                              "오늘 서울 날씨는 맑고 기온은 영하 5도입니다. 외출 시 따뜻하게 입으세요.",
+                              "제주도는 한국에서 가장 인기 있는 여행지로, 한라산과 해변이 유명합니다.",
                             ];
                             int totalChunks = 0;
                             for (var i = 0; i < samples.length; i++) {
