@@ -1,6 +1,6 @@
 // lib/screens/quality_test_screen.dart
 import 'package:flutter/material.dart';
-import 'package:mobile_rag_engine/services/quality_test_service.dart';
+import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
 class QualityTestScreen extends StatefulWidget {
   const QualityTestScreen({super.key});

@@ -1,6 +1,6 @@
 // lib/screens/chunking_test_screen.dart
 import 'package:flutter/material.dart';
-import 'package:mobile_rag_engine/src/rust/api/semantic_chunker.dart';
+import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
 /// Test center for comparing different chunking strategies.
 class ChunkingTestScreen extends StatefulWidget {
