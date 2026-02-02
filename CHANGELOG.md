@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.7.9
+
+### Fixed
+- **Library Exports**: Added missing exports for `BenchmarkService`, `QualityTestService`, `PromptCompressor`, and `SemanticChunk` types. Now all services are accessible via the main library import.
+- **Example App**: Fixed internal import paths in example code to use the public API.
 ## 0.7.8
 
 ### Changed
