@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.7.11
+
+### Fixed
+- **Reverted Model Integration**: Reverted changes related to `ko-sroberta` integration due to ONNX runtime compatibility issues (`Invalid Feed Input Name:token_type_ids`).
+- **Stability**: Restored original embedding logic compatible with standard models (e.g., `bge-m3`, `all-MiniLM-L6-v2`).
+
+## 0.7.10 (Withdrawn)
+- Attempted `ko-sroberta` integration (caused runtime errors).
+
 ## 0.7.9
 
 ### Fixed
