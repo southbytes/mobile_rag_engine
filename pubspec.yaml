@@ -20,9 +20,9 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_rust_bridge: ^2.11.1
-  # rag_engine_flutter: ^0.7.6
-  rag_engine_flutter:
-    path: rust_builder
+  rag_engine_flutter: ^0.8.0
+  # rag_engine_flutter:
+  #   path: rust_builder
   path_provider: ^2.1.5
   onnxruntime: ^1.4.1
   freezed_annotation: ^3.1.0
