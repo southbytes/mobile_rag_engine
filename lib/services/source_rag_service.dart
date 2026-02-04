@@ -10,7 +10,27 @@ library;
 
 import 'dart:typed_data';
 import '../src/rust/api/error.dart';
-import '../src/rust/api/source_rag.dart';
+import '../src/rust/api/source_rag.dart' as rust_rag;
+import '../src/rust/api/source_rag.dart'
+    show
+        SourceStats,
+        ChunkSearchResult,
+        // AddSourceResult, // Unused
+        ChunkData,
+        SourceEntry,
+        initSourceDb,
+        addSource,
+        addChunks,
+        // listSources, // Removed to avoid collision, using rust_rag.listSources
+        searchChunks, // Added back
+        deleteSource,
+        getAdjacentChunks,
+        getSource,
+        getSourceStats,
+        getAllChunkIdsAndContents,
+        updateChunkEmbedding,
+        rebuildChunkHnswIndex,
+        rebuildChunkBm25Index;
 import '../src/rust/api/semantic_chunker.dart';
 import '../src/rust/api/hybrid_search.dart' as hybrid;
 import '../src/rust/api/hnsw_index.dart' as hnsw;
@@ -18,6 +38,8 @@ import 'context_builder.dart';
 import 'embedding_service.dart';
 import '../utils/error_utils.dart';
 import '../src/rust/api/logger.dart';
+import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart'
+    as frb;
 import 'dart:async';
 
 extension RagErrorMessage on RagError {
@@ -94,6 +116,19 @@ class SourceRagService {
   }
 
   StreamSubscription<String>? _logSubscription;
+
+  /// Helper to convert List<int> to the specific Int64List type required by FRB.
+  /// We do this manually because frb.Int64List.fromList() might return a native
+  /// dart:typed_data Int64List which can cause type mismatch errors if FRB
+  /// expects its own wrapped type.
+  frb.Int64List _toInt64List(List<int> list) {
+    // Try using the constructor directly
+    final result = frb.Int64List(list.length);
+    for (var i = 0; i < list.length; i++) {
+      result[i] = list[i];
+    }
+    return result;
+  }
 
   /// Get the HNSW index path (derived from dbPath)
   String get _indexPath => dbPath.replaceAll('.db', '_hnsw');
@@ -184,6 +219,7 @@ class SourceRagService {
   Future<SourceAddResult> addSourceWithChunking(
     String content, {
     String? metadata,
+    String? name,
     String? filePath,
     ChunkingStrategy? strategy,
     void Function(int done, int total)? onProgress,
@@ -191,7 +227,11 @@ class SourceRagService {
     // 1. Add source document
     late SourceAddResult sourceResult;
     try {
-      final res = await addSource(content: content, metadata: metadata);
+      final res = await addSource(
+        content: content,
+        metadata: metadata,
+        name: name,
+      );
       sourceResult = SourceAddResult(
         sourceId: res.sourceId.toInt(),
         isDuplicate: res.isDuplicate,
@@ -376,6 +416,7 @@ class SourceRagService {
     ContextStrategy strategy = ContextStrategy.relevanceFirst,
     int adjacentChunks = 0,
     bool singleSourceMode = false,
+    List<int>? sourceIds,
   }) async {
     // 1. Generate query embedding
     final queryEmbedding = await EmbeddingService.embed(query);
@@ -393,7 +434,33 @@ class SourceRagService {
     // 2. Search chunks
     late List<ChunkSearchResult> chunks;
     try {
-      chunks = await searchChunks(queryEmbedding: queryEmbedding, topK: topK);
+      if (sourceIds != null && sourceIds.isNotEmpty) {
+        // Use hybrid search with filter for vector search capability is limited in filters
+        // For strictly vector search with filters, we'd need HNSW filtering which is more complex.
+        // For now, we'll use hybrid search with 1.0 vector weight if sourceIds are provided.
+        final hybridResults = await searchHybrid(
+          query,
+          topK: topK,
+          vectorWeight: 1.0,
+          bm25Weight: 0.0,
+          sourceIds: sourceIds,
+        );
+        chunks = hybridResults
+            .map(
+              (r) => ChunkSearchResult(
+                chunkId: r.docId,
+                sourceId: r.sourceId,
+                content: r.content,
+                chunkIndex: 0, // Lost in hybrid search
+                chunkType: 'general',
+                similarity: r.score,
+                metadata: r.metadata,
+              ),
+            )
+            .toList();
+      } else {
+        chunks = await searchChunks(queryEmbedding: queryEmbedding, topK: topK);
+      }
     } on RagError catch (e) {
       e.when(
         databaseError: (msg) =>
@@ -579,6 +646,11 @@ class SourceRagService {
     );
   }
 
+  /// Get a list of all stored sources.
+  Future<List<SourceEntry>> listSources() async {
+    return await rust_rag.listSources();
+  }
+
   /// Remove a source and all its chunks from the database.
   Future<void> removeSource(int sourceId) async {
     try {
@@ -612,6 +684,7 @@ class SourceRagService {
     int topK = 10,
     double vectorWeight = 0.5,
     double bm25Weight = 0.5,
+    List<int>? sourceIds,
   }) async {
     // 1. Generate query embedding
     final queryEmbedding = await EmbeddingService.embed(query);
@@ -619,12 +692,25 @@ class SourceRagService {
     // 2. Perform hybrid search with RRF fusion
     late List<hybrid.HybridSearchResult> results;
     try {
-      results = await hybrid.searchHybridWeighted(
+      // Improve post-filtering recall:
+      // If filtering by source, fetch more candidates internally to avoid
+      // the dominant source occupying all top-k slots before filtering.
+      final effectiveTopK = sourceIds != null
+          ? (topK * 10).clamp(50, 200)
+          : topK;
+
+      results = await hybrid.searchHybrid(
         queryText: query,
         queryEmbedding: queryEmbedding,
-        topK: topK,
-        vectorWeight: vectorWeight,
-        bm25Weight: bm25Weight,
+        topK: effectiveTopK,
+        config: hybrid.RrfConfig(
+          k: 60,
+          vectorWeight: vectorWeight,
+          bm25Weight: bm25Weight,
+        ),
+        filter: sourceIds != null
+            ? hybrid.SearchFilter(sourceIds: _toInt64List(sourceIds))
+            : null,
       );
     } on RagError catch (e) {
       e.when(
@@ -641,7 +727,7 @@ class SourceRagService {
       rethrow;
     }
 
-    return results;
+    return results.take(topK).toList();
   }
 
   /// Hybrid search with context assembly for LLM.
@@ -654,6 +740,7 @@ class SourceRagService {
     ContextStrategy strategy = ContextStrategy.relevanceFirst,
     double vectorWeight = 0.5,
     double bm25Weight = 0.5,
+    List<int>? sourceIds,
   }) async {
     // 1. Get hybrid search results
     final hybridResults = await searchHybrid(
@@ -661,6 +748,7 @@ class SourceRagService {
       topK: topK,
       vectorWeight: vectorWeight,
       bm25Weight: bm25Weight,
+      sourceIds: sourceIds,
     );
 
     // 2. Convert to ChunkSearchResult format for context building

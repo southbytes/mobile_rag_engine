@@ -24,11 +24,23 @@
 /// ```
 library;
 
-import 'services/rag_config.dart';
-import 'services/rag_engine.dart';
-import 'services/context_builder.dart';
-import 'services/source_rag_service.dart';
-import 'src/rust/api/hybrid_search.dart' as hybrid;
+import 'package:mobile_rag_engine/services/rag_config.dart';
+import 'package:mobile_rag_engine/services/rag_engine.dart';
+import 'package:mobile_rag_engine/services/context_builder.dart';
+import 'package:mobile_rag_engine/services/source_rag_service.dart';
+// Explicitly import SourceEntry so it can be used in types
+import 'package:mobile_rag_engine/src/rust/api/source_rag.dart'
+    show SourceEntry, SourceStats;
+import 'package:mobile_rag_engine/src/rust/api/hybrid_search.dart' as hybrid;
+
+// Export types for consumers
+export 'package:mobile_rag_engine/src/rust/api/source_rag.dart'
+    show
+        ChunkSearchResult,
+        SourceStats,
+        AddSourceResult,
+        ChunkData,
+        SourceEntry;
 
 /// Singleton facade for Mobile RAG Engine.
 ///
@@ -122,16 +134,29 @@ class MobileRag {
   Future<SourceAddResult> addDocument(
     String content, {
     String? metadata,
+    String? name,
     String? filePath,
     ChunkingStrategy? strategy,
     void Function(int done, int total)? onProgress,
   }) => _engine!.addDocument(
     content,
     metadata: metadata,
+    name: name,
     filePath: filePath,
     strategy: strategy,
     onProgress: onProgress,
   );
+
+  /// Get a list of all stored sources.
+  Future<List<SourceEntry>> listSources() => _engine!.listSources();
+
+  /// Remove a source and all its chunks.
+  ///
+  /// **Note:** You do NOT need to call [rebuildIndex] immediately.
+  /// The engine uses lazy filtering to exclude deleted items from search results.
+  /// However, if you delete a large amount of data (e.g., >50%), calling
+  /// [rebuildIndex] is recommended to reclaim memory and optimize the vector graph.
+  Future<void> removeSource(int sourceId) => _engine!.removeSource(sourceId);
 
   /// Search for relevant chunks and assemble context for LLM.
   Future<RagSearchResult> search(
@@ -141,6 +166,7 @@ class MobileRag {
     ContextStrategy strategy = ContextStrategy.relevanceFirst,
     int adjacentChunks = 0,
     bool singleSourceMode = false,
+    List<int>? sourceIds,
   }) => _engine!.search(
     query,
     topK: topK,
@@ -148,6 +174,7 @@ class MobileRag {
     strategy: strategy,
     adjacentChunks: adjacentChunks,
     singleSourceMode: singleSourceMode,
+    sourceIds: sourceIds,
   );
 
   /// Hybrid search combining vector and keyword (BM25) search.
@@ -156,11 +183,13 @@ class MobileRag {
     int topK = 10,
     double vectorWeight = 0.5,
     double bm25Weight = 0.5,
+    List<int>? sourceIds,
   }) => _engine!.searchHybrid(
     query,
     topK: topK,
     vectorWeight: vectorWeight,
     bm25Weight: bm25Weight,
+    sourceIds: sourceIds,
   );
 
   /// Hybrid search with context assembly for LLM.
@@ -171,6 +200,7 @@ class MobileRag {
     ContextStrategy strategy = ContextStrategy.relevanceFirst,
     double vectorWeight = 0.5,
     double bm25Weight = 0.5,
+    List<int>? sourceIds,
   }) => _engine!.searchHybridWithContext(
     query,
     topK: topK,
@@ -178,23 +208,48 @@ class MobileRag {
     strategy: strategy,
     vectorWeight: vectorWeight,
     bm25Weight: bm25Weight,
+    sourceIds: sourceIds,
   );
 
-  /// Rebuild the HNSW index after adding documents.
+  /// Rebuild the HNSW index.
+  ///
+  /// **When to use:**
+  /// - **Required:** After adding new documents (to make them searchable).
+  /// - **Recommended:** After deleting a large number of sources (to clean up the index).
+  /// - **Not needed:** After `clearAllData()` (which resets everything).
+  ///
+  /// This operation can be slow for large datasets.
   Future<void> rebuildIndex() => _engine!.rebuildIndex();
 
   /// Try to load a cached HNSW index.
+  ///
+  /// Use this at startup to skip the expensive [rebuildIndex] step.
+  /// Returns `true` if an index was successfully loaded from disk.
   Future<bool> tryLoadCachedIndex() => _engine!.tryLoadCachedIndex();
+
+  /// Save the HNSW index marker to disk.
+  ///
+  /// This is handled automatically by [rebuildIndex], but can be called manually
+  /// if you are doing custom index management.
+  Future<void> saveIndex() => _engine!.saveIndex();
+
+  /// Get statistics about stored sources and chunks.
+  Future<SourceStats> getStats() => _engine!.getStats();
 
   /// Format search results as an LLM prompt.
   String formatPrompt(String query, RagSearchResult result) =>
       _engine!.formatPrompt(query, result);
 
+  /// Clear all data (database and index files) and reset the engine.
+  ///
+  /// This is a destructive operation!
+  Future<void> clearAllData() => _engine!.clearAllData();
+
   /// Dispose of resources.
   ///
   /// Call when completely done with the engine.
-  static void dispose() {
-    RagEngine.dispose();
+  static Future<void> dispose() async {
+    await RagEngine.dispose();
     _engine = null;
     _instance = null;
   }

@@ -32,7 +32,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../src/rust/api/tokenizer.dart';
-import '../src/rust/api/source_rag.dart' show SourceStats;
+import '../src/rust/api/source_rag.dart' show SourceStats, SourceEntry;
 import '../src/rust/api/db_pool.dart';
 import 'embedding_service.dart';
 import 'rag_config.dart';
@@ -169,12 +169,14 @@ class RagEngine {
   Future<SourceAddResult> addDocument(
     String content, {
     String? metadata,
+    String? name,
     String? filePath,
     ChunkingStrategy? strategy,
     void Function(int done, int total)? onProgress,
   }) => _ragService.addSourceWithChunking(
     content,
     metadata: metadata,
+    name: name,
     filePath: filePath,
     strategy: strategy,
     onProgress: onProgress,
@@ -195,6 +197,7 @@ class RagEngine {
     ContextStrategy strategy = ContextStrategy.relevanceFirst,
     int adjacentChunks = 0,
     bool singleSourceMode = false,
+    List<int>? sourceIds,
   }) => _ragService.search(
     query,
     topK: topK,
@@ -202,6 +205,7 @@ class RagEngine {
     strategy: strategy,
     adjacentChunks: adjacentChunks,
     singleSourceMode: singleSourceMode,
+    sourceIds: sourceIds,
   );
 
   /// Hybrid search combining vector and keyword (BM25) search.
@@ -212,11 +216,13 @@ class RagEngine {
     int topK = 10,
     double vectorWeight = 0.5,
     double bm25Weight = 0.5,
+    List<int>? sourceIds,
   }) => _ragService.searchHybrid(
     query,
     topK: topK,
     vectorWeight: vectorWeight,
     bm25Weight: bm25Weight,
+    sourceIds: sourceIds,
   );
 
   /// Hybrid search with context assembly for LLM.
@@ -227,6 +233,7 @@ class RagEngine {
     ContextStrategy strategy = ContextStrategy.relevanceFirst,
     double vectorWeight = 0.5,
     double bm25Weight = 0.5,
+    List<int>? sourceIds,
   }) => _ragService.searchHybridWithContext(
     query,
     topK: topK,
@@ -234,6 +241,7 @@ class RagEngine {
     strategy: strategy,
     vectorWeight: vectorWeight,
     bm25Weight: bm25Weight,
+    sourceIds: sourceIds,
   );
 
   /// Rebuild the HNSW index after adding documents.
@@ -256,6 +264,9 @@ class RagEngine {
   /// Remove a source and all its chunks from the database.
   Future<void> removeSource(int sourceId) => _ragService.removeSource(sourceId);
 
+  /// Get a list of all stored sources.
+  Future<List<SourceEntry>> listSources() => _ragService.listSources();
+
   /// Format search results as an LLM prompt.
   String formatPrompt(String query, RagSearchResult result) =>
       _ragService.formatPrompt(query, result);
@@ -267,14 +278,49 @@ class RagEngine {
     void Function(int done, int total)? onProgress,
   }) => _ragService.regenerateAllEmbeddings(onProgress: onProgress);
 
+  /// Clear all data (database and index files) and reset the engine.
+  ///
+  /// This is a destructive operation that:
+  /// 1. Closes the database connection
+  /// 2. Deletes the SQLite database file
+  /// 3. Deletes the HNSW index file
+  /// 4. Re-initializes the database and service
+  Future<void> clearAllData() async {
+    // 1. Close DB pool
+    await closeDbPool();
+
+    // 2. Delete DB file
+    final dbFile = File(dbPath);
+    if (await dbFile.exists()) {
+      await dbFile.delete();
+    }
+
+    // 3. Delete HNSW index file (and lock file if exists)
+    final indexFile = File('${dbPath.replaceAll('.db', '')}_hnsw');
+    if (await indexFile.exists()) {
+      await indexFile.delete();
+    }
+    // Also try checking for .pbin if naming convention varies
+    final indexFileAlt = File('${dbPath.replaceAll('.db', '')}_hnsw.pbin');
+    if (await indexFileAlt.exists()) {
+      await indexFileAlt.delete();
+    }
+
+    // 4. Re-initialize DB pool
+    await initDbPool(dbPath: dbPath, maxSize: 4);
+
+    // 5. Re-initialize service
+    await _ragService.init();
+  }
+
   /// Access to the underlying [SourceRagService] for advanced operations.
   SourceRagService get service => _ragService;
 
   /// Dispose of resources.
   ///
   /// Call this when done using the engine to release resources.
-  static void dispose() {
+  static Future<void> dispose() async {
     EmbeddingService.dispose();
-    closeDbPool();
+    await closeDbPool();
   }
 }

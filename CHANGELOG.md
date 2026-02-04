@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.8.0
+
+### Added
+- **Independent Source Search (Exact Scan)**: When filtering by `sourceIds`, the engine now switches to a brute-force scan of ALL chunks in that source. This guarantees perfect recall within a specific document, bypassing global index limitations.
+- **Advanced Documentation**: Expanded "Quick Start" guide with "Advanced Features" (Cached Index, LLM Context, usage of `searchHybridWithContext`).
+- **API Improvements**: Exported `SourceStats` type for easier usage of `getStats()`.
+
+### Fixed
+- **PDF Text Extraction**: Improved "Smart Dehyphenation" to correctly handle broken newlines in Korean text (joining words split by line breaks incorrectly).
+- **Example App**: Fixed crash when deleting sources caused by incorrect `BuildContext`.
+
 ## 0.7.11
 
 ### Fixed

@@ -43,6 +43,8 @@ Data never leaves the user's device. Perfect for privacy-focused apps (journals,
 - **PDF/DOCX Text Extraction:** Built-in document parsing with smart dehyphenation and page number removal
 - **Auto-Chunking:** Intelligent text splitting strategies included (Unicode-based semantic chunking)
 - **Model Flexibility:** Use standard ONNX models (e.g., `bge-m3`, `all-MiniLM-L6-v2`)
+- **Independent Source Search:** Filter by specific documents (Exact Scan guarantees recall)
+- **Data Management:** Delete individual sources or clear all data easily
 
 ---
 

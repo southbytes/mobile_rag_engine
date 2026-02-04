@@ -62,7 +62,12 @@ export 'services/intent_parser.dart';
 
 // Search Result Types (Essential for using search APIs)
 export 'src/rust/api/source_rag.dart'
-    show ChunkSearchResult, SourceStats, AddSourceResult, ChunkData;
+    show
+        ChunkSearchResult,
+        SourceStats,
+        AddSourceResult,
+        ChunkData,
+        SourceEntry;
 
 // Hybrid Search Types
 export 'src/rust/api/hybrid_search.dart' show HybridSearchResult;

@@ -206,7 +206,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.7.10"
+    version: "0.7.11"
   onnxruntime:
     dependency: transitive
     description:
@@ -290,10 +290,9 @@ packages:
   rag_engine_flutter:
     dependency: transitive
     description:
-      name: rag_engine_flutter
-      sha256: c2e6d5761da19ede8e6abdc35da1c3bbd64fc40151f4c5e31f47546b6d8d9e16
-      url: "https://pub.dev"
-    source: hosted
+      path: "../rust_builder"
+      relative: true
+    source: path
     version: "0.7.6"
   sky_engine:
     dependency: transitive

@@ -37,6 +37,9 @@ class _MyAppState extends State<MyApp> {
   final TextEditingController _queryController = TextEditingController();
   // Store full hybrid results
   List<HybridSearchResult> _searchResults = [];
+  // Store source list
+  List<SourceEntry> _sources = [];
+  int? _selectedSourceId; // Selected source for filtering
   int _topK = 5; // Adjustable topK for search
 
   @override
@@ -46,9 +49,21 @@ class _MyAppState extends State<MyApp> {
     if (MobileRag.isInitialized) {
       final vocab = MobileRag.instance.vocabSize;
       _status = "✅ Ready!\nVocab: $vocab | Embedding: 384 dims";
+      _loadSources();
     } else {
       _status = "❌ MobileRag not initialzed in main()";
       _isReady = false;
+    }
+  }
+
+  Future<void> _loadSources() async {
+    try {
+      final sources = await MobileRag.instance.listSources();
+      setState(() {
+        _sources = sources;
+      });
+    } catch (e) {
+      debugPrint('Failed to load sources: $e');
     }
   }
 
@@ -66,6 +81,7 @@ class _MyAppState extends State<MyApp> {
       // Add document with automatic chunking and embedding
       final result = await MobileRag.instance.addDocument(
         text,
+        name: "Manual Entry ${DateTime.now().toIso8601String()}",
         onProgress: (done, total) {
           setState(() => _status = "Embedding chunks: $done/$total");
         },
@@ -80,6 +96,7 @@ class _MyAppState extends State<MyApp> {
       } else {
         // Rebuild HNSW index after adding
         await MobileRag.instance.rebuildIndex();
+        await _loadSources();
 
         setState(() {
           _status =
@@ -111,7 +128,11 @@ class _MyAppState extends State<MyApp> {
 
     try {
       // Use Hybrid Search for enriched results (Vector + BM25 + Metadata)
-      final results = await MobileRag.instance.searchHybrid(query, topK: _topK);
+      final results = await MobileRag.instance.searchHybrid(
+        query,
+        topK: _topK,
+        sourceIds: _selectedSourceId != null ? [_selectedSourceId!] : null,
+      );
 
       setState(() {
         _searchResults = results;
@@ -123,6 +144,7 @@ class _MyAppState extends State<MyApp> {
     } catch (e) {
       setState(() {
         _status = "❌ Search error: $e";
+        debugPrint(e.toString());
         _isLoading = false;
       });
     }
@@ -196,6 +218,7 @@ class _MyAppState extends State<MyApp> {
       final addResult = await MobileRag.instance.addDocument(
         extractedText,
         metadata: '{"filename": "${file.name}"}',
+        name: file.name,
         filePath: filePath, // <-- Auto-detect chunking strategy
         onProgress: (done, total) {
           setState(() => _status = "Embedding chunks: $done/$total");
@@ -211,6 +234,7 @@ class _MyAppState extends State<MyApp> {
       } else {
         // Rebuild HNSW index
         await MobileRag.instance.rebuildIndex();
+        await _loadSources();
 
         setState(() {
           _status =
@@ -224,6 +248,49 @@ class _MyAppState extends State<MyApp> {
     } catch (e, st) {
       setState(() {
         _status = "❌ Import error: $e\n$st";
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _deleteSource(BuildContext context, int sourceId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Source'),
+        content: Text('Delete source #$sourceId?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await MobileRag.instance.removeSource(sourceId);
+      // HNSW index update is recommended but not strictly required for deletion
+      // But for consistency we can rebuild or just accept it's gone from DB
+      // Rebuild is expensive, so maybe skip or do it
+      // Let's rebuild to be safe
+      await MobileRag.instance.rebuildIndex();
+      await _loadSources();
+      setState(() {
+        _status = "✅ Deleted source $sourceId";
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _status = "❌ Delete error: $e";
         _isLoading = false;
       });
     }
@@ -395,6 +462,44 @@ class _MyAppState extends State<MyApp> {
                   enabled: _isReady,
                 ),
                 const SizedBox(height: 8),
+                // Source Filter Dropdown
+                InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Filter by Source',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int?>(
+                      value: _selectedSourceId,
+                      isExpanded: true,
+                      items: [
+                        const DropdownMenuItem<int?>(
+                          value: null,
+                          child: Text('All Sources'),
+                        ),
+                        ..._sources.map(
+                          (s) => DropdownMenuItem<int?>(
+                            value: s.id.toInt(),
+                            child: Text(
+                              '#${s.id} ${s.name ?? "Untitled"}',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ],
+                      onChanged: _isReady
+                          ? (value) {
+                              setState(() => _selectedSourceId = value);
+                            }
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 ElevatedButton.icon(
                   onPressed: _isReady && !_isLoading ? _searchDocuments : null,
                   icon: const Icon(Icons.search),
@@ -451,6 +556,74 @@ class _MyAppState extends State<MyApp> {
 
                 const Divider(height: 40),
 
+                // Source List Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '📚 Sources (${_sources.length})',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: _loadSources,
+                      tooltip: 'Refresh Sources',
+                    ),
+                  ],
+                ),
+
+                if (_sources.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text("No sources found. Add a document!"),
+                  )
+                else
+                  Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ListView.separated(
+                      itemCount: _sources.length,
+                      separatorBuilder: (c, i) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final source = _sources[index];
+                        return ListTile(
+                          dense: true,
+                          leading: Text('#${source.id}'),
+                          title: Text(
+                            source.name ?? "Untitled Source ${source.id}",
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          subtitle: Text(
+                            DateTime.fromMillisecondsSinceEpoch(
+                              (source.createdAt * 1000).toInt(),
+                            ).toString().split('.')[0],
+                            style: TextStyle(fontSize: 10),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(
+                              Icons.delete,
+                              color: Colors.red,
+                              size: 20,
+                            ),
+                            onPressed: _isReady && !_isLoading
+                                ? () =>
+                                      _deleteSource(context, source.id.toInt())
+                                : null,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                const SizedBox(height: 16),
+
                 // Sample data load button
                 OutlinedButton.icon(
                   onPressed: _isReady && !_isLoading
@@ -480,11 +653,15 @@ class _MyAppState extends State<MyApp> {
                                     "Adding sample ${i + 1}/${samples.length}...",
                               );
                               final result = await MobileRag.instance
-                                  .addDocument(samples[i]);
+                                  .addDocument(
+                                    samples[i],
+                                    name: "Sample ${i + 1}",
+                                  );
                               totalChunks += result.chunkCount;
                             }
                             // Rebuild index after all samples added
                             await MobileRag.instance.rebuildIndex();
+                            await _loadSources();
 
                             setState(() {
                               _status =
@@ -542,32 +719,13 @@ class _MyAppState extends State<MyApp> {
                             // Get stats before deletion
                             final stats = await MobileRag.instance.engine
                                 .getStats();
-                            // Delete DB file and re-initialize
-                            final dbPath = MobileRag.instance.dbPath;
-                            // Note: MobileRag singleton is persistent, so we can't easily re-init
-                            // In a real app we would have a cleanDatabase method.
-                            // For this example, we'll just show not supported or implement delete logic
-                            // Actually MobileRag doesn't expose dispose/re-init easily for the same instance.
-                            // Let's just create a new helper or skip this function for now?
-                            // Or better: access the engine directly via MobileRag.instance.engine
 
-                            // For simplicity in this refactor, let's just delete the DB file and restart
-                            final dbFile = File(dbPath);
-                            if (await dbFile.exists()) {
-                              await dbFile.delete();
-                            }
-
-                            // Force app restart by asking user? Or just crash/re-init?
-                            // Since MobileRag is a singleton initialized in main, we can't really re-initialize it cleanly here without disposing.
-                            MobileRag.dispose();
-                            await MobileRag.initialize(
-                              tokenizerAsset: 'assets/tokenizer.json',
-                              modelAsset: 'assets/model.onnx',
-                              databaseName: 'rag_db.sqlite',
-                            );
-                            _searchResults.clear();
+                            // Use the new clearAllData API
+                            await MobileRag.instance.clearAllData();
+                            await _loadSources();
 
                             setState(() {
+                              _searchResults.clear();
                               _status =
                                   "✅ Deleted all documents!\n"
                                   "Previously had ${stats.sourceCount} sources.";

@@ -104,6 +104,48 @@ for (final chunk in result.chunks) {
 
 ---
 
+## Step 6: Source-Filtered Search (New!)
+
+You can search within specific documents using `searchHybrid` with `sourceIds`. 
+
+**Key Feature - Independent Source Search (Exact Scan):**
+When you specify a source, the engine switches to a "Brute Force" mode, scanning *every* chunk in that source. This guarantees perfect recall within that document, even if the content isn't "globally" top-ranked.
+
+```dart
+// 1. Get list of sources
+final sources = await MobileRag.instance.listSources();
+final thesisId = sources.first.id;
+
+// 2. Search ONLY within that source
+final results = await MobileRag.instance.searchHybrid(
+  'attention mechanism',
+  topK: 5,
+  sourceIds: [thesisId], // Filter active -> Exact Scan mode
+);
+
+print('Found ${results.length} results in thesis source');
+```
+
+---
+
+## Step 7: Manage Data
+
+```dart
+// List all sources
+final sources = await MobileRag.instance.listSources();
+for (var s in sources) {
+  print('#${s.id}: ${s.name}');
+}
+
+// Delete a specific source
+await MobileRag.instance.removeSource(sourceId);
+
+// Delete EVERYTHING (Factory Reset)
+await MobileRag.instance.clearAllData();
+```
+
+---
+
 ## Complete Example
 
 ```dart
@@ -144,6 +186,76 @@ For fine-grained control, you can still use the low-level APIs:
 // Use services directly for custom flows
 final text = await DocumentParser.parsePdf(pdfBytes);
 final intent = IntentParser.classify('Summarize this');
+```
+
+---
+
+## Step 8: Adding Metadata
+
+You can attach arbitrary string data (typically JSON) to any document. This is useful for storing URLs, authors, or timestamps.
+
+```dart
+import 'dart:convert';
+
+await MobileRag.instance.addDocument(
+  'Flutter 3.19 was released in Feb 2024.',
+  metadata: jsonEncode({
+    'url': 'https://flutter.dev',
+    'author': 'Google',
+    'year': 2024
+  }),
+);
+
+// Retrieval
+final results = await MobileRag.instance.search('frontend framework');
+for (var r in results.chunks) {
+  if (r.metadata != null) {
+      final meta = jsonDecode(r.metadata!);
+      print('Source URL: ${meta['url']}');
+  }
+}
+```
+
+---
+
+---
+
+## Step 9: Advanced Features
+
+### 1. Optimize Startup (Cached Index)
+Instead of rebuilding the index every time, you can load a previously cached index.
+
+```dart
+await MobileRag.initialize(...);
+
+// Try to load existing index from disk (much faster)
+bool loaded = await MobileRag.instance.tryLoadCachedIndex();
+
+if (!loaded) {
+  // Only rebuild if cache doesn't exist
+  await MobileRag.instance.rebuildIndex();
+}
+```
+
+### 2. Search for LLM Context
+If you are building a chat app, use `searchHybridWithContext` to get a formatted prompt context directly.
+
+```dart
+final result = await MobileRag.instance.searchHybridWithContext(
+  'Explain quantum physics',
+  tokenBudget: 1000, // Limit context size for LLM
+);
+
+// Ready-to-use prompt context
+print(result.context.text); 
+```
+
+### 3. Database Stats
+Check how much data you have stored.
+
+```dart
+final stats = await MobileRag.instance.getStats();
+print('Sources: ${stats.sourceCount}, Chunks: ${stats.chunkCount}');
 ```
 
 ---

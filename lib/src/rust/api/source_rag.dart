@@ -8,7 +8,7 @@ import 'error.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `hash_content`, `search_chunks_linear`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
 
 /// Initialize database with sources and chunks tables.
 Future<void> initSourceDb() =>
@@ -18,10 +18,15 @@ Future<void> initSourceDb() =>
 Future<AddSourceResult> addSource({
   required String content,
   String? metadata,
+  String? name,
 }) => RustLib.instance.api.crateApiSourceRagAddSource(
   content: content,
   metadata: metadata,
+  name: name,
 );
+
+Future<List<SourceEntry>> listSources() =>
+    RustLib.instance.api.crateApiSourceRagListSources();
 
 /// Add chunks for a source (uses transaction for atomicity).
 Future<int> addChunks({
@@ -220,6 +225,34 @@ class ChunkSearchResult {
           content == other.content &&
           chunkType == other.chunkType &&
           similarity == other.similarity &&
+          metadata == other.metadata;
+}
+
+class SourceEntry {
+  final PlatformInt64 id;
+  final String? name;
+  final PlatformInt64 createdAt;
+  final String? metadata;
+
+  const SourceEntry({
+    required this.id,
+    this.name,
+    required this.createdAt,
+    this.metadata,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^ name.hashCode ^ createdAt.hashCode ^ metadata.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SourceEntry &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          createdAt == other.createdAt &&
           metadata == other.metadata;
 }
 
