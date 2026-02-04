@@ -44,7 +44,8 @@ pub fn init_source_db() -> Result<(), RagError> {
             content TEXT NOT NULL,
             content_hash TEXT UNIQUE,
             metadata TEXT,
-            created_at INTEGER DEFAULT (strftime('%s', 'now'))
+            created_at INTEGER DEFAULT (strftime('%s', 'now')),
+            name TEXT
         )",
         [],
     ).map_err(|e| RagError::DatabaseError(e.to_string()))?;
@@ -64,10 +65,18 @@ pub fn init_source_db() -> Result<(), RagError> {
         [],
     ).map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
+    // Migration: Add chunk_type if missing
     let has_chunk_type: bool = conn.prepare("SELECT chunk_type FROM chunks LIMIT 1").is_ok();
     if !has_chunk_type {
         info!("[init_source_db] Migrating: adding chunk_type column");
         conn.execute("ALTER TABLE chunks ADD COLUMN chunk_type TEXT DEFAULT 'general'", []).map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    }
+
+    // Migration: Add name if missing
+    let has_name: bool = conn.prepare("SELECT name FROM sources LIMIT 1").is_ok();
+    if !has_name {
+        info!("[init_source_db] Migrating: adding name column to sources");
+        conn.execute("ALTER TABLE sources ADD COLUMN name TEXT", []).map_err(|e| RagError::DatabaseError(e.to_string()))?;
     }
     
     conn.execute("CREATE INDEX IF NOT EXISTS idx_chunks_source_id ON chunks(source_id)", []).map_err(|e| RagError::DatabaseError(e.to_string()))?;
@@ -88,8 +97,9 @@ pub struct AddSourceResult {
 pub fn add_source(
     content: String,
     metadata: Option<String>,
+    name: Option<String>,
 ) -> Result<AddSourceResult, RagError> {
-    info!("[add_source] Adding source, {} chars", content.len());
+    info!("[add_source] Adding source, {} chars, name={:?}", content.len(), name);
     
     let content_hash = hash_content(&content);
     let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
@@ -109,8 +119,8 @@ pub fn add_source(
     }
     
     conn.execute(
-        "INSERT INTO sources (content, content_hash, metadata) VALUES (?1, ?2, ?3)",
-        params![content, content_hash, metadata],
+        "INSERT INTO sources (content, content_hash, metadata, name) VALUES (?1, ?2, ?3, ?4)",
+        params![content, content_hash, metadata, name],
     ).map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
     let source_id = conn.last_insert_rowid();
@@ -122,6 +132,34 @@ pub fn add_source(
         chunk_count: 0,
         message: "Source created".to_string(),
     })
+}
+
+#[derive(Debug, Clone)]
+pub struct SourceEntry {
+    pub id: i64,
+    pub name: Option<String>,
+    pub created_at: i64,
+    pub metadata: Option<String>,
+}
+
+pub fn list_sources() -> Result<Vec<SourceEntry>, RagError> {
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    let mut stmt = conn.prepare("SELECT id, name, created_at, metadata FROM sources ORDER BY id DESC")
+        .map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    
+    let sources = stmt.query_map([], |row| {
+        Ok(SourceEntry {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            created_at: row.get(2)?,
+            metadata: row.get(3)?,
+        })
+    })
+    .map_err(|e| RagError::DatabaseError(e.to_string()))?
+    .filter_map(|r| r.ok())
+    .collect();
+    
+    Ok(sources)
 }
 
 #[derive(Debug, Clone)]

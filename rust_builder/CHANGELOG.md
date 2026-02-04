@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0
+
+- **Exact Scan Optimization**: Implemented brute-force vector scan for source-filtered searches, guaranteeing perfect recall within the selected source.
+- **Smart Dehyphenation**: Fixed Korean text extraction to correctly handle words split by line breaks.
+- **Dependencies**: Bumps `mobile_rag_engine` compatibility.
+
 ## 0.7.6
 
 - **Duplicate Logs Fix**: Logger now only uses `println!` when Dart stream is not connected, preventing duplicate output.

@@ -19,10 +19,12 @@
 use std::collections::HashMap;
 use log::{info, debug};
 
-use crate::api::hnsw_index::{search_hnsw, is_hnsw_index_loaded};
+use crate::api::hnsw_index::{search_hnsw, is_hnsw_index_loaded, HnswSearchResult};
 use crate::api::bm25_search::{bm25_search};
 use crate::api::db_pool::{get_connection};
 use crate::api::error::RagError;
+use ndarray::Array1;
+use rusqlite::params;
 
 #[derive(Debug, Clone)]
 pub struct SearchFilter {
@@ -73,7 +75,7 @@ pub fn search_hybrid(
     let (mut vector_results, mut bm25_results) = std::thread::scope(|s| {
         let handle_vec = s.spawn(|| {
             if is_hnsw_index_loaded() {
-                search_hnsw(query_embedding, candidate_k).unwrap_or_else(|e| {
+                search_hnsw(query_embedding.clone(), candidate_k).unwrap_or_else(|e| {
                     log::error!("[hybrid] Vector search failed: {}", e);
                     vec![]
                 })
@@ -84,66 +86,139 @@ pub fn search_hybrid(
         });
 
         let handle_bm25 = s.spawn(|| {
-            bm25_search(query_text, candidate_k as u32)
+            bm25_search(query_text.clone(), candidate_k as u32)
         });
 
-        (handle_vec.join().unwrap(), handle_bm25.join().unwrap())
+        let vec_res = handle_vec.join().unwrap_or_else(|e| {
+            log::error!("[hybrid] Vector search thread panicked: {:?}", e);
+            vec![]
+        });
+        
+        let bm25_res = handle_bm25.join().unwrap_or_else(|e| {
+            log::error!("[hybrid] BM25 search thread panicked: {:?}", e);
+            vec![]
+        });
+
+        (vec_res, bm25_res)
     });
 
     info!("[hybrid] Raw candidates - Vector: {}, BM25: {}", vector_results.len(), bm25_results.len());
 
-    // 2. Pre-Ranking Filtering (DB Check)
+
+    // 2. Filter-Aware Search Strategy
+    // If filtering by source_id, performing a global HNSW search and then filtering is inefficient 
+    // and prone to low recall (if source is small/obscure).
+    // Instead, we perform an EXACT SCAN (Brute Force) on the target source's chunks.
     if let Some(f) = &filter {
-         let mut all_doc_ids: Vec<i64> = vector_results.iter().map(|r| r.id)
-            .chain(bm25_results.iter().map(|r| r.doc_id))
-            .collect();
-         all_doc_ids.sort();
-         all_doc_ids.dedup();
+        if let Some(sids) = &f.source_ids {
+            if !sids.is_empty() {
+                info!("[hybrid] Source filter active ({:?}), switching to EXACT SCAN", sids);
+                
+                let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
+                let sids_str = sids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
+                
+                // Fetch ALL chunks for these sources
+                // This is O(N_source) which is typically small (<10k) and very fast.
+                let query = format!(
+                    "SELECT c.id, c.embedding FROM chunks c WHERE c.source_id IN ({})", 
+                    sids_str
+                );
+                
+                let mut stmt = conn.prepare(&query).map_err(|e| RagError::DatabaseError(e.to_string()))?;
+                let chunk_iter = stmt.query_map([], |row| {
+                    Ok((row.get::<_, i64>(0)?, row.get::<_, Vec<u8>>(1)?))
+                }).map_err(|e| RagError::DatabaseError(e.to_string()))?;
 
-         if !all_doc_ids.is_empty() {
-             let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
-             let id_list = all_doc_ids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
-             
-             let mut sql_conditions = Vec::new();
-             sql_conditions.push(format!("c.id IN ({})", id_list));
+                let query_vec = ndarray::Array1::from(query_embedding.clone());
+                let query_norm = query_vec.mapv(|x| x * x).sum().sqrt();
+                
+                // Clear global results and replace with exact scan results
+                vector_results.clear();
+                bm25_results.clear(); // We temporarily disable BM25 in this mode or need to re-run it scoped via SQL
+                // Note: For "Independent Source Search", vector-only is often sufficient/desired. 
+                // Creating a simplified hybrid result from vector only.
 
-             if let Some(sids) = &f.source_ids {
-                 if !sids.is_empty() {
-                     let sids_str = sids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
-                     sql_conditions.push(format!("c.source_id IN ({})", sids_str));
+                for row in chunk_iter {
+                    if let Ok((id, embedding_blob)) = row {
+                        let embedding: Vec<f32> = embedding_blob.chunks(4)
+                            .map(|c| f32::from_ne_bytes(c.try_into().unwrap()))
+                            .collect();
+                        
+                        if embedding.len() == query_embedding.len() {
+                            let target_vec = ndarray::Array1::from(embedding);
+                            let target_norm = target_vec.mapv(|x| x * x).sum().sqrt();
+                            let dot = query_vec.dot(&target_vec);
+                            let sim = if query_norm == 0.0 || target_norm == 0.0 { 0.0 } else { dot / (query_norm * target_norm) };
+                            
+                            // Emulate a HnswSearchResult derived purely from Vector
+                            // In this mode, we treat vector score as the primary ranker.
+                            vector_results.push(HnswSearchResult {
+                                id: id,
+                                distance: (1.0 - sim) as f32, // Convert similarity to distance (lower is better)
+                            });
+                        }
+                    }
+                }
+                
+                // Sort by distance ASCENDING (Best match first)
+                vector_results.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap_or(std::cmp::Ordering::Equal));
+                vector_results.truncate(top_k as usize);
+                
+                info!("[hybrid] Exact scan found {} candidates from sources {:?}", vector_results.len(), sids);
+                
+                // Skip the standard post-filtering since we only fetched valid candidates
+                // Logic continues to RRF Ranking (Step 3). 
+                // Since bm25_results is empty, RRF will just use vector ranks.
+            }
+        }
+    } else {
+        // Standard Global Search Post-Filtering (Old Logic)
+        if let Some(f) = &filter {
+             let mut all_doc_ids: Vec<i64> = vector_results.iter().map(|r| r.id)
+                .chain(bm25_results.iter().map(|r| r.doc_id))
+                .collect();
+             all_doc_ids.sort();
+             all_doc_ids.dedup();
+    
+             if !all_doc_ids.is_empty() {
+                 let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
+                 let id_list = all_doc_ids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
+                 
+                 let mut sql_conditions = Vec::new();
+                 sql_conditions.push(format!("c.id IN ({})", id_list));
+    
+                 if let Some(sids) = &f.source_ids {
+                     if !sids.is_empty() {
+                         let sids_str = sids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
+                         sql_conditions.push(format!("c.source_id IN ({})", sids_str));
+                     }
                  }
+    
+                 if let Some(pattern) = &f.metadata_like {
+                     sql_conditions.push(format!("s.metadata LIKE '{}'", pattern.replace("'", "''")));
+                 }
+                 
+                 let query = format!(
+                     "SELECT c.id FROM chunks c 
+                      LEFT JOIN sources s ON c.source_id = s.id 
+                      WHERE {}", 
+                     sql_conditions.join(" AND ")
+                 );
+    
+                 debug!("[hybrid] Filter query: {}", query);
+                 
+                 let mut stmt = conn.prepare(&query).map_err(|e| RagError::DatabaseError(e.to_string()))?;
+                 let valid_ids: std::collections::HashSet<i64> = stmt.query_map([], |row| row.get(0))
+                     .map_err(|e| RagError::DatabaseError(e.to_string()))?
+                     .filter_map(|r| r.ok())
+                     .collect();
+                 
+                 info!("[hybrid] Filter maintained {}/{} candidates", valid_ids.len(), all_doc_ids.len());
+    
+                 vector_results.retain(|r| valid_ids.contains(&r.id));
+                 bm25_results.retain(|r| valid_ids.contains(&r.doc_id));
              }
-
-             if let Some(pattern) = &f.metadata_like {
-                 // Requires JOIN
-                 sql_conditions.push(format!("s.metadata LIKE '{}'", pattern.replace("'", "''")));
-             }
-
-             // We only support filtering on chunks/sources tables. 
-             // Simple RAG (docs table) results will be EXCLUDED if filtering is applied (as they don't have source_id).
-             // This is acceptable as filtering implies advanced Source RAG usage.
-             
-             let query = format!(
-                 "SELECT c.id FROM chunks c 
-                  LEFT JOIN sources s ON c.source_id = s.id 
-                  WHERE {}", 
-                 sql_conditions.join(" AND ")
-             );
-
-             debug!("[hybrid] Filter query: {}", query);
-             
-             let mut stmt = conn.prepare(&query).map_err(|e| RagError::DatabaseError(e.to_string()))?;
-             let valid_ids: std::collections::HashSet<i64> = stmt.query_map([], |row| row.get(0))
-                 .map_err(|e| RagError::DatabaseError(e.to_string()))?
-                 .filter_map(|r| r.ok())
-                 .collect();
-             
-             info!("[hybrid] Filter maintained {}/{} candidates", valid_ids.len(), all_doc_ids.len());
-
-             // Filter results
-             vector_results.retain(|r| valid_ids.contains(&r.id));
-             bm25_results.retain(|r| valid_ids.contains(&r.doc_id));
-         }
+        }
     }
     
     // 3. RRF Ranking
