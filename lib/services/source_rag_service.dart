@@ -9,7 +9,6 @@
 library;
 
 import 'dart:developer';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import '../src/rust/api/error.dart';
 import '../src/rust/api/source_rag.dart' as rust_rag;
@@ -824,6 +823,11 @@ class SourceRagService {
   /// Hybrid search with context assembly for LLM.
   ///
   /// Similar to [search] but uses hybrid (vector + BM25) search.
+  ///
+  /// [adjacentChunks] - Number of adjacent chunks to include before/after each
+  /// matched chunk (default: 0). Setting this to 1 will include the chunk
+  /// before and after each matched chunk, helping with long articles.
+  /// [singleSourceMode] - If true, only include chunks from the most relevant source.
   Future<RagSearchResult> searchHybridWithContext(
     String query, {
     int topK = 10,
@@ -832,6 +836,8 @@ class SourceRagService {
     double vectorWeight = 0.5,
     double bm25Weight = 0.5,
     List<int>? sourceIds,
+    int adjacentChunks = 0,
+    bool singleSourceMode = false,
   }) async {
     // 1. Get hybrid search results
     final hybridResults = await searchHybrid(
@@ -844,13 +850,13 @@ class SourceRagService {
 
     // 2. Convert to ChunkSearchResult format for context building
     // Note: Hybrid search returns content directly, so we create minimal chunks
-    final chunks = hybridResults
+    var chunks = hybridResults
         .map(
           (r) => ChunkSearchResult(
             chunkId: r.docId,
-            sourceId: r.sourceId, // Correctly map from HybridSearchResult
+            sourceId: r.sourceId,
             content: r.content,
-            chunkIndex: 0,
+            chunkIndex: 0, // Hybrid search doesn't return chunk index
             chunkType: 'general', // Hybrid search doesn't return chunk type
             similarity: r.score, // RRF score as similarity
             metadata: r.metadata,
@@ -858,11 +864,22 @@ class SourceRagService {
         )
         .toList();
 
-    // 3. Assemble context
+    // 3. Filter to single source FIRST (before adjacent expansion)
+    if (singleSourceMode && chunks.isNotEmpty) {
+      chunks = _filterToMostRelevantSource(chunks, query);
+    }
+
+    // 4. Expand with adjacent chunks (only for the selected source)
+    if (adjacentChunks > 0 && chunks.isNotEmpty) {
+      chunks = await _expandWithAdjacentChunks(chunks, adjacentChunks);
+    }
+
+    // 5. Assemble context
     final context = ContextBuilder.build(
       searchResults: chunks,
       tokenBudget: tokenBudget,
       strategy: strategy,
+      singleSourceMode: singleSourceMode,
     );
 
     return RagSearchResult(chunks: chunks, context: context);

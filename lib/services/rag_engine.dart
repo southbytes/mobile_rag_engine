@@ -278,6 +278,9 @@ class RagEngine {
   );
 
   /// Hybrid search with context assembly for LLM.
+  ///
+  /// [adjacentChunks] - Include N chunks before/after matches (default: 0).
+  /// [singleSourceMode] - Only include chunks from most relevant source.
   Future<RagSearchResult> searchHybridWithContext(
     String query, {
     int topK = 10,
@@ -286,6 +289,8 @@ class RagEngine {
     double vectorWeight = 0.5,
     double bm25Weight = 0.5,
     List<int>? sourceIds,
+    int adjacentChunks = 0,
+    bool singleSourceMode = false,
   }) => _ragService.searchHybridWithContext(
     query,
     topK: topK,
@@ -294,6 +299,8 @@ class RagEngine {
     vectorWeight: vectorWeight,
     bm25Weight: bm25Weight,
     sourceIds: sourceIds,
+    adjacentChunks: adjacentChunks,
+    singleSourceMode: singleSourceMode,
   );
 
   /// Rebuild the HNSW index after adding documents.

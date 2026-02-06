@@ -1,6 +1,5 @@
 // lib/services/embedding_service.dart
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:onnxruntime/onnxruntime.dart';
 import 'package:mobile_rag_engine/src/rust/api/tokenizer.dart';
 import 'package:flutter/foundation.dart';

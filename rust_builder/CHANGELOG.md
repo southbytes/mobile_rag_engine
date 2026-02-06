@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.1
+
+- **Hybrid Search Enhancement**: Added `adjacentChunks` and `singleSourceMode` support to `searchHybridWithContext()`.
+- **Code Quality**: Removed unnecessary `dart:typed_data` imports.
+
 ## 0.9.0
 
 - **Thread Configuration**: Added support for explicit thread count configuration in ONNX Runtime.
