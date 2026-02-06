@@ -54,15 +54,28 @@ flutter:
 import 'package:mobile_rag_engine/mobile_rag_engine.dart';
 
 Future<void> initializeRAG() async {
-  // Initialize in just 1 line!
   await MobileRag.initialize(
     tokenizerAsset: 'assets/tokenizer.json',
     modelAsset: 'assets/model.onnx',
+    threadLevel: ThreadUseLevel.medium, // Recommended for most apps
   );
 }
 ```
 
----
+### All Parameters
+
+| Parameter | Default | Description |
+|:----------|:--------|:------------|
+| `tokenizerAsset` | (required) | Path to tokenizer.json in assets |
+| `modelAsset` | (required) | Path to ONNX model in assets |
+| `databaseName` | `'rag.sqlite'` | SQLite database file name |
+| `maxChunkChars` | `500` | Maximum characters per chunk |
+| `overlapChars` | `50` | Overlap between chunks for context |
+| `threadLevel` | `null` | CPU usage level: `low` (~20%), `medium` (~40%), `high` (~80%) |
+| `embeddingIntraOpNumThreads` | `null` | Precise thread count (⚠️ mutually exclusive with `threadLevel`) |
+| `onProgress` | `null` | Callback for initialization status |
+
+> **Note:** Choose either `threadLevel` OR `embeddingIntraOpNumThreads`, not both. Setting both will throw an error.
 
 ## Step 4: Add Documents
 
@@ -159,6 +172,7 @@ void main() async {
   await MobileRag.initialize(
     tokenizerAsset: 'assets/tokenizer.json',
     modelAsset: 'assets/model.onnx',
+    threadLevel: ThreadUseLevel.medium, // CPU usage control
   );
   
   // Add a document

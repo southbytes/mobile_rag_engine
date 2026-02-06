@@ -10,6 +10,14 @@
 /// ```
 library;
 
+/// Thread usage level for ONNX runtime.
+///
+/// Controls how many CPU threads are used for embedding operations.
+/// - [low]: ~20% of cores. Good for background tasks or low power.
+/// - [medium]: ~40% of cores. Balanced performance.
+/// - [high]: ~80% of cores. Maximum performance for heavy tasks.
+enum ThreadUseLevel { low, medium, high }
+
 /// Configuration options for RagEngine initialization.
 class RagConfig {
   /// Asset path for tokenizer JSON file.
@@ -36,6 +44,20 @@ class RagConfig {
   /// Overlap characters between chunks for context continuity (default: 50).
   final int overlapChars;
 
+  /// Maximum number of threads for intra-op parallelism in ONNX runtime.
+  ///
+  /// If [threadLevel] is set, this value is ignored.
+  ///
+  /// Set this to a small number (e.g., 1 or 2) to reduce CPU usage and heat
+  /// on mobile devices, at the cost of slower embedding speed.
+  /// If both are null, defaults to ~50% of available cores.
+  final int? embeddingIntraOpNumThreads;
+
+  /// High-level thread usage configuration.
+  ///
+  /// If specified, this takes precedence over [embeddingIntraOpNumThreads].
+  final ThreadUseLevel? threadLevel;
+
   /// Creates a RagConfig with all options.
   const RagConfig({
     required this.tokenizerAsset,
@@ -43,7 +65,12 @@ class RagConfig {
     this.databaseName,
     this.maxChunkChars = 500,
     this.overlapChars = 50,
-  });
+    this.embeddingIntraOpNumThreads,
+    this.threadLevel,
+  }) : assert(
+         embeddingIntraOpNumThreads == null || threadLevel == null,
+         'Cannot set both [embeddingIntraOpNumThreads] and [threadLevel]. Choose one.',
+       );
 
   /// Convenience factory for asset-based initialization.
   ///
@@ -52,6 +79,7 @@ class RagConfig {
   ///   tokenizerAsset: 'assets/tokenizer.json',
   ///   modelAsset: 'assets/model.onnx',
   ///   databaseName: 'my_rag.sqlite', // optional
+  ///   threadLevel: ThreadUseLevel.medium, // optional
   /// );
   /// ```
   factory RagConfig.fromAssets({
@@ -60,11 +88,15 @@ class RagConfig {
     String? databaseName,
     int maxChunkChars = 500,
     int overlapChars = 50,
+    int? embeddingIntraOpNumThreads,
+    ThreadUseLevel? threadLevel,
   }) => RagConfig(
     tokenizerAsset: tokenizerAsset,
     modelAsset: modelAsset,
     databaseName: databaseName,
     maxChunkChars: maxChunkChars,
     overlapChars: overlapChars,
+    embeddingIntraOpNumThreads: embeddingIntraOpNumThreads,
+    threadLevel: threadLevel,
   );
 }

@@ -5,7 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.9.0
+
+### Added
+- **ThreadUseLevel API**: New high-level thread configuration with `ThreadUseLevel.low` (~20%), `medium` (~40%), and `high` (~80%) options for easier CPU usage control.
+- **Memory Optimization**: ONNX model is now loaded from file instead of memory buffer, reducing Dart heap usage by ~20-50MB (model size).
+
+### Changed
+- **Documentation**: Updated README and Quick Start guide with `threadLevel` parameter and full parameter table.
+- **Architecture Section**: Updated to reflect Hybrid Search (HNSW + BM25 with RRF fusion).
+
+### Fixed
+- **API Consistency**: `threadLevel` and `embeddingIntraOpNumThreads` are now mutually exclusive (throws `AssertionError` if both set).
+
 ## 0.8.0
+
 
 ### Added
 - **Independent Source Search (Exact Scan)**: When filtering by `sourceIds`, the engine now switches to a brute-force scan of ALL chunks in that source. This guarantees perfect recall within a specific document, bypassing global index limitations.

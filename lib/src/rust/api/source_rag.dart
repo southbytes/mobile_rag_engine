@@ -25,6 +25,15 @@ Future<AddSourceResult> addSource({
   name: name,
 );
 
+/// Update processing status of a source (e.g., 'pending', 'processing', 'completed', 'failed').
+Future<void> updateSourceStatus({
+  required PlatformInt64 sourceId,
+  required String status,
+}) => RustLib.instance.api.crateApiSourceRagUpdateSourceStatus(
+  sourceId: sourceId,
+  status: status,
+);
+
 Future<List<SourceEntry>> listSources() =>
     RustLib.instance.api.crateApiSourceRagListSources();
 
@@ -80,6 +89,12 @@ Future<List<ChunkSearchResult>> getAdjacentChunks({
 /// Delete a source and all its chunks.
 Future<void> deleteSource({required PlatformInt64 sourceId}) =>
     RustLib.instance.api.crateApiSourceRagDeleteSource(sourceId: sourceId);
+
+/// Get the number of chunks for a specific source.
+Future<int> getSourceChunkCount({required PlatformInt64 sourceId}) => RustLib
+    .instance
+    .api
+    .crateApiSourceRagGetSourceChunkCount(sourceId: sourceId);
 
 Future<SourceStats> getSourceStats() =>
     RustLib.instance.api.crateApiSourceRagGetSourceStats();
@@ -233,17 +248,23 @@ class SourceEntry {
   final String? name;
   final PlatformInt64 createdAt;
   final String? metadata;
+  final String? status;
 
   const SourceEntry({
     required this.id,
     this.name,
     required this.createdAt,
     this.metadata,
+    this.status,
   });
 
   @override
   int get hashCode =>
-      id.hashCode ^ name.hashCode ^ createdAt.hashCode ^ metadata.hashCode;
+      id.hashCode ^
+      name.hashCode ^
+      createdAt.hashCode ^
+      metadata.hashCode ^
+      status.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -253,7 +274,8 @@ class SourceEntry {
           id == other.id &&
           name == other.name &&
           createdAt == other.createdAt &&
-          metadata == other.metadata;
+          metadata == other.metadata &&
+          status == other.status;
 }
 
 class SourceStats {

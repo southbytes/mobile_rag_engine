@@ -168,10 +168,14 @@ W/onnxruntime: NNAPI execution provider failed
 
 **Solution:** This is just a warning. It automatically falls back to CPU. Safe to ignore.
 
-For persistent issues on specific devices:
+For persistent issues on specific devices, reduce thread count:
 ```dart
-// Disable NNAPI (future support planned)
-await EmbeddingService.init(modelBytes, useNNAPI: false);
+// Limit ONNX threads to reduce CPU/heat
+await MobileRag.initialize(
+  tokenizerAsset: 'assets/tokenizer.json',
+  modelAsset: 'assets/model.onnx',
+  embeddingIntraOpNumThreads: 1, // Minimal CPU usage
+);
 ```
 
 ---

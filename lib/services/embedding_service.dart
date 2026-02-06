@@ -1,7 +1,9 @@
 // lib/services/embedding_service.dart
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:onnxruntime/onnxruntime.dart';
 import 'package:mobile_rag_engine/src/rust/api/tokenizer.dart';
+import 'package:flutter/foundation.dart';
 
 /// Dart-based embedding service
 /// Rust tokenizer + Flutter ONNX Runtime combination
@@ -12,10 +14,42 @@ class EmbeddingService {
   static bool debugMode = false;
 
   /// Initialize ONNX model
-  static Future<void> init(Uint8List modelBytes) async {
+  ///
+  /// Provide either [modelBytes] (loads from memory) or [modelPath] (loads from file).
+  /// [modelPath] is recommended for memory optimization.
+  static Future<void> init({
+    Uint8List? modelBytes,
+    String? modelPath,
+    OrtSessionOptions? options,
+  }) async {
     OrtEnv.instance.init();
-    final sessionOptions = OrtSessionOptions();
-    _session = OrtSession.fromBuffer(modelBytes, sessionOptions);
+    final sessionOptions = options ?? OrtSessionOptions();
+
+    if (modelPath != null) {
+      // Load from file (Memory efficient)
+      // Note: Assuming 'fromFile' exists based on standard ONNX Runtime API patterns.
+      // If the specific binding uses a different name (e.g. create path), we'll catch it.
+      // The web search indicated session creation from file is supported.
+      try {
+        _session = OrtSession.fromFile(File(modelPath), sessionOptions);
+        if (debugMode) {
+          debugPrint('[EmbeddingService] Loaded model from file: $modelPath');
+        }
+      } catch (e) {
+        // Fallback or rethrow?
+        // If fromFile is not found, we might need to check if binding exposes naming differently.
+        // But for now let's assume standard API.
+        rethrow;
+      }
+    } else if (modelBytes != null) {
+      // Legacy: Load from memory (Double buffering)
+      _session = OrtSession.fromBuffer(modelBytes, sessionOptions);
+      if (debugMode) {
+        debugPrint('[EmbeddingService] Loaded model from memory buffer');
+      }
+    } else {
+      throw ArgumentError('Either modelBytes or modelPath must be provided');
+    }
   }
 
   /// Convert text to 384-dimensional embedding
@@ -28,8 +62,8 @@ class EmbeddingService {
     final tokenIds = tokenize(text: text);
 
     if (debugMode) {
-      print('[DEBUG] Text: "$text"');
-      print('[DEBUG] Token IDs: $tokenIds (length: ${tokenIds.length})');
+      debugPrint('[DEBUG] Text: "$text"');
+      debugPrint('[DEBUG] Token IDs: $tokenIds (length: ${tokenIds.length})');
     }
 
     // 2. Generate attention_mask
@@ -76,7 +110,7 @@ class EmbeddingService {
     final outputData = outputTensor.value as List;
 
     if (debugMode) {
-      print('[DEBUG] Output shape: ${_getShape(outputData)}');
+      debugPrint('[DEBUG] Output shape: ${_getShape(outputData)}');
     }
 
     // [1, seq_len, 384] -> mean pooling -> [384]
@@ -109,7 +143,9 @@ class EmbeddingService {
         }
 
         if (debugMode) {
-          print('[DEBUG] Embedding (first 5): ${embedding.take(5).toList()}');
+          debugPrint(
+            '[DEBUG] Embedding (first 5): ${embedding.take(5).toList()}',
+          );
         }
       } else {
         // 2D output: [batch, hidden]

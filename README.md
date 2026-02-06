@@ -48,15 +48,6 @@ Data never leaves the user's device. Perfect for privacy-focused apps (journals,
 
 ---
 
-## Benchmark Results
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/dev07060/mobile_rag_engine/main/assets/readme-sources/ios_benchmark_result.png" width="280" alt="iOS Benchmark">
-  <img src="https://raw.githubusercontent.com/dev07060/mobile_rag_engine/main/assets/readme-sources/android_benchmark_result.png" width="280" alt="Android Benchmark">
-</p>
-
----
-
 ## Requirements
 
 | Platform | Minimum Version |
@@ -107,11 +98,26 @@ void main() async {
   await MobileRag.initialize(
     tokenizerAsset: 'assets/tokenizer.json',
     modelAsset: 'assets/model.onnx',
+    threadLevel: ThreadUseLevel.medium, // CPU usage control
   );
 
   runApp(const MyApp());
 }
 ```
+
+### Initialization Parameters
+
+| Parameter | Default | Description |
+|:----------|:--------|:------------|
+| `tokenizerAsset` | (required) | Path to tokenizer.json |
+| `modelAsset` | (required) | Path to ONNX model |
+| `databaseName` | `'rag.sqlite'` | SQLite file name |
+| `maxChunkChars` | `500` | Max characters per chunk |
+| `overlapChars` | `50` | Overlap between chunks |
+| `threadLevel` | `null` | CPU usage: `low` (20%), `medium` (40%), `high` (80%) |
+| `embeddingIntraOpNumThreads` | `null` | Precise thread count (mutually exclusive with `threadLevel`) |
+| `onProgress` | `null` | Progress callback |
+
 
 Then use it anywhere in your app:
 
@@ -197,7 +203,7 @@ This package bridges the best of two worlds: **Flutter for UI** and **Rust for h
 |:---|:---|
 | **Embedding** | ONNX Runtime with quantized models (INT8) |
 | **Storage** | SQLite for metadata + memory-mapped vector index |
-| **Search** | `instant-distance` (HNSW) for low-latency retrieval |
+| **Search** | Hybrid: HNSW (vector) + BM25 (keyword) with RRF fusion |
 | **Tokenization** | HuggingFace `tokenizers` crate |
 
 ---

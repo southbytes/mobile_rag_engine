@@ -60,16 +60,33 @@ class MobileRag {
   /// 3. Load the ONNX embedding model
   /// 4. Initialize the SQLite database
   ///
-  /// [tokenizerAsset] - Path to tokenizer.json in assets
-  /// [modelAsset] - Path to ONNX model file in assets
-  /// [databaseName] - Optional custom database name (default: 'rag.sqlite')
-  /// [onProgress] - Optional callback for initialization progress
+  /// **Parameters:**
+  ///
+  /// - [tokenizerAsset] - Path to tokenizer.json in assets (e.g., `'assets/tokenizer.json'`)
+  /// - [modelAsset] - Path to ONNX model file in assets (e.g., `'assets/model.onnx'`)
+  /// - [databaseName] - SQLite database file name (default: `'rag.sqlite'`)
+  /// - [maxChunkChars] - Maximum characters per chunk (default: 500)
+  /// - [overlapChars] - Overlap between chunks for context continuity (default: 50)
+  /// - [embeddingIntraOpNumThreads] - Precise thread count for ONNX (e.g., `1` for minimal CPU).
+  ///   **Mutually exclusive with [threadLevel].**
+  /// - [threadLevel] - High-level thread usage: `low` (~20%), `medium` (~40%), `high` (~80%).
+  ///   **Mutually exclusive with [embeddingIntraOpNumThreads].**
+  /// - [onProgress] - Callback for initialization progress updates
+  ///
+  /// **Thread Configuration:**
+  ///
+  /// Choose ONE of the following:
+  /// - `threadLevel: ThreadUseLevel.medium` - Simple, recommended for most apps
+  /// - `embeddingIntraOpNumThreads: 2` - Fine-grained control
+  ///
+  /// ⚠️ Setting BOTH will throw an [AssertionError].
   ///
   /// Example:
   /// ```dart
   /// await MobileRag.initialize(
   ///   tokenizerAsset: 'assets/tokenizer.json',
   ///   modelAsset: 'assets/model.onnx',
+  ///   threadLevel: ThreadUseLevel.medium, // Recommended
   ///   onProgress: (status) => print(status),
   /// );
   /// ```
@@ -79,6 +96,8 @@ class MobileRag {
     String? databaseName,
     int maxChunkChars = 500,
     int overlapChars = 50,
+    int? embeddingIntraOpNumThreads,
+    ThreadUseLevel? threadLevel,
     void Function(String status)? onProgress,
   }) async {
     if (_instance != null) {
@@ -93,6 +112,8 @@ class MobileRag {
         databaseName: databaseName,
         maxChunkChars: maxChunkChars,
         overlapChars: overlapChars,
+        embeddingIntraOpNumThreads: embeddingIntraOpNumThreads,
+        threadLevel: threadLevel,
       ),
       onProgress: onProgress,
     );
@@ -137,6 +158,7 @@ class MobileRag {
     String? name,
     String? filePath,
     ChunkingStrategy? strategy,
+    Duration? chunkDelay,
     void Function(int done, int total)? onProgress,
   }) => _engine!.addDocument(
     content,
@@ -144,6 +166,7 @@ class MobileRag {
     name: name,
     filePath: filePath,
     strategy: strategy,
+    chunkDelay: chunkDelay,
     onProgress: onProgress,
   );
 

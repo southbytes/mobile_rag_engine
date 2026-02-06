@@ -17,6 +17,7 @@ Future<void> main() async {
     tokenizerAsset: 'assets/tokenizer.json',
     modelAsset: 'assets/model.onnx',
     databaseName: 'rag_db.sqlite',
+    threadLevel: ThreadUseLevel.medium, // Default: ~40% of cores
   );
 
   runApp(const MyApp());
@@ -226,11 +227,28 @@ class _MyAppState extends State<MyApp> {
       );
 
       if (addResult.isDuplicate) {
-        setState(() {
-          _status =
-              "⚠️ Duplicate document detected!\n${file.name} already exists.";
-          _isLoading = false;
-        });
+        // Since we now support resuming, "duplicate" might mean "fully processed" or "resumed and finished".
+        // The message from addDocument will clarify (e.g. "Already processed" or "Added X chunks (resumed)")
+
+        // However, if chunkCount > 0, it means we did some work (resumed).
+        // If chunkCount == 0, it means it was already fully complete.
+
+        if (addResult.chunkCount > 0) {
+          await MobileRag.instance.rebuildIndex();
+          await _loadSources();
+          setState(() {
+            _status =
+                "✅ Resumed & Completed!\n"
+                "📄 File: ${file.name}\n"
+                "📦 ${addResult.message}";
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _status = "ℹ️ Already processed.\n${file.name} is up to date.";
+            _isLoading = false;
+          });
+        }
       } else {
         // Rebuild HNSW index
         await MobileRag.instance.rebuildIndex();
@@ -250,6 +268,25 @@ class _MyAppState extends State<MyApp> {
         _status = "❌ Import error: $e\n$st";
         _isLoading = false;
       });
+    }
+  }
+
+  Widget _buildStatusIcon(String? status) {
+    switch (status) {
+      case 'processing':
+        return const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        );
+      case 'pending':
+        return const Icon(Icons.timer, color: Colors.orange, size: 20);
+      case 'failed':
+        return const Icon(Icons.error, color: Colors.red, size: 20);
+      case 'completed':
+      default:
+        // Default to checkmark for legacy data or explicit success
+        return const Icon(Icons.check_circle, color: Colors.green, size: 20);
     }
   }
 
@@ -594,16 +631,14 @@ class _MyAppState extends State<MyApp> {
                         final source = _sources[index];
                         return ListTile(
                           dense: true,
-                          leading: Text('#${source.id}'),
+                          leading: _buildStatusIcon(source.status),
                           title: Text(
                             source.name ?? "Untitled Source ${source.id}",
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(fontWeight: FontWeight.w500),
                           ),
                           subtitle: Text(
-                            DateTime.fromMillisecondsSinceEpoch(
-                              (source.createdAt * 1000).toInt(),
-                            ).toString().split('.')[0],
+                            "${DateTime.fromMillisecondsSinceEpoch((source.createdAt * 1000).toInt()).toString().split('.')[0]} • ${source.status ?? 'completed'}",
                             style: TextStyle(fontSize: 10),
                           ),
                           trailing: IconButton(

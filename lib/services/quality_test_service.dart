@@ -4,6 +4,7 @@ import 'package:mobile_rag_engine/src/rust/api/simple_rag.dart';
 import 'package:mobile_rag_engine/src/rust/api/db_pool.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 /// Test case data class
 class TestCase {
@@ -234,11 +235,11 @@ class QualityTestService {
     }
 
     // Rebuild HNSW index (explicit call after adding documents)
-    print(
+    debugPrint(
       '[DEBUG] Rebuilding HNSW index with ${testDocuments.length} documents...',
     );
     await rebuildHnswIndex();
-    print('[DEBUG] HNSW index rebuilt');
+    debugPrint('[DEBUG] HNSW index rebuilt');
 
     // Run tests
     final results = <QualityResult>[];
@@ -251,12 +252,12 @@ class QualityTestService {
       // Enable debug mode for first query
       if (i == 0) {
         EmbeddingService.debugMode = true;
-        print('[DEBUG] === Testing query: "${tc.query}" ===');
+        debugPrint('[DEBUG] === Testing query: "${tc.query}" ===');
       }
       final queryEmb = await EmbeddingService.embed(tc.query);
       if (i == 0) {
         EmbeddingService.debugMode = false;
-        print(
+        debugPrint(
           '[DEBUG] Query embedding (first 5): ${queryEmb.take(5).toList()}',
         );
       }
@@ -269,11 +270,11 @@ class QualityTestService {
 
       // Debug first query results
       if (i == 0) {
-        print(
+        debugPrint(
           '[DEBUG] Search results for "${tc.query}": ${searchResults.length} items',
         );
         for (final r in searchResults) {
-          print('[DEBUG]   - ${r.substring(0, r.length.clamp(0, 50))}...');
+          debugPrint('[DEBUG]   - ${r.substring(0, r.length.clamp(0, 50))}...');
         }
       }
 

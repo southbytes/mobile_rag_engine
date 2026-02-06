@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0
+
+- **Thread Configuration**: Added support for explicit thread count configuration in ONNX Runtime.
+- **Memory Optimization**: Model loading now supports direct file path usage to reduce memory overhead.
+- **Dependencies**: Bumps `mobile_rag_engine` compatibility.
+
 ## 0.8.0
 
 - **Exact Scan Optimization**: Implemented brute-force vector scan for source-filtered searches, guaranteeing perfect recall within the selected source.

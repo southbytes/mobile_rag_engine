@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -26,12 +27,12 @@ void main() {
         await service.init();
         fail('Should have thrown RagError');
       } on RagError catch (e) {
-        print('\n[Caught RagError Successfully]');
+        log('\n[Caught RagError Successfully]');
 
         e.when(
           databaseError: (msg) {
-            print('✅ Type: DatabaseError');
-            print('✅ Message: $msg');
+            log('✅ Type: DatabaseError');
+            log('✅ Message: $msg');
             // Expect the message from get_connection() in db_pool.rs
             expect(msg, contains('DB pool not initialized'));
           },
@@ -57,7 +58,7 @@ void main() {
         await service.search('hello', topK: 1);
         fail('Should have thrown RagError');
       } on RagError catch (e) {
-        print('\n[Caught RagError on Search Successfully]');
+        log('\n[Caught RagError on Search Successfully]');
 
         ExtensionRagError(e).when(
           databaseError: (_) => fail(
@@ -70,10 +71,10 @@ void main() {
           // If HNSW not loaded, it calls rebuild_chunk_hnsw_index -> get_connection -> DatabaseError.
           // Let's create a more robust check.
           internalError: (msg) {
-            print('✅ Caught expected error: $msg');
+            log('✅ Caught expected error: $msg');
           },
           unknown: (msg) {
-            print('✅ Caught expected error type (unknown): $msg');
+            log('✅ Caught expected error type (unknown): $msg');
           },
         );
 

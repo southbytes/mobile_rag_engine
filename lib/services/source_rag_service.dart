@@ -8,7 +8,9 @@
 /// - Hybrid search combining vector and BM25 keyword search
 library;
 
+import 'dart:developer';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import '../src/rust/api/error.dart';
 import '../src/rust/api/source_rag.dart' as rust_rag;
 import '../src/rust/api/source_rag.dart'
@@ -30,7 +32,9 @@ import '../src/rust/api/source_rag.dart'
         getAllChunkIdsAndContents,
         updateChunkEmbedding,
         rebuildChunkHnswIndex,
-        rebuildChunkBm25Index;
+        rebuildChunkBm25Index,
+        getSourceChunkCount,
+        updateSourceStatus;
 import '../src/rust/api/semantic_chunker.dart';
 import '../src/rust/api/hybrid_search.dart' as hybrid;
 import '../src/rust/api/hnsw_index.dart' as hnsw;
@@ -117,7 +121,7 @@ class SourceRagService {
 
   StreamSubscription<String>? _logSubscription;
 
-  /// Helper to convert List<int> to the specific Int64List type required by FRB.
+  /// Helper to convert `List<int>` to the specific `Int64List` type required by FRB.
   /// We do this manually because frb.Int64List.fromList() might return a native
   /// dart:typed_data Int64List which can cause type mismatch errors if FRB
   /// expects its own wrapped type.
@@ -136,27 +140,43 @@ class SourceRagService {
   /// Initialize the source database.
   Future<void> init() async {
     try {
-      // 1. Initialize Rust logger (idempotent)
-      await initLogger();
+      debugPrint('[SourceRagService] init: Starting...');
 
-      // 2. Close any existing log stream (both Dart and Rust side)
-      await _cleanupLogStream();
+      // 1-3. Initialize Logger (only if not already active)
+      // Skipping re-init avoids potential deadlocks with closeLogStream/logging threads
+      if (_logSubscription == null) {
+        debugPrint('[SourceRagService] init: Initializing logger system...');
+        await initLogger(); // Idempotent
 
-      // 3. Start fresh log stream (logs already have [LEVEL] prefix)
-      _logSubscription = initLogStream().listen((log) {
-        print(log);
-      });
+        // Close any existing (though _logSubscription is null, be safe)
+        await _cleanupLogStream();
+
+        // Start fresh log stream
+        debugPrint('[SourceRagService] init: Starting log stream...');
+        _logSubscription = initLogStream().listen((log) {
+          debugPrint(log);
+        });
+      } else {
+        debugPrint(
+          '[SourceRagService] init: Logger stream already active, skipping re-init.',
+        );
+      }
 
       // 4. Initialize DB
+      debugPrint('[SourceRagService] init: Initializing Source DB...');
       await initSourceDb();
 
       // 5. Rebuild indexes for existing chunks (both are in-memory only)
       // This is critical because neither HNSW nor BM25 indexes are persisted to disk
+      debugPrint('[SourceRagService] init: Rebuilding HNSW index...');
       await rebuildChunkHnswIndex(); // Vector search
+      debugPrint('[SourceRagService] init: Rebuilding BM25 index...');
       await rebuildChunkBm25Index(); // Keyword search
+
+      debugPrint('[SourceRagService] init: Done!');
     } on RagError catch (e) {
       // Smart Error Handling integration
-      print(
+      debugPrint(
         '[SmartError] ${e.userFriendlyMessage} (Tech: ${e.technicalMessage})',
       );
       rethrow;
@@ -222,6 +242,7 @@ class SourceRagService {
     String? name,
     String? filePath,
     ChunkingStrategy? strategy,
+    Duration? chunkDelay,
     void Function(int done, int total)? onProgress,
   }) async {
     // 1. Add source document
@@ -241,106 +262,170 @@ class SourceRagService {
     } on RagError catch (e) {
       e.when(
         databaseError: (msg) =>
-            print('[SmartError] Storage write failed: $msg'),
-        ioError: (msg) => print('[SmartError] IO error adding source: $msg'),
+            debugPrint('[SmartError] Storage write failed: $msg'),
+        ioError: (msg) =>
+            debugPrint('[SmartError] IO error adding source: $msg'),
         modelLoadError: (_) {},
         invalidInput: (msg) =>
-            print('[SmartError] Invalid source content: $msg'),
+            debugPrint('[SmartError] Invalid source content: $msg'),
         internalError: (msg) =>
-            print('[SmartError] Internal error adding source: $msg'),
+            debugPrint('[SmartError] Internal error adding source: $msg'),
         unknown: (msg) =>
-            print('[SmartError] Unknown error adding source: $msg'),
+            debugPrint('[SmartError] Unknown error adding source: $msg'),
       );
       rethrow;
-    }
-
-    if (sourceResult.isDuplicate) {
-      return SourceAddResult(
-        sourceId: sourceResult.sourceId.toInt(),
-        isDuplicate: true,
-        chunkCount: 0,
-        message: sourceResult.message,
-      );
     }
 
     // 2. Determine chunking strategy
     final effectiveStrategy = strategy ?? detectChunkingStrategy(filePath);
 
     // 3. Split content based on strategy
-    final chunkDataList = <ChunkData>[];
-
+    List<dynamic> allRawChunks; // Either MarkdownChunk or String/Chunk
     if (effectiveStrategy == ChunkingStrategy.markdown) {
-      // Markdown-aware chunking
-      final chunks = markdownChunk(text: content, maxChars: maxChunkChars);
-
-      for (var i = 0; i < chunks.length; i++) {
-        onProgress?.call(i, chunks.length);
-        final chunk = chunks[i];
-        final embedding = await EmbeddingService.embed(chunk.content);
-
-        // Include header path in chunk type for context
-        final enrichedType = chunk.headerPath.isNotEmpty
-            ? '${chunk.chunkType}|${chunk.headerPath}'
-            : chunk.chunkType;
-
-        chunkDataList.add(
-          ChunkData(
-            content: chunk.content,
-            chunkIndex: chunk.index,
-            startPos: chunk.startPos,
-            endPos: chunk.endPos,
-            chunkType: enrichedType,
-            embedding: Float32List.fromList(embedding),
-          ),
-        );
-      }
-      onProgress?.call(chunks.length, chunks.length);
+      allRawChunks = markdownChunk(text: content, maxChars: maxChunkChars);
     } else {
-      // Default recursive chunking
-      final chunks = semanticChunkWithOverlap(
+      allRawChunks = semanticChunkWithOverlap(
         text: content,
         maxChars: maxChunkChars,
         overlapChars: overlapChars,
       );
+    }
 
-      for (var i = 0; i < chunks.length; i++) {
-        onProgress?.call(i, chunks.length);
-        final chunk = chunks[i];
-        final embedding = await EmbeddingService.embed(chunk.content);
+    // 4. Check for existing progress (Resume capability)
+    int startIndex = 0;
+    if (sourceResult.isDuplicate) {
+      try {
+        final existingCount = await getSourceChunkCount(
+          sourceId: sourceResult.sourceId.toInt(),
+        );
+        if (existingCount >= allRawChunks.length) {
+          // Ensure it's marked as completed if it wasn't already
+          await updateSourceStatus(
+            sourceId: sourceResult.sourceId,
+            status: 'completed',
+          );
 
-        chunkDataList.add(
+          return SourceAddResult(
+            sourceId: sourceResult.sourceId.toInt(),
+            isDuplicate: true,
+            chunkCount: 0, // No new chunks added
+            message: 'Already processed (${allRawChunks.length} chunks)',
+          );
+        }
+        startIndex = existingCount;
+        debugPrint(
+          '[MobileRag] Resuming source ${sourceResult.sourceId} from chunk $startIndex/${allRawChunks.length}',
+        );
+      } catch (e) {
+        debugPrint(
+          '[MobileRag] Failed to check existing chunks, restarting: $e',
+        );
+      }
+    }
+
+    // 5. Process chunks with batching
+    final chunkDataBatch = <ChunkData>[];
+    int chunksAdded = 0;
+    const batchSize = 50;
+
+    try {
+      for (var i = startIndex; i < allRawChunks.length; i++) {
+        onProgress?.call(i, allRawChunks.length);
+        final rawChunk = allRawChunks[i];
+
+        // Throttling: Wait if delay is configured
+        if (chunkDelay != null) {
+          await Future.delayed(chunkDelay);
+        }
+
+        String contentStr;
+        String chunkType;
+        int chunkIdx;
+        int startPos;
+        int endPos;
+
+        if (effectiveStrategy == ChunkingStrategy.markdown) {
+          final c = rawChunk as StructuredChunk;
+          contentStr = c.content;
+          chunkType = c.headerPath.isNotEmpty
+              ? '${c.chunkType}|${c.headerPath}'
+              : c.chunkType;
+          chunkIdx = c.index;
+          startPos = c.startPos;
+          endPos = c.endPos;
+        } else {
+          final c = rawChunk as SemanticChunk;
+          contentStr = c.content;
+          chunkType = c.chunkType;
+          chunkIdx = c.index;
+          startPos = c.startPos;
+          endPos = c.endPos;
+        }
+
+        final embedding = await EmbeddingService.embed(contentStr);
+
+        chunkDataBatch.add(
           ChunkData(
-            content: chunk.content,
-            chunkIndex: chunk.index,
-            startPos: chunk.startPos,
-            endPos: chunk.endPos,
-            chunkType: chunk.chunkType,
+            content: contentStr,
+            chunkIndex: chunkIdx,
+            startPos: startPos,
+            endPos: endPos,
+            chunkType: chunkType,
             embedding: Float32List.fromList(embedding),
           ),
         );
-      }
-      onProgress?.call(chunks.length, chunks.length);
-    }
+        chunksAdded++;
 
-    if (chunkDataList.isEmpty) {
+        // Incremental save
+        if (chunkDataBatch.length >= batchSize) {
+          await addChunks(
+            sourceId: sourceResult.sourceId,
+            chunks: chunkDataBatch,
+          );
+          chunkDataBatch.clear();
+          // Optional: Update status to 'processing' or 'partial' if needed, but 'pending' serves as "not done".
+          // We could update to 'processing' here to indicate active work.
+          await updateSourceStatus(
+            sourceId: sourceResult.sourceId,
+            status: 'processing',
+          );
+        }
+      }
+
+      // Save remaining chunks
+      if (chunkDataBatch.isNotEmpty) {
+        await addChunks(
+          sourceId: sourceResult.sourceId,
+          chunks: chunkDataBatch,
+        );
+      }
+
+      onProgress?.call(allRawChunks.length, allRawChunks.length);
+
+      // Mark as completed
+      await updateSourceStatus(
+        sourceId: sourceResult.sourceId,
+        status: 'completed',
+      );
+
       return SourceAddResult(
         sourceId: sourceResult.sourceId.toInt(),
-        isDuplicate: false,
-        chunkCount: 0,
-        message: 'No chunks created',
+        isDuplicate: sourceResult.isDuplicate,
+        chunkCount: chunksAdded,
+        message:
+            'Added $chunksAdded chunks (Resumed from $startIndex, Total ${allRawChunks.length})',
       );
+    } catch (e) {
+      // Mark as failed if error occurs during chunking/embedding loop
+      debugPrint(
+        '[MobileRag] Error adding source ${sourceResult.sourceId}: $e',
+      );
+      await updateSourceStatus(
+        sourceId: sourceResult.sourceId,
+        status: 'failed',
+      );
+      rethrow;
     }
-
-    // 4. Store chunks
-    await addChunks(sourceId: sourceResult.sourceId, chunks: chunkDataList);
-
-    return SourceAddResult(
-      sourceId: sourceResult.sourceId.toInt(),
-      isDuplicate: false,
-      chunkCount: chunkDataList.length,
-      message:
-          'Added ${chunkDataList.length} chunks (${effectiveStrategy.name})',
-    );
   }
 
   /// Rebuild the HNSW and BM25 indexes after adding sources.
@@ -353,12 +438,13 @@ class SourceRagService {
     } on RagError catch (e) {
       e.when(
         databaseError: (msg) =>
-            print('[SmartError] DB error rebuilding index: $msg'),
-        ioError: (msg) => print('[SmartError] IO error rebuilding index: $msg'),
+            debugPrint('[SmartError] DB error rebuilding index: $msg'),
+        ioError: (msg) =>
+            debugPrint('[SmartError] IO error rebuilding index: $msg'),
         modelLoadError: (_) {},
         invalidInput: (_) {},
         internalError: (msg) =>
-            print('[SmartError] Internal error rebuilding indexes: $msg'),
+            debugPrint('[SmartError] Internal error rebuilding indexes: $msg'),
         unknown: (_) {},
       );
       rethrow;
@@ -372,7 +458,7 @@ class SourceRagService {
   }) async {
     // 1. Get all chunk IDs and contents
     final chunks = await getAllChunkIdsAndContents();
-    print(
+    debugPrint(
       '[regenerateAllEmbeddings] Found ${chunks.length} chunks to re-embed',
     );
 
@@ -391,16 +477,18 @@ class SourceRagService {
 
       // Log progress every 50 chunks
       if ((i + 1) % 50 == 0) {
-        print('[regenerateAllEmbeddings] Progress: ${i + 1}/${chunks.length}');
+        debugPrint(
+          '[regenerateAllEmbeddings] Progress: ${i + 1}/${chunks.length}',
+        );
       }
     }
 
-    print('[regenerateAllEmbeddings] Completed. Rebuilding HNSW index...');
+    debugPrint('[regenerateAllEmbeddings] Completed. Rebuilding HNSW index...');
 
     // 4. Rebuild HNSW index
     await rebuildIndex();
 
-    print('[regenerateAllEmbeddings] Done!');
+    debugPrint('[regenerateAllEmbeddings] Done!');
   }
 
   /// Search for relevant chunks and assemble context for LLM.
@@ -423,11 +511,11 @@ class SourceRagService {
 
     // DEBUG: Log embedding stats
     final embNorm = queryEmbedding.fold<double>(0, (sum, v) => sum + v * v);
-    print('[DEBUG] Query: "$query"');
-    print(
+    debugPrint('[DEBUG] Query: "$query"');
+    debugPrint(
       '[DEBUG] Embedding norm: ${embNorm.toStringAsFixed(4)}, dims: ${queryEmbedding.length}',
     );
-    print(
+    debugPrint(
       '[DEBUG] First 5 values: ${queryEmbedding.take(5).map((v) => v.toStringAsFixed(4)).toList()}',
     );
 
@@ -464,14 +552,14 @@ class SourceRagService {
     } on RagError catch (e) {
       e.when(
         databaseError: (msg) =>
-            print('[SmartError] Search failed (database): $msg'),
-        ioError: (msg) => print('[SmartError] Search IO error: $msg'),
+            debugPrint('[SmartError] Search failed (database): $msg'),
+        ioError: (msg) => debugPrint('[SmartError] Search IO error: $msg'),
         modelLoadError: (_) {},
         invalidInput: (msg) =>
-            print('[SmartError] Invalid search parameters: $msg'),
+            debugPrint('[SmartError] Invalid search parameters: $msg'),
         internalError: (msg) =>
-            print('[SmartError] Search engine failure: $msg'),
-        unknown: (msg) => print('[SmartError] Unknown search error: $msg'),
+            debugPrint('[SmartError] Search engine failure: $msg'),
+        unknown: (msg) => debugPrint('[SmartError] Unknown search error: $msg'),
       );
       rethrow;
     }
@@ -604,7 +692,9 @@ class SourceRagService {
           maxIndex: maxIndex,
         );
       } on RagError catch (e) {
-        print('[SmartError] Failed to fetch adjacent chunks: ${e.message}');
+        debugPrint(
+          '[SmartError] Failed to fetch adjacent chunks: ${e.message}',
+        );
         // Non-critical, just continue without expansion
         continue;
       }
@@ -656,7 +746,9 @@ class SourceRagService {
     try {
       await deleteSource(sourceId: sourceId);
     } on RagError catch (e) {
-      print('[SmartError] Failed to remove source $sourceId: ${e.message}');
+      debugPrint(
+        '[SmartError] Failed to remove source $sourceId: ${e.message}',
+      );
       rethrow;
     }
     // Note: HNSW index is not automatically updated.
@@ -715,14 +807,13 @@ class SourceRagService {
     } on RagError catch (e) {
       e.when(
         databaseError: (msg) =>
-            print('[SmartError] Hybrid search DB error: $msg'),
+            debugPrint('[SmartError] Hybrid search DB error: $msg'),
         ioError: (_) {},
         modelLoadError: (_) {},
         invalidInput: (_) {},
         internalError: (msg) =>
-            print('[SmartError] Hybrid search engine error: $msg'),
-        unknown: (msg) =>
-            print('[SmartError] Hybrid search unknown error: $msg'),
+            log('[SmartError] Hybrid search engine error: $msg'),
+        unknown: (msg) => log('[SmartError] Hybrid search unknown error: $msg'),
       );
       rethrow;
     }

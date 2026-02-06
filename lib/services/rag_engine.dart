@@ -29,6 +29,8 @@ library;
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import 'package:onnxruntime/onnxruntime.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../src/rust/api/tokenizer.dart';
@@ -108,6 +110,7 @@ class RagEngine {
     final dir = await getApplicationDocumentsDirectory();
     final dbPath = "${dir.path}/${config.databaseName ?? 'rag.sqlite'}";
     final tokenizerPath = "${dir.path}/tokenizer.json";
+    final modelPath = "${dir.path}/${config.modelAsset.split('/').last}";
 
     // 2. Copy and initialize tokenizer
     onProgress?.call('Initializing tokenizer...');
@@ -115,10 +118,57 @@ class RagEngine {
     await initTokenizer(tokenizerPath: tokenizerPath);
     final vocabSize = getVocabSize();
 
-    // 3. Load ONNX embedding model
+    // 3. Prepare ONNX embedding model (Copy logic)
+    onProgress?.call('Preparing embedding model...');
+    // Copy model asset to file (optimized for memory)
+    await _copyAssetToFile(config.modelAsset, modelPath);
+
+    // Configure session options if thread limit is requested
+    OrtSessionOptions? sessionOptions;
+
+    // Default to half the cores if not specified to prevent full CPU usage
+    // Calculate threads based on configuration
+    int threads;
+    final totalCores = Platform.numberOfProcessors;
+
+    if (config.threadLevel != null) {
+      // 1. Thread Level (Percentage based)
+      switch (config.threadLevel!) {
+        case ThreadUseLevel.low:
+          threads = (totalCores * 0.2).ceil();
+          break;
+        case ThreadUseLevel.medium:
+          threads = (totalCores * 0.4).ceil();
+          break;
+        case ThreadUseLevel.high:
+          threads = (totalCores * 0.8).ceil();
+          break;
+      }
+    } else if (config.embeddingIntraOpNumThreads != null) {
+      // 2. Manual Count
+      threads = config.embeddingIntraOpNumThreads!;
+    } else {
+      // 3. Priority: Default (50% safe fallback)
+      threads = (totalCores > 1 ? (totalCores / 2).ceil() : 1);
+    }
+
+    // Ensure at least 1 thread
+    if (threads < 1) threads = 1;
+
+    // Apply thread configuration
+    sessionOptions = OrtSessionOptions();
+    try {
+      sessionOptions.setIntraOpNumThreads(threads);
+      debugPrint(
+        '[RagEngine] Configured ONNX embedding threads: $threads (Total Cores: $totalCores)',
+      );
+    } catch (e) {
+      debugPrint('[RagEngine] Warning: Failed to set intra-op num threads: $e');
+    }
+
+    // Init EmbeddingService with file path
     onProgress?.call('Loading embedding model...');
-    final modelBytes = await rootBundle.load(config.modelAsset);
-    await EmbeddingService.init(modelBytes.buffer.asUint8List());
+    await EmbeddingService.init(modelPath: modelPath, options: sessionOptions);
 
     // 4. Initialize database connection pool
     onProgress?.call('Initializing connection pool...');
@@ -172,6 +222,7 @@ class RagEngine {
     String? name,
     String? filePath,
     ChunkingStrategy? strategy,
+    Duration? chunkDelay,
     void Function(int done, int total)? onProgress,
   }) => _ragService.addSourceWithChunking(
     content,
@@ -179,6 +230,7 @@ class RagEngine {
     name: name,
     filePath: filePath,
     strategy: strategy,
+    chunkDelay: chunkDelay,
     onProgress: onProgress,
   );
 
@@ -286,31 +338,44 @@ class RagEngine {
   /// 3. Deletes the HNSW index file
   /// 4. Re-initializes the database and service
   Future<void> clearAllData() async {
+    debugPrint('[RagEngine] clearAllData: Starting...');
     // 1. Close DB pool
+    debugPrint('[RagEngine] clearAllData: Closing DB pool...');
     await closeDbPool();
+    debugPrint('[RagEngine] clearAllData: DB pool closed.');
 
     // 2. Delete DB file
     final dbFile = File(dbPath);
     if (await dbFile.exists()) {
+      debugPrint('[RagEngine] clearAllData: Deleting DB file at $dbPath...');
       await dbFile.delete();
+      debugPrint('[RagEngine] clearAllData: DB file deleted.');
+    } else {
+      debugPrint('[RagEngine] clearAllData: DB file not found.');
     }
 
     // 3. Delete HNSW index file (and lock file if exists)
     final indexFile = File('${dbPath.replaceAll('.db', '')}_hnsw');
     if (await indexFile.exists()) {
+      debugPrint('[RagEngine] clearAllData: Deleting index file...');
       await indexFile.delete();
     }
     // Also try checking for .pbin if naming convention varies
     final indexFileAlt = File('${dbPath.replaceAll('.db', '')}_hnsw.pbin');
     if (await indexFileAlt.exists()) {
+      debugPrint('[RagEngine] clearAllData: Deleting alt index file...');
       await indexFileAlt.delete();
     }
 
     // 4. Re-initialize DB pool
+    debugPrint('[RagEngine] clearAllData: Re-initializing DB pool...');
     await initDbPool(dbPath: dbPath, maxSize: 4);
+    debugPrint('[RagEngine] clearAllData: DB pool initialized.');
 
     // 5. Re-initialize service
+    debugPrint('[RagEngine] clearAllData: Re-initializing service...');
     await _ragService.init();
+    debugPrint('[RagEngine] clearAllData: Service initialized. Done.');
   }
 
   /// Access to the underlying [SourceRagService] for advanced operations.
