@@ -79,6 +79,14 @@ pub fn init_source_db() -> Result<(), RagError> {
         conn.execute("ALTER TABLE sources ADD COLUMN name TEXT", []).map_err(|e| RagError::DatabaseError(e.to_string()))?;
     }
     
+    // Migration: Add status if missing
+    let has_status: bool = conn.prepare("SELECT status FROM sources LIMIT 1").is_ok();
+    if (!has_status) {
+        info!("[init_source_db] Migrating: adding status column to sources");
+         // Default to 'completed' for existing sources (backward compatibility)
+        conn.execute("ALTER TABLE sources ADD COLUMN status TEXT DEFAULT 'completed'", []).map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    }
+    
     conn.execute("CREATE INDEX IF NOT EXISTS idx_chunks_source_id ON chunks(source_id)", []).map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
     info!("[init_source_db] Tables created");
@@ -118,8 +126,9 @@ pub fn add_source(
         });
     }
     
+    // New sources start as 'pending'
     conn.execute(
-        "INSERT INTO sources (content, content_hash, metadata, name) VALUES (?1, ?2, ?3, ?4)",
+        "INSERT INTO sources (content, content_hash, metadata, name, status) VALUES (?1, ?2, ?3, ?4, 'pending')",
         params![content, content_hash, metadata, name],
     ).map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
@@ -134,17 +143,30 @@ pub fn add_source(
     })
 }
 
+/// Update processing status of a source (e.g., 'pending', 'processing', 'completed', 'failed').
+pub fn update_source_status(source_id: i64, status: String) -> Result<(), RagError> {
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    conn.execute(
+        "UPDATE sources SET status = ?1 WHERE id = ?2",
+        params![status, source_id],
+    ).map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    info!("[update_source_status] Updated source {} to status '{}'", source_id, status);
+    Ok(())
+}
+
 #[derive(Debug, Clone)]
 pub struct SourceEntry {
     pub id: i64,
     pub name: Option<String>,
     pub created_at: i64,
     pub metadata: Option<String>,
+    pub status: Option<String>,
 }
 
 pub fn list_sources() -> Result<Vec<SourceEntry>, RagError> {
     let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
-    let mut stmt = conn.prepare("SELECT id, name, created_at, metadata FROM sources ORDER BY id DESC")
+    // Coalesce null status to 'completed' for legacy rows if any remains (though strict migration sets default)
+    let mut stmt = conn.prepare("SELECT id, name, created_at, metadata, status FROM sources ORDER BY id DESC")
         .map_err(|e| RagError::DatabaseError(e.to_string()))?;
     
     let sources = stmt.query_map([], |row| {
@@ -153,6 +175,7 @@ pub fn list_sources() -> Result<Vec<SourceEntry>, RagError> {
             name: row.get(1)?,
             created_at: row.get(2)?,
             metadata: row.get(3)?,
+            status: row.get(4)?,
         })
     })
     .map_err(|e| RagError::DatabaseError(e.to_string()))?
@@ -443,6 +466,17 @@ pub fn delete_source(source_id: i64) -> Result<(), RagError> {
 pub struct SourceStats {
     pub source_count: i64,
     pub chunk_count: i64,
+}
+
+/// Get the number of chunks for a specific source.
+pub fn get_source_chunk_count(source_id: i64) -> Result<i32, RagError> {
+    let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    let count: i32 = conn.query_row(
+        "SELECT COUNT(*) FROM chunks WHERE source_id = ?1",
+        params![source_id],
+        |row| row.get(0),
+    ).map_err(|e| RagError::DatabaseError(e.to_string()))?;
+    Ok(count)
 }
 
 pub fn get_source_stats() -> Result<SourceStats, RagError> {
