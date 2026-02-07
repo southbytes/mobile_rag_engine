@@ -36,15 +36,24 @@ Data never leaves the user's device. Perfect for privacy-focused apps (journals,
 
 ## Features
 
-- **Cross-Platform:** Works seamlessly on **iOS, Android, and macOS**
-- **HNSW Vector Index:** Fast approximate nearest neighbor search (proven scale up to 10k+ docs)
-- **Hybrid Search Ready:** Supports semantic search combined with exact matching
-- **Markdown Structure-Aware Chunking:** Preserves headers, code blocks, and tables during chunking with header path inheritance
-- **PDF/DOCX Text Extraction:** Built-in document parsing with smart dehyphenation and page number removal
-- **Auto-Chunking:** Intelligent text splitting strategies included (Unicode-based semantic chunking)
-- **Model Flexibility:** Use standard ONNX models (e.g., `bge-m3`, `all-MiniLM-L6-v2`)
-- **Independent Source Search:** Filter by specific documents (Exact Scan guarantees recall)
-- **Data Management:** Delete individual sources or clear all data easily
+### End-to-End RAG Pipeline
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/dev07060/mobile_rag_engine/main/assets/readme-sources/package_introduction.png" width="860" alt="End-to-End RAG Pipeline">
+</p>
+
+> **One package, complete pipeline.** From any document format to LLM-ready context.
+
+### Key Features
+
+| Category | Features |
+|:---------|:---------|
+| **Document Input** | PDF, DOCX, Markdown, Plain Text with smart dehyphenation |
+| **Chunking** | Semantic chunking, Markdown structure-aware, header path inheritance |
+| **Search** | HNSW vector + BM25 keyword hybrid search with RRF fusion |
+| **Storage** | SQLite persistence, connection pooling, resumable indexing |
+| **Performance** | Rust core, 10x faster tokenization, thread control, memory optimized |
+| **Context** | Token budget, adjacent chunk expansion, single source mode |
 
 ---
 
@@ -176,38 +185,6 @@ Future<void> importDocument() async {
 
 ---
 
-## Benchmarks
-
-**Rust-powered components** (M3 Pro macOS):
-
-| Operation | Time | Notes |
-|:---|:---:|:---|
-| **Tokenization** (234 chars) | **0.04ms** | HuggingFace `tokenizers` crate |
-| **HNSW Search** (100 docs) | **0.3ms** | `instant-distance` (O(log n)) |
-
-> These are the components where Rust provides **10-100x speedup** over pure Dart implementations.
->
-> Embedding generation uses ONNX Runtime (platform-dependent, typically 25-100ms per text).
-
----
-
-## Architecture
-
-This package bridges the best of two worlds: **Flutter for UI** and **Rust for heavy lifting**.
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/dev07060/mobile_rag_engine/main/assets/readme-sources/rag_engine_architecture.png" width="600" alt="Architecture">
-</p>
-
-| Component | Technology |
-|:---|:---|
-| **Embedding** | ONNX Runtime with quantized models (INT8) |
-| **Storage** | SQLite for metadata + memory-mapped vector index |
-| **Search** | Hybrid: HNSW (vector) + BM25 (keyword) with RRF fusion |
-| **Tokenization** | HuggingFace `tokenizers` crate |
-
----
-
 ## Model Options
 
 | Model | Dimensions | Size | Max Tokens | Languages |
@@ -245,7 +222,7 @@ Check out the example application using this package. This desktop app demonstra
 [mobile-ondevice-rag-desktop](https://github.com/dev07060/mobile-ondevice-rag-desktop)
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/dev07060/mobile_rag_engine/main/assets/readme-sources/sample_app.png" width="600" alt="Sample App Screenshot">
+  <img src="https://raw.githubusercontent.com/dev07060/mobile_rag_engine/main/assets/readme-sources/sample_app.png" width="860" alt="Sample App Screenshot">
 </p>
 
 ---
