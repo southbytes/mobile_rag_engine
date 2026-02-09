@@ -2942,16 +2942,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  Map<String, String> dco_decode_Map_String_String_None(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return Map.fromEntries(
-      dco_decode_list_record_string_string(
-        raw,
-      ).map((e) => MapEntry(e.$1, e.$2)),
-    );
-  }
-
-  @protected
   RustStreamSink<String> dco_decode_StreamSink_String_Sse(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     throw UnimplementedError();
@@ -3012,6 +3002,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   CompressionOptions dco_decode_box_autoadd_compression_options(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_compression_options(raw);
+  }
+
+  @protected
+  int dco_decode_box_autoadd_i_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
   }
 
   @protected
@@ -3326,12 +3322,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  List<(String, String)> dco_decode_list_record_string_string(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return (raw as List<dynamic>).map(dco_decode_record_string_string).toList();
-  }
-
-  @protected
   List<SemanticChunk> dco_decode_list_semantic_chunk(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_semantic_chunk).toList();
@@ -3353,6 +3343,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   String? dco_decode_opt_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_String(raw);
+  }
+
+  @protected
+  int? dco_decode_opt_box_autoadd_i_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_i_32(raw);
   }
 
   @protected
@@ -3441,16 +3437,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  (String, String) dco_decode_record_string_string(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 2) {
-      throw Exception('Expected 2 elements, got ${arr.length}');
-    }
-    return (dco_decode_String(arr[0]), dco_decode_String(arr[1]));
-  }
-
-  @protected
   (int, int, int) dco_decode_record_u_32_u_32_u_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -3535,8 +3521,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   StructuredChunk dco_decode_structured_chunk(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 7)
-      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    if (arr.length != 9)
+      throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
     return StructuredChunk(
       index: dco_decode_i_32(arr[0]),
       content: dco_decode_String(arr[1]),
@@ -3544,7 +3530,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       chunkType: dco_decode_String(arr[3]),
       startPos: dco_decode_i_32(arr[4]),
       endPos: dco_decode_i_32(arr[5]),
-      metadata: dco_decode_Map_String_String_None(arr[6]),
+      batchId: dco_decode_opt_String(arr[6]),
+      batchIndex: dco_decode_opt_box_autoadd_i_32(arr[7]),
+      batchTotal: dco_decode_opt_box_autoadd_i_32(arr[8]),
     );
   }
 
@@ -3605,15 +3593,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_String(deserializer);
     return AnyhowException(inner);
-  }
-
-  @protected
-  Map<String, String> sse_decode_Map_String_String_None(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var inner = sse_decode_list_record_string_string(deserializer);
-    return Map.fromEntries(inner.map((e) => MapEntry(e.$1, e.$2)));
   }
 
   @protected
@@ -3683,6 +3662,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_compression_options(deserializer));
+  }
+
+  @protected
+  int sse_decode_box_autoadd_i_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_i_32(deserializer));
   }
 
   @protected
@@ -4089,20 +4074,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  List<(String, String)> sse_decode_list_record_string_string(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var len_ = sse_decode_i_32(deserializer);
-    var ans_ = <(String, String)>[];
-    for (var idx_ = 0; idx_ < len_; ++idx_) {
-      ans_.add(sse_decode_record_string_string(deserializer));
-    }
-    return ans_;
-  }
-
-  @protected
   List<SemanticChunk> sse_decode_list_semantic_chunk(
     SseDeserializer deserializer,
   ) {
@@ -4148,6 +4119,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
     if (sse_decode_bool(deserializer)) {
       return (sse_decode_String(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  int? sse_decode_opt_box_autoadd_i_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_i_32(deserializer));
     } else {
       return null;
     }
@@ -4270,16 +4252,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  (String, String) sse_decode_record_string_string(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_field0 = sse_decode_String(deserializer);
-    var var_field1 = sse_decode_String(deserializer);
-    return (var_field0, var_field1);
-  }
-
-  @protected
   (int, int, int) sse_decode_record_u_32_u_32_u_32(
     SseDeserializer deserializer,
   ) {
@@ -4368,7 +4340,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_chunkType = sse_decode_String(deserializer);
     var var_startPos = sse_decode_i_32(deserializer);
     var var_endPos = sse_decode_i_32(deserializer);
-    var var_metadata = sse_decode_Map_String_String_None(deserializer);
+    var var_batchId = sse_decode_opt_String(deserializer);
+    var var_batchIndex = sse_decode_opt_box_autoadd_i_32(deserializer);
+    var var_batchTotal = sse_decode_opt_box_autoadd_i_32(deserializer);
     return StructuredChunk(
       index: var_index,
       content: var_content,
@@ -4376,7 +4350,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       chunkType: var_chunkType,
       startPos: var_startPos,
       endPos: var_endPos,
-      metadata: var_metadata,
+      batchId: var_batchId,
+      batchIndex: var_batchIndex,
+      batchTotal: var_batchTotal,
     );
   }
 
@@ -4449,18 +4425,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_Map_String_String_None(
-    Map<String, String> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_list_record_string_string(
-      self.entries.map((e) => (e.key, e.value)).toList(),
-      serializer,
-    );
-  }
-
-  @protected
   void sse_encode_StreamSink_String_Sse(
     RustStreamSink<String> self,
     SseSerializer serializer,
@@ -4529,6 +4493,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_compression_options(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_i_32(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self, serializer);
   }
 
   @protected
@@ -4909,18 +4879,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_list_record_string_string(
-    List<(String, String)> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    for (final item in self) {
-      sse_encode_record_string_string(item, serializer);
-    }
-  }
-
-  @protected
   void sse_encode_list_semantic_chunk(
     List<SemanticChunk> self,
     SseSerializer serializer,
@@ -4963,6 +4921,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_String(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_i_32(int? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_i_32(self, serializer);
     }
   }
 
@@ -5073,16 +5041,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_record_string_string(
-    (String, String) self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_String(self.$1, serializer);
-    sse_encode_String(self.$2, serializer);
-  }
-
-  @protected
   void sse_encode_record_u_32_u_32_u_32(
     (int, int, int) self,
     SseSerializer serializer,
@@ -5147,7 +5105,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.chunkType, serializer);
     sse_encode_i_32(self.startPos, serializer);
     sse_encode_i_32(self.endPos, serializer);
-    sse_encode_Map_String_String_None(self.metadata, serializer);
+    sse_encode_opt_String(self.batchId, serializer);
+    sse_encode_opt_box_autoadd_i_32(self.batchIndex, serializer);
+    sse_encode_opt_box_autoadd_i_32(self.batchTotal, serializer);
   }
 
   @protected

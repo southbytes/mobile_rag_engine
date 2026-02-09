@@ -108,7 +108,9 @@ class StructuredChunk {
   final String chunkType;
   final int startPos;
   final int endPos;
-  final Map<String, String> metadata;
+  final String? batchId;
+  final int? batchIndex;
+  final int? batchTotal;
 
   const StructuredChunk({
     required this.index,
@@ -117,7 +119,9 @@ class StructuredChunk {
     required this.chunkType,
     required this.startPos,
     required this.endPos,
-    required this.metadata,
+    this.batchId,
+    this.batchIndex,
+    this.batchTotal,
   });
 
   @override
@@ -128,7 +132,9 @@ class StructuredChunk {
       chunkType.hashCode ^
       startPos.hashCode ^
       endPos.hashCode ^
-      metadata.hashCode;
+      batchId.hashCode ^
+      batchIndex.hashCode ^
+      batchTotal.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -141,5 +147,7 @@ class StructuredChunk {
           chunkType == other.chunkType &&
           startPos == other.startPos &&
           endPos == other.endPos &&
-          metadata == other.metadata;
+          batchId == other.batchId &&
+          batchIndex == other.batchIndex &&
+          batchTotal == other.batchTotal;
 }

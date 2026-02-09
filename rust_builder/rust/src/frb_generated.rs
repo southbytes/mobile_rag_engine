@@ -2968,14 +2968,6 @@ impl SseDecode for flutter_rust_bridge::for_generated::anyhow::Error {
     }
 }
 
-impl SseDecode for std::collections::HashMap<String, String> {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut inner = <Vec<(String, String)>>::sse_decode(deserializer);
-        return inner.into_iter().collect();
-    }
-}
-
 impl SseDecode for StreamSink<String, flutter_rust_bridge::for_generated::SseCodec> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3435,18 +3427,6 @@ impl SseDecode for Vec<(i64, String)> {
     }
 }
 
-impl SseDecode for Vec<(String, String)> {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut len_ = <i32>::sse_decode(deserializer);
-        let mut ans_ = vec![];
-        for idx_ in 0..len_ {
-            ans_.push(<(String, String)>::sse_decode(deserializer));
-        }
-        return ans_;
-    }
-}
-
 impl SseDecode for Vec<crate::api::semantic_chunker::SemanticChunk> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3494,6 +3474,17 @@ impl SseDecode for Option<String> {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<String>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<i32> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<i32>::sse_decode(deserializer));
         } else {
             return None;
         }
@@ -3618,15 +3609,6 @@ impl SseDecode for (i64, String) {
     }
 }
 
-impl SseDecode for (String, String) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_field0 = <String>::sse_decode(deserializer);
-        let mut var_field1 = <String>::sse_decode(deserializer);
-        return (var_field0, var_field1);
-    }
-}
-
 impl SseDecode for (u32, u32, u32) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3720,8 +3702,9 @@ impl SseDecode for crate::api::semantic_chunker::StructuredChunk {
         let mut var_chunkType = <String>::sse_decode(deserializer);
         let mut var_startPos = <i32>::sse_decode(deserializer);
         let mut var_endPos = <i32>::sse_decode(deserializer);
-        let mut var_metadata =
-            <std::collections::HashMap<String, String>>::sse_decode(deserializer);
+        let mut var_batchId = <Option<String>>::sse_decode(deserializer);
+        let mut var_batchIndex = <Option<i32>>::sse_decode(deserializer);
+        let mut var_batchTotal = <Option<i32>>::sse_decode(deserializer);
         return crate::api::semantic_chunker::StructuredChunk {
             index: var_index,
             content: var_content,
@@ -3729,7 +3712,9 @@ impl SseDecode for crate::api::semantic_chunker::StructuredChunk {
             chunk_type: var_chunkType,
             start_pos: var_startPos,
             end_pos: var_endPos,
-            metadata: var_metadata,
+            batch_id: var_batchId,
+            batch_index: var_batchIndex,
+            batch_total: var_batchTotal,
         };
     }
 }
@@ -4647,7 +4632,9 @@ impl flutter_rust_bridge::IntoDart for crate::api::semantic_chunker::StructuredC
             self.chunk_type.into_into_dart().into_dart(),
             self.start_pos.into_into_dart().into_dart(),
             self.end_pos.into_into_dart().into_dart(),
-            self.metadata.into_into_dart().into_dart(),
+            self.batch_id.into_into_dart().into_dart(),
+            self.batch_index.into_into_dart().into_dart(),
+            self.batch_total.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -4707,13 +4694,6 @@ impl SseEncode for flutter_rust_bridge::for_generated::anyhow::Error {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(format!("{:?}", self), serializer);
-    }
-}
-
-impl SseEncode for std::collections::HashMap<String, String> {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <Vec<(String, String)>>::sse_encode(self.into_iter().collect(), serializer);
     }
 }
 
@@ -5057,16 +5037,6 @@ impl SseEncode for Vec<(i64, String)> {
     }
 }
 
-impl SseEncode for Vec<(String, String)> {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <i32>::sse_encode(self.len() as _, serializer);
-        for item in self {
-            <(String, String)>::sse_encode(item, serializer);
-        }
-    }
-}
-
 impl SseEncode for Vec<crate::api::semantic_chunker::SemanticChunk> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -5103,6 +5073,16 @@ impl SseEncode for Option<String> {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <String>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<i32> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <i32>::sse_encode(value, serializer);
         }
     }
 }
@@ -5208,14 +5188,6 @@ impl SseEncode for (i64, String) {
     }
 }
 
-impl SseEncode for (String, String) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <String>::sse_encode(self.0, serializer);
-        <String>::sse_encode(self.1, serializer);
-    }
-}
-
 impl SseEncode for (u32, u32, u32) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -5281,7 +5253,9 @@ impl SseEncode for crate::api::semantic_chunker::StructuredChunk {
         <String>::sse_encode(self.chunk_type, serializer);
         <i32>::sse_encode(self.start_pos, serializer);
         <i32>::sse_encode(self.end_pos, serializer);
-        <std::collections::HashMap<String, String>>::sse_encode(self.metadata, serializer);
+        <Option<String>>::sse_encode(self.batch_id, serializer);
+        <Option<i32>>::sse_encode(self.batch_index, serializer);
+        <Option<i32>>::sse_encode(self.batch_total, serializer);
     }
 }
 

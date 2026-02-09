@@ -255,7 +255,9 @@ pub struct StructuredChunk {
     pub chunk_type: String,    // "text", "code", "table", "header"
     pub start_pos: i32,
     pub end_pos: i32,
-    pub metadata: std::collections::HashMap<String, String>,
+    pub batch_id: Option<String>,
+    pub batch_index: Option<i32>,
+    pub batch_total: Option<i32>,
 }
 
 /// Chunking strategy for structure-aware chunking.
@@ -336,7 +338,9 @@ pub fn markdown_chunk(text: String, max_chars: i32) -> Vec<StructuredChunk> {
                 chunk_type: chunk_type.to_string(),
                 start_pos: current_pos,
                 end_pos: current_pos + content.len() as i32,
-                metadata: std::collections::HashMap::new(),
+                batch_id: None,
+                batch_index: None,
+                batch_total: None,
             });
             chunk_index += 1;
             current_pos += content.len() as i32 + 1;
@@ -366,13 +370,6 @@ pub fn markdown_chunk(text: String, max_chars: i32) -> Vec<StructuredChunk> {
                     "text".to_string()
                 };
 
-                let mut metadata = std::collections::HashMap::new();
-                if let Some(ref bid) = batch_id {
-                    metadata.insert("batch_id".to_string(), bid.clone());
-                    metadata.insert("batch_index".to_string(), i.to_string());
-                    metadata.insert("batch_total".to_string(), total_chunks.to_string());
-                }
-
                 chunks.push(StructuredChunk {
                     index: chunk_index,
                     content: sub.clone(),
@@ -380,7 +377,9 @@ pub fn markdown_chunk(text: String, max_chars: i32) -> Vec<StructuredChunk> {
                     chunk_type: sub_type,
                     start_pos: current_pos,
                     end_pos: current_pos + sub.len() as i32,
-                    metadata,
+                    batch_id: batch_id.clone(),
+                    batch_index: batch_id.as_ref().map(|_| i as i32),
+                    batch_total: batch_id.as_ref().map(|_| total_chunks as i32),
                 });
                 chunk_index += 1;
                 current_pos += sub.len() as i32 + 1;
@@ -817,21 +816,20 @@ mod markdown_tests {
         
         assert!(chunks.len() >= 2);
         
-        // Check first chunk has metadata
-        let first_meta = &chunks[0].metadata;
-        assert!(first_meta.contains_key("batch_id"));
-        assert!(first_meta.contains_key("batch_index"));
-        assert!(first_meta.contains_key("batch_total"));
+        // Check first chunk has linking info
+        let first_chunk = &chunks[0];
+        assert!(first_chunk.batch_id.is_some());
+        assert!(first_chunk.batch_index.is_some());
+        assert!(first_chunk.batch_total.is_some());
         
-        let batch_id = first_meta.get("batch_id").unwrap();
-        let total = first_meta.get("batch_total").unwrap();
+        let batch_id = first_chunk.batch_id.as_ref().unwrap();
+        let total = first_chunk.batch_total.unwrap();
         
         // Check all chunks share batch_id and have correct total
         for (i, chunk) in chunks.iter().enumerate() {
-            let meta = &chunk.metadata;
-            assert_eq!(meta.get("batch_id").unwrap(), batch_id);
-            assert_eq!(meta.get("batch_total").unwrap(), total);
-            assert_eq!(meta.get("batch_index").unwrap(), &i.to_string());
+            assert_eq!(chunk.batch_id.as_ref().unwrap(), batch_id);
+            assert_eq!(chunk.batch_total.unwrap(), total);
+            assert_eq!(chunk.batch_index.unwrap(), i as i32);
         }
     }
 }
