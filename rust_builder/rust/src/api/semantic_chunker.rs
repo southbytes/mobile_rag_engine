@@ -255,6 +255,7 @@ pub struct StructuredChunk {
     pub chunk_type: String,    // "text", "code", "table", "header"
     pub start_pos: i32,
     pub end_pos: i32,
+    pub metadata: std::collections::HashMap<String, String>,
 }
 
 /// Chunking strategy for structure-aware chunking.
@@ -335,20 +336,51 @@ pub fn markdown_chunk(text: String, max_chars: i32) -> Vec<StructuredChunk> {
                 chunk_type: chunk_type.to_string(),
                 start_pos: current_pos,
                 end_pos: current_pos + content.len() as i32,
+                metadata: std::collections::HashMap::new(),
             });
             chunk_index += 1;
             current_pos += content.len() as i32 + 1;
         } else {
-            // Recursive fallback for large sections
-            let sub_chunks = recursive_split(content, max_chars_usize);
-            for sub in sub_chunks {
+            // Structure-aware splitting for large sections
+            let sub_chunks = if section.is_table {
+                 split_table_preserving_headers(content, max_chars_usize)
+            } else if section.is_code_block {
+                 split_by_lines(content, max_chars_usize)
+            } else {
+                 recursive_split(content, max_chars_usize)
+            };
+
+            // Generate batch linking metadata for code blocks
+            let batch_id: Option<String> = if section.is_code_block && sub_chunks.len() > 1 {
+                Some(uuid::Uuid::new_v4().to_string())
+            } else {
+                None
+            };
+            let total_chunks = sub_chunks.len();
+
+            for (i, sub) in sub_chunks.iter().enumerate() {
+                // Propagate original chunk type for structured content
+                let sub_type = if section.is_code_block || section.is_table {
+                    chunk_type.clone()
+                } else {
+                    "text".to_string()
+                };
+
+                let mut metadata = std::collections::HashMap::new();
+                if let Some(ref bid) = batch_id {
+                    metadata.insert("batch_id".to_string(), bid.clone());
+                    metadata.insert("batch_index".to_string(), i.to_string());
+                    metadata.insert("batch_total".to_string(), total_chunks.to_string());
+                }
+
                 chunks.push(StructuredChunk {
                     index: chunk_index,
                     content: sub.clone(),
                     header_path: header_path.clone(),
-                    chunk_type: "text".to_string(),
+                    chunk_type: sub_type,
                     start_pos: current_pos,
                     end_pos: current_pos + sub.len() as i32,
+                    metadata,
                 });
                 chunk_index += 1;
                 current_pos += sub.len() as i32 + 1;
@@ -523,6 +555,95 @@ fn split_by_headers(text: &str) -> Vec<Section> {
     sections
 }
 
+/// Split text line-by-line, trying to fill chunks up to max_chars.
+/// Preserves structure by not breaking lines (unless a single line is too long).
+fn split_by_lines(text: &str, max_chars: usize) -> Vec<String> {
+    let mut chunks = Vec::new();
+    let mut buffer = String::new();
+
+    for line in text.lines() {
+        // If buffer + line fits, add it
+        // +1 for newline
+        let needed = if buffer.is_empty() { line.len() } else { buffer.len() + 1 + line.len() };
+
+        if needed <= max_chars {
+             if !buffer.is_empty() {
+                buffer.push('\n');
+            }
+            buffer.push_str(line);
+        } else {
+            // Buffer full, flush it
+            if !buffer.is_empty() {
+                chunks.push(buffer.clone());
+                buffer.clear();
+            }
+
+            // Handle current line
+            if line.len() <= max_chars {
+                buffer.push_str(line);
+            } else {
+                // Line itself is too long, must split it
+                // Fallback to text splitter for this line
+                let splitter = TextSplitter::new(max_chars);
+                for sub in splitter.chunks(line) {
+                    let sub_trimmed = sub.trim();
+                    if !sub_trimmed.is_empty() {
+                         chunks.push(sub_trimmed.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    if !buffer.is_empty() {
+        chunks.push(buffer);
+    }
+
+    chunks
+}
+
+/// Split table while preserving headers for each chunk.
+fn split_table_preserving_headers(table_content: &str, max_chars: usize) -> Vec<String> {
+    let lines: Vec<&str> = table_content.lines().collect(); 
+    if lines.len() < 3 { // Need at least header + separator + 1 row
+        return split_by_lines(table_content, max_chars); 
+    }
+
+    let header_rows = format!("{}\n{}", lines[0], lines[1]);
+    let mut chunks = Vec::new();
+    let mut current_chunk = header_rows.clone();
+    
+    for line in &lines[2..] {
+        if current_chunk.len() + 1 + line.len() <= max_chars {
+            current_chunk.push('\n');
+            current_chunk.push_str(line);
+        } else {
+             // Flush current
+             chunks.push(current_chunk);
+             
+             // Start new with header
+             current_chunk = header_rows.clone();
+             
+             // Check if line fits in new chunk
+             if current_chunk.len() + 1 + line.len() <= max_chars {
+                 current_chunk.push('\n');
+                 current_chunk.push_str(line);
+             } else {
+                 // Line too huge even with fresh header.
+                 // Force add it contextually
+                 current_chunk.push('\n');
+                 current_chunk.push_str(line);
+             }
+        }
+    }
+    
+    if !current_chunk.is_empty() && current_chunk != header_rows {
+        chunks.push(current_chunk);
+    }
+    
+    chunks
+}
+
 /// Recursively split large text into smaller chunks.
 fn recursive_split(text: &str, max_chars: usize) -> Vec<String> {
     if text.len() <= max_chars {
@@ -645,6 +766,73 @@ mod markdown_tests {
         assert!(deep_chunk.unwrap().header_path.contains("Main"));
         assert!(deep_chunk.unwrap().header_path.contains("Section A"));
         assert!(deep_chunk.unwrap().header_path.contains("Subsection"));
+    }
+
+    #[test]
+    fn test_large_code_block_splitting() {
+        // Create code block larger than max_chars (100 minimum enforced)
+        // We need content > 100 chars.
+        // 6 lines of ~20 chars = 120 chars.
+        let code_body = "let a = 10000000000;\nlet b = 20000000000;\nlet c = 30000000000;\nlet d = 40000000000;\nlet e = 50000000000;\nlet f = 60000000000;";
+        let text = format!("```rust\n{}\n```", code_body);
+        
+        // max_chars=100 (clamped internally if we pass less, but we pass 100 to be explicit)
+        let chunks = markdown_chunk(text, 100);
+        
+        assert!(chunks.len() >= 2);
+        for chunk in &chunks {
+            assert!(chunk.chunk_type == "code:rust");
+            // Verify no split mid-line (simple check: no partial variable names if lines are atomic)
+            assert!(!chunk.content.contains("let a = 10000000000;let")); 
+        }
+    }
+
+    #[test]
+    fn test_large_table_splitting() {
+        // Table needs to be > 100 chars.
+        // Header: | Col1 | Col2 |\n|---|---| (25 chars)
+        // Rows: | Val1 | Val2 | (15 chars)
+        // Need > 100 total. 25 + 15*6 = 115.
+        let header = "| Col1 | Col2 |\n|---|---|";
+        let row = "| Val1 | Val2 |";
+        let text = format!("{}\n{}\n{}\n{}\n{}\n{}\n{}", header, row, row, row, row, row, row);
+        
+        let chunks = markdown_chunk(text, 100); 
+        
+        for (i, chunk) in chunks.iter().enumerate() {
+            assert_eq!(chunk.chunk_type, "table");
+            // EVERY chunk must start with header
+            assert!(chunk.content.starts_with("| Col1 | Col2 |"), "Chunk {} missing header", i);
+            assert!(chunk.content.contains("|---|---|"), "Chunk {} missing separator", i);
+        }
+    }
+
+    #[test]
+    fn test_code_block_linking() {
+        // Need > 100 chars to force split (min_chars clamped to 100)
+        let code_body = "let a = 10000000000;\nlet b = 20000000000;\nlet c = 30000000000;\nlet d = 40000000000;\nlet e = 50000000000;\nlet f = 60000000000;";
+        let text = format!("```\n{}\n```", code_body);
+        // Force split with max_chars=100
+        let chunks = markdown_chunk(text, 100);
+        
+        assert!(chunks.len() >= 2);
+        
+        // Check first chunk has metadata
+        let first_meta = &chunks[0].metadata;
+        assert!(first_meta.contains_key("batch_id"));
+        assert!(first_meta.contains_key("batch_index"));
+        assert!(first_meta.contains_key("batch_total"));
+        
+        let batch_id = first_meta.get("batch_id").unwrap();
+        let total = first_meta.get("batch_total").unwrap();
+        
+        // Check all chunks share batch_id and have correct total
+        for (i, chunk) in chunks.iter().enumerate() {
+            let meta = &chunk.metadata;
+            assert_eq!(meta.get("batch_id").unwrap(), batch_id);
+            assert_eq!(meta.get("batch_total").unwrap(), total);
+            assert_eq!(meta.get("batch_index").unwrap(), &i.to_string());
+        }
     }
 }
 

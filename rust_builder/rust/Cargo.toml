@@ -44,6 +44,7 @@ docx-lite = "0.2"
 
 # Regex for PDF dehyphenation (fix line-break word splits)
 regex = "1.11"
+uuid = { version = "1.20.0", features = ["v4"] }
 
 # Removed 'ort' crate: failed to load libonnxruntime.dylib on iOS
 # ONNX inference moved to Flutter onnxruntime package

@@ -6,7 +6,7 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `is_article_title`, `protect_structural_blocks`, `recursive_split`, `split_by_headers`, `split_by_sentences`
+// These functions are ignored because they are not marked as `pub`: `is_article_title`, `protect_structural_blocks`, `recursive_split`, `split_by_headers`, `split_by_lines`, `split_by_sentences`, `split_table_preserving_headers`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ChunkingStrategy`, `ProtectedText`, `Section`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`
 
@@ -108,6 +108,7 @@ class StructuredChunk {
   final String chunkType;
   final int startPos;
   final int endPos;
+  final Map<String, String> metadata;
 
   const StructuredChunk({
     required this.index,
@@ -116,6 +117,7 @@ class StructuredChunk {
     required this.chunkType,
     required this.startPos,
     required this.endPos,
+    required this.metadata,
   });
 
   @override
@@ -125,7 +127,8 @@ class StructuredChunk {
       headerPath.hashCode ^
       chunkType.hashCode ^
       startPos.hashCode ^
-      endPos.hashCode;
+      endPos.hashCode ^
+      metadata.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -137,5 +140,6 @@ class StructuredChunk {
           headerPath == other.headerPath &&
           chunkType == other.chunkType &&
           startPos == other.startPos &&
-          endPos == other.endPos;
+          endPos == other.endPos &&
+          metadata == other.metadata;
 }
