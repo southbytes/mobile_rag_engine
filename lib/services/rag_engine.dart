@@ -27,6 +27,7 @@
 library;
 
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
@@ -77,6 +78,61 @@ class RagEngine {
     required this.dbPath,
     required this.vocabSize,
   }) : _ragService = ragService;
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Auto-Indexing Strategy (Active Tracking + Debounce + Flush-on-Search)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Timer? _indexDebounceTimer;
+  static const _debounceDuration = Duration(milliseconds: 500);
+
+  /// Tracks the number of active long-running operations (Add/Remove).
+  /// We ONLY schedule a debounce timer when this count drops to zero.
+  int _activeOperations = 0;
+
+  /// Start a long-running operation.
+  /// Cancels any pending timer to prevent premature indexing.
+  void _startOperation() {
+    _activeOperations++;
+    _indexDebounceTimer?.cancel();
+    _indexDebounceTimer = null;
+  }
+
+  /// End a long-running operation.
+  /// If no more operations are active, schedule the debounce timer.
+  void _endOperation() {
+    _activeOperations--;
+    if (_activeOperations <= 0) {
+      _activeOperations = 0; // Safety clamp
+      _scheduleIndexRebuild();
+    }
+  }
+
+  /// Schedules an index rebuild with a debounce delay.
+  /// Only runs if no operations are currently active.
+  void _scheduleIndexRebuild() {
+    if (_activeOperations > 0) return; // Don't schedule if busy
+
+    _indexDebounceTimer?.cancel();
+    _indexDebounceTimer = Timer(_debounceDuration, () {
+      if (_activeOperations > 0) return; // double-check
+      debugPrint('[RagEngine] Auto-rebuilding index (Debounce)...');
+      rebuildIndex();
+      _indexDebounceTimer = null;
+    });
+  }
+
+  /// Flushes any pending index rebuilds properly BEFORE a search.
+  /// checks both the timer AND active operations.
+  Future<void> _flushIndex() async {
+    // If timer is pending, cancel and run immediately
+    if (_indexDebounceTimer != null && _indexDebounceTimer!.isActive) {
+      debugPrint('[RagEngine] Flushing pending index rebuild before search...');
+      _indexDebounceTimer!.cancel();
+      _indexDebounceTimer = null;
+      await rebuildIndex();
+    }
+  }
 
   /// Initialize RagEngine with all dependencies.
   ///
@@ -224,15 +280,23 @@ class RagEngine {
     ChunkingStrategy? strategy,
     Duration? chunkDelay,
     void Function(int done, int total)? onProgress,
-  }) => _ragService.addSourceWithChunking(
-    content,
-    metadata: metadata,
-    name: name,
-    filePath: filePath,
-    strategy: strategy,
-    chunkDelay: chunkDelay,
-    onProgress: onProgress,
-  );
+  }) async {
+    _startOperation(); // Start tracking
+    try {
+      final result = await _ragService.addSourceWithChunking(
+        content,
+        metadata: metadata,
+        name: name,
+        filePath: filePath,
+        strategy: strategy,
+        chunkDelay: chunkDelay,
+        onProgress: onProgress,
+      );
+      return result;
+    } finally {
+      _endOperation(); // End tracking -> Schedule debounce
+    }
+  }
 
   /// Search for relevant chunks and assemble context for LLM.
   ///
@@ -250,15 +314,18 @@ class RagEngine {
     int adjacentChunks = 0,
     bool singleSourceMode = false,
     List<int>? sourceIds,
-  }) => _ragService.search(
-    query,
-    topK: topK,
-    tokenBudget: tokenBudget,
-    strategy: strategy,
-    adjacentChunks: adjacentChunks,
-    singleSourceMode: singleSourceMode,
-    sourceIds: sourceIds,
-  );
+  }) async {
+    await _flushIndex(); // Ensure index is up-to-date before searching
+    return _ragService.search(
+      query,
+      topK: topK,
+      tokenBudget: tokenBudget,
+      strategy: strategy,
+      adjacentChunks: adjacentChunks,
+      singleSourceMode: singleSourceMode,
+      sourceIds: sourceIds,
+    );
+  }
 
   /// Hybrid search combining vector and keyword (BM25) search.
   ///
@@ -269,13 +336,16 @@ class RagEngine {
     double vectorWeight = 0.5,
     double bm25Weight = 0.5,
     List<int>? sourceIds,
-  }) => _ragService.searchHybrid(
-    query,
-    topK: topK,
-    vectorWeight: vectorWeight,
-    bm25Weight: bm25Weight,
-    sourceIds: sourceIds,
-  );
+  }) async {
+    await _flushIndex(); // Ensure index is up-to-date before searching
+    return _ragService.searchHybrid(
+      query,
+      topK: topK,
+      vectorWeight: vectorWeight,
+      bm25Weight: bm25Weight,
+      sourceIds: sourceIds,
+    );
+  }
 
   /// Hybrid search with context assembly for LLM.
   ///
@@ -291,23 +361,34 @@ class RagEngine {
     List<int>? sourceIds,
     int adjacentChunks = 0,
     bool singleSourceMode = false,
-  }) => _ragService.searchHybridWithContext(
-    query,
-    topK: topK,
-    tokenBudget: tokenBudget,
-    strategy: strategy,
-    vectorWeight: vectorWeight,
-    bm25Weight: bm25Weight,
-    sourceIds: sourceIds,
-    adjacentChunks: adjacentChunks,
-    singleSourceMode: singleSourceMode,
-  );
+  }) async {
+    await _flushIndex(); // Ensure index is up-to-date before searching
+    return _ragService.searchHybridWithContext(
+      query,
+      topK: topK,
+      tokenBudget: tokenBudget,
+      strategy: strategy,
+      vectorWeight: vectorWeight,
+      bm25Weight: bm25Weight,
+      sourceIds: sourceIds,
+      adjacentChunks: adjacentChunks,
+      singleSourceMode: singleSourceMode,
+    );
+  }
 
   /// Rebuild the HNSW index after adding documents.
   ///
   /// Call this after adding one or more documents for optimal search
   /// performance. The index enables fast approximate nearest neighbor search.
-  Future<void> rebuildIndex() => _ragService.rebuildIndex();
+  /// [force] - If true, rebuilds even if no changes were detected (default: false).
+  Future<void> rebuildIndex({bool force = false}) {
+    _indexDebounceTimer
+        ?.cancel(); // Cancel any pending auto-rebuild since we are doing it now
+    _indexDebounceTimer = null;
+    return _ragService.rebuildIndex(
+      force: force,
+    ); // Service handles dirty check
+  }
 
   /// Try to load a cached HNSW index from disk.
   ///
@@ -321,7 +402,14 @@ class RagEngine {
   Future<SourceStats> getStats() => _ragService.getStats();
 
   /// Remove a source and all its chunks from the database.
-  Future<void> removeSource(int sourceId) => _ragService.removeSource(sourceId);
+  Future<void> removeSource(int sourceId) async {
+    _startOperation();
+    try {
+      await _ragService.removeSource(sourceId);
+    } finally {
+      _endOperation();
+    }
+  }
 
   /// Get a list of all stored sources.
   Future<List<SourceEntry>> listSources() => _ragService.listSources();

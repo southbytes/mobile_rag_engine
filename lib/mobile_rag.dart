@@ -151,7 +151,10 @@ class MobileRag {
   /// Add a document with automatic chunking and embedding.
   ///
   /// The document is split into chunks, embedded, and stored.
-  /// Remember to call [rebuildIndex] after adding documents.
+  ///
+  /// **Note:** Indexing is **automatic** (debounced by 500ms).
+  /// You generally do NOT need to call [rebuildIndex] manually, unless you want
+  /// to ensure the index is ready immediately (e.g., before a UI update).
   Future<SourceAddResult> addDocument(
     String content, {
     String? metadata,
@@ -237,8 +240,8 @@ class MobileRag {
   /// Rebuild the HNSW index.
   ///
   /// **When to use:**
-  /// - **Required:** After adding new documents (to make them searchable).
-  /// - **Recommended:** After deleting a large number of sources (to clean up the index).
+  /// - **Automatic:** The engine automatically rebuilds 500ms after the last operation.
+  /// - **Manual:** Call this if you want to **force** an immediate rebuild (e.g., to guarantee consistency before a critical search).
   /// - **Not needed:** After `clearAllData()` (which resets everything).
   ///
   /// This operation can be slow for large datasets.

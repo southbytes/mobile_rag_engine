@@ -137,7 +137,11 @@ class MySearchScreen extends StatelessWidget {
     await MobileRag.instance.addDocument(
       'Flutter is a UI toolkit for building apps.',
     );
-    await MobileRag.instance.rebuildIndex();
+    await MobileRag.instance.addDocument(
+      'Flutter is a UI toolkit for building apps.',
+    );
+    // Indexing is automatic! (Debounced 500ms)
+    // Optional: await MobileRag.instance.rebuildIndex(); // Call if you want it done NOW
   
     // 3. Search with LLM-ready context
     final result = await MobileRag.instance.search(
@@ -177,7 +181,9 @@ Future<void> importDocument() async {
 
   // Add to RAG with auto-chunking
   await MobileRag.instance.addDocument(text, filePath: result.files.single.path);
-  await MobileRag.instance.rebuildIndex();
+  // Add to RAG with auto-chunking
+  await MobileRag.instance.addDocument(text, filePath: result.files.single.path);
+  // await MobileRag.instance.rebuildIndex(); // Optional: Force immediate update
 }
 ```
 

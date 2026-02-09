@@ -9,6 +9,8 @@
 library;
 
 import 'dart:developer';
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import '../src/rust/api/error.dart';
 import '../src/rust/api/source_rag.dart' as rust_rag;
@@ -136,6 +138,39 @@ class SourceRagService {
   /// Get the HNSW index path (derived from dbPath)
   String get _indexPath => dbPath.replaceAll('.db', '_hnsw');
 
+  /// File marker to indicate if the index is dirty (needs rebuild).
+  /// This persists across app restarts for crash recovery.
+  File get _dirtyMarkerFile => File('${dbPath.replaceAll('.db', '')}.dirty');
+
+  /// Memory flag to track dirty state alongside the file marker.
+  bool _needsRebuild = false;
+
+  /// Mark the index as dirty (needs rebuild).
+  /// Creates a persistent marker file.
+  Future<void> _markDirty() async {
+    _needsRebuild = true;
+    try {
+      if (!await _dirtyMarkerFile.exists()) {
+        await _dirtyMarkerFile.create();
+      }
+    } catch (e) {
+      debugPrint('[SourceRagService] Failed to create dirty marker: $e');
+    }
+  }
+
+  /// Mark the index as clean (rebuild complete).
+  /// Deletes the persistent marker file.
+  Future<void> _markClean() async {
+    _needsRebuild = false;
+    try {
+      if (await _dirtyMarkerFile.exists()) {
+        await _dirtyMarkerFile.delete();
+      }
+    } catch (e) {
+      debugPrint('[SourceRagService] Failed to delete dirty marker: $e');
+    }
+  }
+
   /// Initialize the source database.
   Future<void> init() async {
     try {
@@ -164,6 +199,15 @@ class SourceRagService {
       // 4. Initialize DB
       debugPrint('[SourceRagService] init: Initializing Source DB...');
       await initSourceDb();
+
+      // 4.1 Check for dirty marker (Crash Recovery)
+      if (await _dirtyMarkerFile.exists()) {
+        debugPrint(
+          '[SourceRagService] Found dirty marker. Previous session might have crashed.',
+        );
+        debugPrint('[SourceRagService] Index will be rebuilt automatically.');
+        _needsRebuild = true;
+      }
 
       // 5. Rebuild indexes for existing chunks (both are in-memory only)
       // This is critical because neither HNSW nor BM25 indexes are persisted to disk
@@ -258,6 +302,9 @@ class SourceRagService {
         chunkCount: res.chunkCount,
         message: res.message,
       );
+
+      // Mark index as dirty (Persistent)
+      await _markDirty();
     } on RagError catch (e) {
       e.when(
         databaseError: (msg) =>
@@ -428,12 +475,21 @@ class SourceRagService {
   }
 
   /// Rebuild the HNSW and BM25 indexes after adding sources.
-  Future<void> rebuildIndex() async {
+  /// [force] - If true, rebuilds even if no changes were detected (default: false).
+  Future<void> rebuildIndex({bool force = false}) async {
+    if (!force && !_needsRebuild) {
+      debugPrint(
+        '[SourceRagService] Index is already up to date. Skipping rebuild.',
+      );
+      return;
+    }
     try {
       // Rebuild HNSW for vector search
       await rebuildChunkHnswIndex();
       // Rebuild BM25 for keyword search (critical for hybrid search!)
       await rebuildChunkBm25Index();
+
+      await _markClean(); // Mark index as clean (Persistent)
     } on RagError catch (e) {
       e.when(
         databaseError: (msg) =>
@@ -744,6 +800,7 @@ class SourceRagService {
   Future<void> removeSource(int sourceId) async {
     try {
       await deleteSource(sourceId: sourceId);
+      await _markDirty(); // Mark index as dirty (Persistent)
     } on RagError catch (e) {
       debugPrint(
         '[SmartError] Failed to remove source $sourceId: ${e.message}',
