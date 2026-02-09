@@ -1,9 +1,10 @@
 # Changelog
 
 ## 0.9.1
-
-- **Hybrid Search Enhancement**: Added `adjacentChunks` and `singleSourceMode` support to `searchHybridWithContext()`.
-- **Code Quality**: Removed unnecessary `dart:typed_data` imports.
+* Improved markdown chunking logic:
+  * **Structure Preservation**: Code blocks and tables are now split intelligently, preserving their type (`code`, `table`) instead of reverting to plain text.
+  * **Code Block Linking**: Large code blocks split into multiple chunks now carry metadata (`batch_id`, `batch_index`, `batch_total`) to allow reconstructing the original block.
+  * **Table Header Repetition**: Large tables split across chunks now automatically repeat the header row in every chunk to maintain column context.
 
 ## 0.9.0
 

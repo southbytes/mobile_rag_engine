@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.9.3
+* **Core Engine Update**: Incorporates `rag_engine_flutter` v0.9.2 improvements.
+  * Enhanced markdown chunking with structure preservation for code blocks and tables.
+  * Added linking metadata for split code blocks to support context reconstruction.
+  * Improved handling of large tables with automatic header repetition.
+
 ## 0.9.2
 
 ### Changed
