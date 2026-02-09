@@ -538,7 +538,7 @@ mod tests {
 
         // 2. Add Source with Metadata
         let metadata = r#"{"author": "Test Author", "year": 2025}"#;
-        let source_res = add_source("Test Content".to_string(), Some(metadata.to_string())).unwrap();
+        let source_res = add_source("Test Content".to_string(), Some(metadata.to_string()), None).unwrap();
         
         let chunk = ChunkData {
             content: "Test Chunk".to_string(),

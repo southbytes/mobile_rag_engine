@@ -46,7 +46,8 @@ fn join_pages(pages: Vec<String>) -> String {
         .map(|p| remove_trailing_page_number(p))
         .collect();
     
-    let hyphen_end_re = Regex::new(r"(\w+)-\s*$").unwrap();
+    // Include standard hyphen (-), soft hyphen (\u{00AD}), hyphen (\u{2010}), non-breaking hyphen (\u{2011})
+    let hyphen_end_re = Regex::new(r"(\w+)[-\u{00AD}\u{2010}\u{2011}]\s*$").unwrap();
     let word_start_re = Regex::new(r"^\s*(\w+)").unwrap();
     
     let mut result = String::new();
@@ -91,7 +92,8 @@ fn join_pages(pages: Vec<String>) -> String {
     // Handle in-line hyphenation (line breaks within pages)
     // Only join when: word- + newline + lowercase continuation
     // Preserves real compound words like "user-facing", "data-binding"
-    let inline_hyphen_re = Regex::new(r"(\w+)-\s*[\r\n]+\s*([a-z]\w*)").unwrap();
+    // Also handles soft hyphens etc.
+    let inline_hyphen_re = Regex::new(r"(\w+)[-\u{00AD}\u{2010}\u{2011}]\s*[\r\n]+\s*([a-z]\w*)").unwrap();
     let dehyphenated = inline_hyphen_re.replace_all(&result, "$1$2");
     
     // Normalize whitespace
@@ -373,4 +375,24 @@ mod tests {
         
     //     assert!(result.contains("해지환급금"), "Failed to dehyphenate '해지환급금'");
     // }
+    #[test]
+    fn test_weird_hyphens() {
+        // Standard hyphen
+        let pages = vec!["highly-read-\n\nable".to_string()];
+        let result = join_pages(pages);
+        assert_eq!(result, "highly-readable");
+
+        // Soft hyphen (U+00AD) - The Regex expects literal '-', so this might fail to join 
+        // and leave the soft hyphen in the output.
+        let pages_soft = vec!["highly-read\u{00AD}\n\nable".to_string()];
+        let result_soft = join_pages(pages_soft);
+        // If it fails to join, it will likely be "highly-read\u{00AD} able" (with space)
+        // We want to see what happens currenty. 
+        // If it fails, we know we need to fix the regex.
+        println!("Soft hyphen result: {}", result_soft);
+        
+        // We expect it to FAIL joining currently, resulting in the soft hyphen remaining
+        // and a space being inserted.
+        assert_eq!(result_soft, "highly-readable", "Soft hyphen SHOULD match regex now");
+    }
 }
