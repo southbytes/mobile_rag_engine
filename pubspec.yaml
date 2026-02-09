@@ -20,7 +20,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_rust_bridge: ^2.11.1
-  rag_engine_flutter: ^0.9.0
+  rag_engine_flutter: ^0.9.1
   # rag_engine_flutter:
     # path: rust_builder
   path_provider: ^2.1.5
