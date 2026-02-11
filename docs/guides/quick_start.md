@@ -86,6 +86,7 @@ await MobileRag.instance.addDocument(
 );
 
 // Add PDF/DOCX
+// See [Markdown Chunker](../features/markdown_chunker.md) for structural handling
 final bytes = await File('document.pdf').readAsBytes();
 final text = await DocumentParser.parse(bytes.toList());
 await MobileRag.instance.addDocument(text, filePath: 'document.pdf');
@@ -97,6 +98,8 @@ await MobileRag.instance.rebuildIndex();
 ---
 
 ## Step 5: Search
+
+See [Search Strategies](../features/search_strategies.md) and [Adjacent Chunk Retrieval](../features/adjacent_chunk_retrieval.md) for more details.
 
 ```dart
 final result = await MobileRag.instance.search(
@@ -119,7 +122,7 @@ for (final chunk in result.chunks) {
 
 ## Step 6: Source-Filtered Search (New!)
 
-You can search within specific documents using `searchHybrid` with `sourceIds`. 
+You can search within specific documents using `searchHybrid` with `sourceIds`. See [Search by Source](../features/search_by_source.md) for full guide.
 
 **Key Feature - Independent Source Search (Exact Scan):**
 When you specify a source, the engine switches to a "Brute Force" mode, scanning *every* chunk in that source. This guarantees perfect recall within that document, even if the content isn't "globally" top-ranked.
@@ -142,6 +145,8 @@ print('Found ${results.length} results in thesis source');
 ---
 
 ## Step 7: Manage Data
+
+See [Index Management](../features/index_management.md) for advanced operations.
 
 ```dart
 // List all sources
@@ -237,7 +242,7 @@ for (var r in results.chunks) {
 ## Step 9: Advanced Features
 
 ### 1. Optimize Startup (Cached Index)
-Instead of rebuilding the index every time, you can load a previously cached index.
+Instead of rebuilding the index every time, you can load a previously cached index. See [Index Management](../features/index_management.md#hnsw-index-persistence) for details.
 
 ```dart
 await MobileRag.initialize(...);

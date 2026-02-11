@@ -51,7 +51,7 @@ Data never leaves the user's device. Perfect for privacy-focused apps (journals,
 | **Document Input** | PDF, DOCX, Markdown, Plain Text with smart dehyphenation |
 | **Chunking** | Semantic chunking, Markdown structure-aware, header path inheritance |
 | **Search** | HNSW vector + BM25 keyword hybrid search with RRF fusion |
-| **Storage** | SQLite persistence, connection pooling, resumable indexing |
+| **Storage** | SQLite persistence, HNSW Index persistence (fast startup), connection pooling, resumable indexing |
 | **Performance** | Rust core, 10x faster tokenization, thread control, memory optimized |
 | **Context** | Token budget, adjacent chunk expansion, single source mode |
 
@@ -233,6 +233,41 @@ Check out the example application using this package. This desktop app demonstra
 
 ---
 
+## Unit Testing
+
+You can test your app logic without loading the native Rust library by injecting a mock instance.
+
+```dart
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile_rag_engine/mobile_rag_engine.dart';
+import 'package:mocktail/mocktail.dart';
+
+class MockMobileRag extends Mock implements MobileRag {}
+
+void main() {
+  test('UI handles search results', () async {
+    final mock = MockMobileRag();
+    
+    // Inject mock (bypasses native Rust initialization)
+    MobileRag.setMockInstance(mock);
+    
+    when(() => mock.search(any())).thenAnswer(
+      (_) async => RagSearchResult(
+        chunks: [], 
+        context: AssembledContext(text: 'Mock context', tokens: 10),
+      )
+    );
+
+    // Run your app code
+    await MobileRag.instance.search('Hello');
+    
+    verify(() => mock.search('Hello')).called(1);
+  });
+}
+```
+
+---
+
 ## Contributing
 
 Bug reports, feature requests, and PRs are all welcome!
@@ -240,3 +275,24 @@ Bug reports, feature requests, and PRs are all welcome!
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## Full Documentation Index
+
+### Features
+*   [Adjacent Chunk Retrieval](docs/features/adjacent_chunk_retrieval.md) - Fetch surrounding context.
+*   [Index Management](docs/features/index_management.md) - Stats, persistence, and recovery.
+*   [Markdown Chunker](docs/features/markdown_chunker.md) - Structure-aware text splitting.
+*   [Prompt Compression](docs/features/prompt_compression.md) - Reduce token usage.
+*   [Search by Source](docs/features/search_by_source.md) - Filter results by document.
+*   [Search Strategies](docs/features/search_strategies.md) - Tune ranking and retrieval.
+
+### Guides
+*   [Quick Start](docs/guides/quick_start.md) - Setup in 5 minutes.
+*   [Model Setup](docs/guides/model_setup.md) - Choosing and downloading models.
+*   [Troubleshooting](docs/guides/troubleshooting.md) - Common fixes.
+*   [FAQ](docs/guides/faq.md) - Frequently asked questions.
+
+### Testing
+*   [Unit Testing](docs/test/unit_testing.md) - Mocking for isolated tests.
