@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.10.1
+* Maintenance release:
+  * Fix hnsw uninitialized error.(caused by updating hnsw cargo version)
+
 ## 0.10.0
 * Maintenance release:
   * Updated dependencies.
