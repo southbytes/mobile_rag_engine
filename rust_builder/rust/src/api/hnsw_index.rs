@@ -40,7 +40,7 @@ impl EmbeddingPoint {
 }
 
 /// Global HNSW index (thread-safe in-memory cache).
-static HNSW_INDEX: Lazy<RwLock<Option<Hnsw<f32, DistCosine>>>> = 
+static HNSW_INDEX: Lazy<RwLock<Option<Hnsw<'static, f32, DistCosine>>>> = 
     Lazy::new(|| RwLock::new(None));
 
 /// Build HNSW index from embedding points.
@@ -103,16 +103,31 @@ pub fn save_hnsw_index(base_path: &str) -> anyhow::Result<()> {
     info!("[hnsw] Saving index to {}", base_path);
     
     let index_guard = HNSW_INDEX.read().unwrap();
-    let index = index_guard.as_ref()
-        .ok_or_else(|| anyhow::anyhow!("HNSW index not initialized"))?;
     
-    // Create directory if it doesn't exist
-    if let Some(parent) = Path::new(base_path).parent() {
-        std::fs::create_dir_all(parent)?;
+    let index = match index_guard.as_ref() {
+        Some(idx) => idx,
+        None => {
+            warn!("[hnsw] Index not initialized (empty), skipping save");
+            return Ok(());
+        }
+    };
+    
+    if index.get_nb_point() == 0 {
+        warn!("[hnsw] Index is empty, skipping save to avoid crash");
+        return Ok(());
     }
     
-    // hnsw_rs file_dump creates multiple files in the directory
-    index.file_dump(base_path)?;
+    let path = Path::new(base_path);
+    let parent = path.parent().ok_or_else(|| anyhow::anyhow!("Invalid base path"))?;
+    let file_stem = path.file_stem().ok_or_else(|| anyhow::anyhow!("Invalid filename"))?;
+    // Convert OsStr to String, which file_dump expects for filename base
+    let filename = file_stem.to_str().ok_or_else(|| anyhow::anyhow!("Invalid UTF-8 filename"))?;
+
+    // Create directory if it doesn't exist
+    std::fs::create_dir_all(parent)?;
+    
+    // hnsw_rs 0.3 file_dump takes (directory, filename_base)
+    index.file_dump(parent, filename)?;
     
     info!("[hnsw] Index saved successfully");
     Ok(())
@@ -123,6 +138,7 @@ pub fn save_hnsw_index(base_path: &str) -> anyhow::Result<()> {
 /// Returns true if the index was successfully loaded into memory.
 pub fn load_hnsw_index(base_path: &str) -> anyhow::Result<bool> {
     // Check if the primary data file exists to avoid unnecessary log noise
+    // hnsw_rs adds .hnsw.data and .hnsw.graph to the base name
     let data_path = format!("{}.hnsw.data", base_path);
     if !Path::new(&data_path).exists() {
         debug!("[hnsw] No index files found at {}", base_path);
@@ -131,9 +147,22 @@ pub fn load_hnsw_index(base_path: &str) -> anyhow::Result<bool> {
 
     info!("[hnsw] Loading index from {}", base_path);
     
+    let path = Path::new(base_path);
+    let parent = path.parent().ok_or_else(|| anyhow::anyhow!("Invalid base path"))?;
+    let file_stem = path.file_stem().ok_or_else(|| anyhow::anyhow!("Invalid filename"))?;
+    let filename = file_stem.to_str().ok_or_else(|| anyhow::anyhow!("Invalid UTF-8 filename"))?;
+
+    // hnsw_rs 0.3 load_hnsw is a method of HnswIo
+    let hnswio = HnswIo::new(parent, filename);
+    
+    // We need to extend the lifetime of hnswio to 'static because HNSW_INDEX is static.
+    // Hnsw<'b> borrows from HnswIo if mmap is used (or is tied to it by signature).
+    // By leaking the Box, we get a &'static mut HnswIo, allowing load_hnsw to return Hnsw<'static>.
+    let hnswio = Box::leak(Box::new(hnswio));
+
     // hnsw_rs load_hnsw reconstructs the index from files
     // DistCosine must match the one used during build
-    match load_hnsw::<f32, DistCosine>(base_path) {
+    match hnswio.load_hnsw::<f32, DistCosine>() {
         Ok(hnsw) => {
             let mut index_guard = HNSW_INDEX.write().unwrap();
             *index_guard = Some(hnsw);
@@ -141,6 +170,9 @@ pub fn load_hnsw_index(base_path: &str) -> anyhow::Result<bool> {
             Ok(true)
         }
         Err(e) => {
+            // If loading fails, we technically leaked hnswio memory, but this happens rarely (only on error)
+            // and it's a small struct (path + options), so it's acceptable for this use case.
+            // Ideally we would reconstruct the box and drop it, but error handling complexity outweighs benefit here.
             warn!("[hnsw] Failed to load index: {}. Rebuild required.", e);
             Ok(false)
         }
