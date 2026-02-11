@@ -39,13 +39,19 @@ class _ChunkingTestScreenState extends State<ChunkingTestScreen> {
 
     // Recursive chunking
     final recursiveStart = DateTime.now();
-    final recursive = semanticChunk(text: text, maxChars: _maxChars.toInt());
+    final recursive = await TextChunker.recursive(
+      text,
+      maxChars: _maxChars.toInt(),
+    );
     final recursiveEnd = DateTime.now();
     _recursiveTimeMs = recursiveEnd.difference(recursiveStart).inMilliseconds;
 
     // Markdown chunking
     final markdownStart = DateTime.now();
-    final markdown = markdownChunk(text: text, maxChars: _maxChars.toInt());
+    final markdown = await TextChunker.markdown(
+      text,
+      maxChars: _maxChars.toInt(),
+    );
     final markdownEnd = DateTime.now();
     _markdownTimeMs = markdownEnd.difference(markdownStart).inMilliseconds;
 

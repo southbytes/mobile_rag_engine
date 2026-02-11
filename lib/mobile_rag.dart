@@ -24,6 +24,7 @@
 /// ```
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:mobile_rag_engine/services/rag_config.dart';
 import 'package:mobile_rag_engine/services/rag_engine.dart';
 import 'package:mobile_rag_engine/services/context_builder.dart';
@@ -41,6 +42,8 @@ export 'package:mobile_rag_engine/src/rust/api/source_rag.dart'
         AddSourceResult,
         ChunkData,
         SourceEntry;
+
+export 'package:mobile_rag_engine/services/text_chunker.dart';
 
 /// Singleton facade for Mobile RAG Engine.
 ///
@@ -118,6 +121,18 @@ class MobileRag {
       onProgress: onProgress,
     );
     _instance = MobileRag._();
+  }
+
+  /// **(FOR TESTING ONLY)** Inject a custom instance for mocking.
+  ///
+  /// This allows you to provide a mock implementation or a pre-configured
+  /// engine instance in unit tests.
+  @visibleForTesting
+  static void setMockInstance(MobileRag? mock) {
+    _instance = mock;
+    if (mock != null && mock.engine != _engine) {
+      _engine = mock.engine;
+    }
   }
 
   /// Check if the engine is initialized.
@@ -224,16 +239,20 @@ class MobileRag {
     int topK = 10,
     int tokenBudget = 2000,
     ContextStrategy strategy = ContextStrategy.relevanceFirst,
+    int adjacentChunks = 0,
     double vectorWeight = 0.5,
     double bm25Weight = 0.5,
+    bool singleSourceMode = false,
     List<int>? sourceIds,
   }) => _engine!.searchHybridWithContext(
     query,
     topK: topK,
     tokenBudget: tokenBudget,
     strategy: strategy,
+    adjacentChunks: adjacentChunks,
     vectorWeight: vectorWeight,
     bm25Weight: bm25Weight,
+    singleSourceMode: singleSourceMode,
     sourceIds: sourceIds,
   );
 

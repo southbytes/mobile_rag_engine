@@ -51,6 +51,7 @@ export 'services/embedding_service.dart';
 export 'services/benchmark_service.dart';
 export 'services/quality_test_service.dart';
 export 'services/prompt_compressor.dart';
+export 'services/text_chunker.dart';
 
 // Document parsing
 export 'services/document_parser.dart';
@@ -67,9 +68,7 @@ export 'src/rust/api/source_rag.dart'
         SourceStats,
         AddSourceResult,
         ChunkData,
-        SourceEntry,
-        ChunkForReembedding,
-        getAllChunkIdsAndContents;
+        SourceEntry;
 
 // Hybrid Search Types
 export 'src/rust/api/hybrid_search.dart' show HybridSearchResult;
@@ -79,12 +78,7 @@ export 'src/rust/api/user_intent.dart';
 
 // Semantic Chunking Types
 export 'src/rust/api/semantic_chunker.dart'
-    show
-        SemanticChunk,
-        StructuredChunk,
-        ChunkType,
-        semanticChunk,
-        markdownChunk;
+    show SemanticChunk, StructuredChunk, ChunkType;
 
 // Error Types
 export 'src/rust/api/error.dart' show RagError;

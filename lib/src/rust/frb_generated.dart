@@ -3170,8 +3170,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   HybridSearchResult dco_decode_hybrid_search_result(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 7)
-      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
     return HybridSearchResult(
       docId: dco_decode_i_64(arr[0]),
       content: dco_decode_String(arr[1]),
@@ -3180,6 +3180,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       bm25Rank: dco_decode_u_32(arr[4]),
       sourceId: dco_decode_i_64(arr[5]),
       metadata: dco_decode_opt_String(arr[6]),
+      chunkIndex: dco_decode_u_32(arr[7]),
     );
   }
 
@@ -3849,6 +3850,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_bm25Rank = sse_decode_u_32(deserializer);
     var var_sourceId = sse_decode_i_64(deserializer);
     var var_metadata = sse_decode_opt_String(deserializer);
+    var var_chunkIndex = sse_decode_u_32(deserializer);
     return HybridSearchResult(
       docId: var_docId,
       content: var_content,
@@ -3857,6 +3859,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       bm25Rank: var_bm25Rank,
       sourceId: var_sourceId,
       metadata: var_metadata,
+      chunkIndex: var_chunkIndex,
     );
   }
 
@@ -4660,6 +4663,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_u_32(self.bm25Rank, serializer);
     sse_encode_i_64(self.sourceId, serializer);
     sse_encode_opt_String(self.metadata, serializer);
+    sse_encode_u_32(self.chunkIndex, serializer);
   }
 
   @protected

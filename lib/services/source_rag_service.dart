@@ -15,27 +15,7 @@ import 'package:flutter/foundation.dart';
 import '../src/rust/api/error.dart';
 import '../src/rust/api/source_rag.dart' as rust_rag;
 import '../src/rust/api/source_rag.dart'
-    show
-        SourceStats,
-        ChunkSearchResult,
-        // AddSourceResult, // Unused
-        ChunkData,
-        SourceEntry,
-        initSourceDb,
-        addSource,
-        addChunks,
-        // listSources, // Removed to avoid collision, using rust_rag.listSources
-        searchChunks, // Added back
-        deleteSource,
-        getAdjacentChunks,
-        getSource,
-        getSourceStats,
-        getAllChunkIdsAndContents,
-        updateChunkEmbedding,
-        rebuildChunkHnswIndex,
-        rebuildChunkBm25Index,
-        getSourceChunkCount,
-        updateSourceStatus;
+    show SourceStats, ChunkSearchResult, ChunkData, SourceEntry;
 import '../src/rust/api/semantic_chunker.dart';
 import '../src/rust/api/hybrid_search.dart' as hybrid;
 import '../src/rust/api/hnsw_index.dart' as hnsw;
@@ -198,7 +178,7 @@ class SourceRagService {
 
       // 4. Initialize DB
       debugPrint('[SourceRagService] init: Initializing Source DB...');
-      await initSourceDb();
+      await rust_rag.initSourceDb();
 
       // 4.1 Check for dirty marker (Crash Recovery)
       if (await _dirtyMarkerFile.exists()) {
@@ -209,12 +189,27 @@ class SourceRagService {
         _needsRebuild = true;
       }
 
-      // 5. Rebuild indexes for existing chunks (both are in-memory only)
-      // This is critical because neither HNSW nor BM25 indexes are persisted to disk
-      debugPrint('[SourceRagService] init: Rebuilding HNSW index...');
-      await rebuildChunkHnswIndex(); // Vector search
+      // 5. Load or Rebuild indexes
+      // BM25 is currently in-memory only and fast to rebuild from SQLite
       debugPrint('[SourceRagService] init: Rebuilding BM25 index...');
-      await rebuildChunkBm25Index(); // Keyword search
+      await rust_rag.rebuildChunkBm25Index();
+
+      // HNSW can be slow to rebuild for large datasets, so we try loading from disk first
+      debugPrint('[SourceRagService] init: Attempting to load HNSW index from disk...');
+      final loaded = await tryLoadCachedIndex();
+      
+      if (loaded && !_needsRebuild) {
+        debugPrint('[SourceRagService] init: HNSW index loaded successfully from cache.');
+      } else {
+        if (_needsRebuild) {
+          debugPrint('[SourceRagService] init: Dirty marker found, forcing HNSW rebuild.');
+        } else {
+          debugPrint('[SourceRagService] init: No cached HNSW index found, rebuilding from DB.');
+        }
+        await rust_rag.rebuildChunkHnswIndex();
+        // Save the newly built index for next time
+        await saveIndex();
+      }
 
       debugPrint('[SourceRagService] init: Done!');
     } on RagError catch (e) {
@@ -291,7 +286,7 @@ class SourceRagService {
     // 1. Add source document
     late SourceAddResult sourceResult;
     try {
-      final res = await addSource(
+      final res = await rust_rag.addSource(
         content: content,
         metadata: metadata,
         name: name,
@@ -341,12 +336,12 @@ class SourceRagService {
     int startIndex = 0;
     if (sourceResult.isDuplicate) {
       try {
-        final existingCount = await getSourceChunkCount(
+        final existingCount = await rust_rag.getSourceChunkCount(
           sourceId: sourceResult.sourceId.toInt(),
         );
         if (existingCount >= allRawChunks.length) {
           // Ensure it's marked as completed if it wasn't already
-          await updateSourceStatus(
+          await rust_rag.updateSourceStatus(
             sourceId: sourceResult.sourceId,
             status: 'completed',
           );
@@ -424,14 +419,14 @@ class SourceRagService {
 
         // Incremental save
         if (chunkDataBatch.length >= batchSize) {
-          await addChunks(
+          await rust_rag.addChunks(
             sourceId: sourceResult.sourceId,
             chunks: chunkDataBatch,
           );
           chunkDataBatch.clear();
           // Optional: Update status to 'processing' or 'partial' if needed, but 'pending' serves as "not done".
           // We could update to 'processing' here to indicate active work.
-          await updateSourceStatus(
+          await rust_rag.updateSourceStatus(
             sourceId: sourceResult.sourceId,
             status: 'processing',
           );
@@ -440,7 +435,7 @@ class SourceRagService {
 
       // Save remaining chunks
       if (chunkDataBatch.isNotEmpty) {
-        await addChunks(
+        await rust_rag.addChunks(
           sourceId: sourceResult.sourceId,
           chunks: chunkDataBatch,
         );
@@ -449,7 +444,7 @@ class SourceRagService {
       onProgress?.call(allRawChunks.length, allRawChunks.length);
 
       // Mark as completed
-      await updateSourceStatus(
+      await rust_rag.updateSourceStatus(
         sourceId: sourceResult.sourceId,
         status: 'completed',
       );
@@ -466,7 +461,7 @@ class SourceRagService {
       debugPrint(
         '[MobileRag] Error adding source ${sourceResult.sourceId}: $e',
       );
-      await updateSourceStatus(
+      await rust_rag.updateSourceStatus(
         sourceId: sourceResult.sourceId,
         status: 'failed',
       );
@@ -485,9 +480,9 @@ class SourceRagService {
     }
     try {
       // Rebuild HNSW for vector search
-      await rebuildChunkHnswIndex();
+      await rust_rag.rebuildChunkHnswIndex();
       // Rebuild BM25 for keyword search (critical for hybrid search!)
-      await rebuildChunkBm25Index();
+      await rust_rag.rebuildChunkBm25Index();
 
       await _markClean(); // Mark index as clean (Persistent)
     } on RagError catch (e) {
@@ -511,39 +506,89 @@ class SourceRagService {
   Future<void> regenerateAllEmbeddings({
     void Function(int done, int total)? onProgress,
   }) async {
-    // 1. Get all chunk IDs and contents
-    final chunks = await getAllChunkIdsAndContents();
+    // 1. Get total stats for progress tracking
+    final stats = await rust_rag.getSourceStats();
+    final totalChunks = stats.chunkCount.toInt();
+
     debugPrint(
-      '[regenerateAllEmbeddings] Found ${chunks.length} chunks to re-embed',
+      '[regenerateAllEmbeddings] Found $totalChunks chunks to re-embed (Safe Batch Mode)',
     );
 
-    // 2. Re-embed each chunk
-    for (var i = 0; i < chunks.length; i++) {
-      final chunk = chunks[i];
-      final embedding = await EmbeddingService.embed(chunk.content);
+    // 2. Iterate by Source to ensure memory safety
+    // Instead of loading all chunks (which could be huge), we process source by source
+    final sources = await rust_rag.listSources();
+    int processedCount = 0;
 
-      // 3. Update in DB
-      await updateChunkEmbedding(
-        chunkId: chunk.chunkId,
-        embedding: Float32List.fromList(embedding),
+    for (final source in sources) {
+      final sourceId = source.id.toInt();
+      final chunkCount = await rust_rag.getSourceChunkCount(
+        sourceId: source.id,
       );
 
-      onProgress?.call(i + 1, chunks.length);
+      // Process chunks for this source in batches
+      const batchSize = 50;
+      for (var offset = 0; offset < chunkCount; offset += batchSize) {
+        // Fetch batch of chunks
+        // We use getAdjacentChunks to fetch specific ranges safely
+        // minIndex = offset, maxIndex = offset + batchSize - 1
+        List<ChunkSearchResult> batch;
+        try {
+          batch = await rust_rag.getAdjacentChunks(
+            sourceId: source.id,
+            minIndex: offset,
+            maxIndex: offset + batchSize - 1, // Inclusive
+          );
+        } catch (e) {
+          debugPrint(
+            '[regenerateAllEmbeddings] Failed to fetch batch for source $sourceId: $e',
+          );
+          continue;
+        }
 
-      // Log progress every 50 chunks
-      if ((i + 1) % 50 == 0) {
-        debugPrint(
-          '[regenerateAllEmbeddings] Progress: ${i + 1}/${chunks.length}',
-        );
+        // Re-embed and update each chunk
+        for (final chunk in batch) {
+          try {
+            final embedding = await EmbeddingService.embed(chunk.content);
+            await rust_rag.updateChunkEmbedding(
+              chunkId: chunk.chunkId,
+              embedding: Float32List.fromList(embedding),
+            );
+          } catch (e) {
+            debugPrint(
+              '[regenerateAllEmbeddings] Failed to update chunk ${chunk.chunkId}: $e',
+            );
+          }
+        }
+
+        processedCount += batch.length;
+        onProgress?.call(processedCount, totalChunks);
+
+        // Yield to event loop to prevent UI jank
+        await Future.delayed(Duration.zero);
       }
     }
 
     debugPrint('[regenerateAllEmbeddings] Completed. Rebuilding HNSW index...');
 
-    // 4. Rebuild HNSW index
-    await rebuildIndex();
+    // 3. Rebuild HNSW index
+    await rebuildIndex(force: true);
 
     debugPrint('[regenerateAllEmbeddings] Done!');
+  }
+
+  /// Fetch adjacent chunks for a given source and index range.
+  ///
+  /// Useful for "Show More" or "Read Previous/Next" features.
+  Future<List<ChunkSearchResult>> getAdjacentChunks({
+    required int sourceId,
+    required int minIndex,
+    required int maxIndex,
+  }) {
+    return rust_rag.getAdjacentChunks(
+      sourceId: sourceId,
+      minIndex: minIndex,
+      maxIndex: maxIndex,
+    );
   }
 
   /// Search for relevant chunks and assemble context for LLM.
@@ -602,7 +647,10 @@ class SourceRagService {
             )
             .toList();
       } else {
-        chunks = await searchChunks(queryEmbedding: queryEmbedding, topK: topK);
+        chunks = await rust_rag.searchChunks(
+          queryEmbedding: queryEmbedding,
+          topK: topK,
+        );
       }
     } on RagError catch (e) {
       e.when(
@@ -741,7 +789,7 @@ class SourceRagService {
 
       List<ChunkSearchResult> adjacent = [];
       try {
-        adjacent = await getAdjacentChunks(
+        adjacent = await rust_rag.getAdjacentChunks(
           sourceId: chunk.sourceId,
           minIndex: minIndex,
           maxIndex: maxIndex,
@@ -775,12 +823,12 @@ class SourceRagService {
 
   /// Get the original source document for a chunk.
   Future<String?> getSourceForChunk(ChunkSearchResult chunk) async {
-    return await getSource(sourceId: chunk.sourceId);
+    return await rust_rag.getSource(sourceId: chunk.sourceId);
   }
 
   /// Get statistics about stored sources and chunks.
   Future<SourceStats> getStats() async {
-    return await getSourceStats();
+    return await rust_rag.getSourceStats();
   }
 
   /// Format search results as an LLM prompt.
@@ -799,7 +847,7 @@ class SourceRagService {
   /// Remove a source and all its chunks from the database.
   Future<void> removeSource(int sourceId) async {
     try {
-      await deleteSource(sourceId: sourceId);
+      await rust_rag.deleteSource(sourceId: sourceId);
       await _markDirty(); // Mark index as dirty (Persistent)
     } on RagError catch (e) {
       debugPrint(
@@ -913,7 +961,7 @@ class SourceRagService {
             chunkId: r.docId,
             sourceId: r.sourceId,
             content: r.content,
-            chunkIndex: 0, // Hybrid search doesn't return chunk index
+            chunkIndex: r.chunkIndex, // Now available from Rust!
             chunkType: 'general', // Hybrid search doesn't return chunk type
             similarity: r.score, // RRF score as similarity
             metadata: r.metadata,

@@ -18,11 +18,15 @@ Future<void> buildHnswIndex({
   required List<(PlatformInt64, Float32List)> points,
 }) => RustLib.instance.api.crateApiHnswIndexBuildHnswIndex(points: points);
 
-/// Save HNSW index marker to disk (uses DB-based persistence).
+/// Save HNSW index to disk using hnsw_rs persistence.
+///
+/// This saves the full graph and data to a directory specified by [base_path].
 Future<void> saveHnswIndex({required String basePath}) =>
     RustLib.instance.api.crateApiHnswIndexSaveHnswIndex(basePath: basePath);
 
-/// Load HNSW index marker. Returns true if marker exists.
+/// Load HNSW index from disk.
+///
+/// Returns true if the index was successfully loaded into memory.
 Future<bool> loadHnswIndex({required String basePath}) =>
     RustLib.instance.api.crateApiHnswIndexLoadHnswIndex(basePath: basePath);
 

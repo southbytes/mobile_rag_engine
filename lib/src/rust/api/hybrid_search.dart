@@ -59,6 +59,7 @@ class HybridSearchResult {
   final int bm25Rank;
   final PlatformInt64 sourceId;
   final String? metadata;
+  final int chunkIndex;
 
   const HybridSearchResult({
     required this.docId,
@@ -68,6 +69,7 @@ class HybridSearchResult {
     required this.bm25Rank,
     required this.sourceId,
     this.metadata,
+    required this.chunkIndex,
   });
 
   @override
@@ -78,7 +80,8 @@ class HybridSearchResult {
       vectorRank.hashCode ^
       bm25Rank.hashCode ^
       sourceId.hashCode ^
-      metadata.hashCode;
+      metadata.hashCode ^
+      chunkIndex.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -91,7 +94,8 @@ class HybridSearchResult {
           vectorRank == other.vectorRank &&
           bm25Rank == other.bm25Rank &&
           sourceId == other.sourceId &&
-          metadata == other.metadata;
+          metadata == other.metadata &&
+          chunkIndex == other.chunkIndex;
 }
 
 class RrfConfig {
