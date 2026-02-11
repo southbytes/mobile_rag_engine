@@ -41,6 +41,7 @@ pub struct HybridSearchResult {
     pub bm25_rank: u32,
     pub source_id: i64,
     pub metadata: Option<String>,
+    pub chunk_index: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -260,10 +261,10 @@ pub fn search_hybrid(
     let id_list = target_ids.join(",");
     
     let conn = get_connection().map_err(|e| RagError::DatabaseError(e.to_string()))?;
-    // Map: id -> (content, source_id, metadata)
-    let mut content_map: HashMap<i64, (String, i64, Option<String>)> = HashMap::new();
+    // Map: id -> (content, source_id, metadata, chunk_index)
+    let mut content_map: HashMap<i64, (String, i64, Option<String>, u32)> = HashMap::new();
     
-    // First try docs table (Simple RAG) - assume source_id=id, metadata=None
+    // First try docs table (Simple RAG) - assume source_id=id, metadata=None, chunk_index=0
     // BUT if filter was active, we likely filtered these out.
     if filter.is_none() {
         let query_docs = format!("SELECT id, content FROM docs WHERE id IN ({})", id_list);
@@ -272,7 +273,7 @@ pub fn search_hybrid(
             if let Ok(rows) = found_docs {
                 for row in rows {
                      if let Ok((id, content)) = row {
-                        content_map.insert(id, (content, id, None));
+                        content_map.insert(id, (content, id, None, 0));
                     }
                 }
             }
@@ -288,7 +289,7 @@ pub fn search_hybrid(
     if !missing_ids.is_empty() {
         let missing_list = missing_ids.join(",");
         let query_chunks = format!(
-            "SELECT c.id, c.content, c.source_id, s.metadata 
+            "SELECT c.id, c.content, c.source_id, s.metadata, c.chunk_index 
              FROM chunks c 
              LEFT JOIN sources s ON c.source_id = s.id 
              WHERE c.id IN ({})", 
@@ -301,14 +302,15 @@ pub fn search_hybrid(
                     row.get::<_, i64>(0)?, 
                     row.get::<_, String>(1)?,
                     row.get::<_, i64>(2)?,
-                    row.get::<_, Option<String>>(3)?
+                    row.get::<_, Option<String>>(3)?,
+                    row.get::<_, u32>(4)?
                 ))
             });
             
             if let Ok(results_iter) = found_chunks {
                 for row in results_iter {
-                    if let Ok((id, content, source_id, metadata)) = row {
-                        content_map.insert(id, (content, source_id, metadata));
+                    if let Ok((id, content, source_id, metadata, chunk_index)) = row {
+                        content_map.insert(id, (content, source_id, metadata, chunk_index));
                     }
                 }
             }
@@ -318,7 +320,7 @@ pub fn search_hybrid(
     let mut results: Vec<HybridSearchResult> = Vec::with_capacity(rrf_scores.len());
     
     for (doc_id, score, vec_rank, bm25_rank) in rrf_scores {
-        if let Some((content, source_id, metadata)) = content_map.remove(&doc_id) { 
+        if let Some((content, source_id, metadata, chunk_index)) = content_map.remove(&doc_id) { 
             results.push(HybridSearchResult { 
                 doc_id, 
                 content, 
@@ -326,7 +328,8 @@ pub fn search_hybrid(
                 vector_rank: vec_rank, 
                 bm25_rank,
                 source_id,
-                metadata
+                metadata,
+                chunk_index
             });
         }
     }

@@ -17,6 +17,7 @@
 //! HNSW (Hierarchical Navigable Small Worlds) vector indexing module.
 
 use hnsw_rs::prelude::*;
+use hnsw_rs::hnswio::*;
 use std::sync::RwLock;
 use once_cell::sync::Lazy;
 use log::{info, debug, warn};
@@ -95,31 +96,55 @@ pub fn build_hnsw_index(points: Vec<(i64, Vec<f32>)>) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Save HNSW index marker to disk (uses DB-based persistence).
+/// Save HNSW index to disk using hnsw_rs persistence.
+///
+/// This saves the full graph and data to a directory specified by [base_path].
 pub fn save_hnsw_index(base_path: &str) -> anyhow::Result<()> {
-    info!("[hnsw] save_hnsw_index called - using DB-based persistence");
+    info!("[hnsw] Saving index to {}", base_path);
     
-    let marker_path = format!("{}.hnsw.marker", base_path);
-    if let Some(parent) = Path::new(&marker_path).parent() {
+    let index_guard = HNSW_INDEX.read().unwrap();
+    let index = index_guard.as_ref()
+        .ok_or_else(|| anyhow::anyhow!("HNSW index not initialized"))?;
+    
+    // Create directory if it doesn't exist
+    if let Some(parent) = Path::new(base_path).parent() {
         std::fs::create_dir_all(parent)?;
     }
-    std::fs::write(&marker_path, "1")?;
     
-    info!("[hnsw] Index marker saved to {}", marker_path);
+    // hnsw_rs file_dump creates multiple files in the directory
+    index.file_dump(base_path)?;
+    
+    info!("[hnsw] Index saved successfully");
     Ok(())
 }
 
-/// Load HNSW index marker. Returns true if marker exists.
+/// Load HNSW index from disk. 
+/// 
+/// Returns true if the index was successfully loaded into memory.
 pub fn load_hnsw_index(base_path: &str) -> anyhow::Result<bool> {
-    let marker_path = format!("{}.hnsw.marker", base_path);
-    
-    if Path::new(&marker_path).exists() {
-        info!("[hnsw] Index marker found at {} - rebuild from DB recommended", base_path);
-        return Ok(true);
+    // Check if the primary data file exists to avoid unnecessary log noise
+    let data_path = format!("{}.hnsw.data", base_path);
+    if !Path::new(&data_path).exists() {
+        debug!("[hnsw] No index files found at {}", base_path);
+        return Ok(false);
     }
+
+    info!("[hnsw] Loading index from {}", base_path);
     
-    info!("[hnsw] No index marker found at {}", base_path);
-    Ok(false)
+    // hnsw_rs load_hnsw reconstructs the index from files
+    // DistCosine must match the one used during build
+    match load_hnsw::<f32, DistCosine>(base_path) {
+        Ok(hnsw) => {
+            let mut index_guard = HNSW_INDEX.write().unwrap();
+            *index_guard = Some(hnsw);
+            info!("[hnsw] Index loaded successfully");
+            Ok(true)
+        }
+        Err(e) => {
+            warn!("[hnsw] Failed to load index: {}. Rebuild required.", e);
+            Ok(false)
+        }
+    }
 }
 
 /// HNSW search result containing doc ID and distance.

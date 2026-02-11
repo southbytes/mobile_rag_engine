@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.0
+* Maintenance release:
+  * Updated dependencies.
+  * Internal improvements for `mobile_rag_engine` compatibility.
+
 ## 0.9.1
 * Improved markdown chunking logic:
   * **Structure Preservation**: Code blocks and tables are now split intelligently, preserving their type (`code`, `table`) instead of reverting to plain text.

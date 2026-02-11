@@ -3205,6 +3205,7 @@ impl SseDecode for crate::api::hybrid_search::HybridSearchResult {
         let mut var_bm25Rank = <u32>::sse_decode(deserializer);
         let mut var_sourceId = <i64>::sse_decode(deserializer);
         let mut var_metadata = <Option<String>>::sse_decode(deserializer);
+        let mut var_chunkIndex = <u32>::sse_decode(deserializer);
         return crate::api::hybrid_search::HybridSearchResult {
             doc_id: var_docId,
             content: var_content,
@@ -3213,6 +3214,7 @@ impl SseDecode for crate::api::hybrid_search::HybridSearchResult {
             bm25_rank: var_bm25Rank,
             source_id: var_sourceId,
             metadata: var_metadata,
+            chunk_index: var_chunkIndex,
         };
     }
 }
@@ -4414,6 +4416,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::hybrid_search::HybridSearchRe
             self.bm25_rank.into_into_dart().into_dart(),
             self.source_id.into_into_dart().into_dart(),
             self.metadata.into_into_dart().into_dart(),
+            self.chunk_index.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -4871,6 +4874,7 @@ impl SseEncode for crate::api::hybrid_search::HybridSearchResult {
         <u32>::sse_encode(self.bm25_rank, serializer);
         <i64>::sse_encode(self.source_id, serializer);
         <Option<String>>::sse_encode(self.metadata, serializer);
+        <u32>::sse_encode(self.chunk_index, serializer);
     }
 }
 
