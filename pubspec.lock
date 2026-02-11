@@ -355,6 +355,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  mocktail:
+    dependency: "direct dev"
+    description:
+      name: mocktail
+      sha256: "890df3f9688106f25755f26b1c60589a92b3ab91a22b8b224947ad041bf172d8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.4"
   onnxruntime:
     dependency: "direct main"
     description:
@@ -471,10 +479,10 @@ packages:
     dependency: "direct main"
     description:
       name: rag_engine_flutter
-      sha256: "68e68c3ebb2b18c79026c79fe906f37811db8e590cafb9da6b06154275e9f30c"
+      sha256: acc372bb135d452069360c17194075bef5cde04f469bb24f37a2b9e4f272fd90
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.1"
+    version: "0.10.0"
   shelf:
     dependency: transitive
     description:
