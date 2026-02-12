@@ -35,7 +35,8 @@ import 'package:onnxruntime/onnxruntime.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../src/rust/api/tokenizer.dart';
-import '../src/rust/api/source_rag.dart' show SourceStats, SourceEntry;
+import '../src/rust/api/source_rag.dart'
+    show ChunkSearchResult, SourceStats, SourceEntry;
 import '../src/rust/api/db_pool.dart';
 import 'embedding_service.dart';
 import 'rag_config.dart';
@@ -414,6 +415,38 @@ class RagEngine {
 
   /// Get a list of all stored sources.
   Future<List<SourceEntry>> listSources() => _ragService.listSources();
+
+  /// Get all chunk texts for a specific source.
+  ///
+  /// Returns the raw text content of each chunk in order.
+  /// Useful for displaying full document content reconstructed from chunks.
+  Future<List<String>> getSourceChunks(int sourceId) =>
+      _ragService.getSourceChunks(sourceId: sourceId);
+
+  /// Get adjacent chunks around a given chunk range.
+  ///
+  /// Useful for "Read More" or context expansion features.
+  Future<List<ChunkSearchResult>> getAdjacentChunks({
+    required int sourceId,
+    required int minIndex,
+    required int maxIndex,
+  }) => _ragService.getAdjacentChunks(
+    sourceId: sourceId,
+    minIndex: minIndex,
+    maxIndex: maxIndex,
+  );
+
+  /// Get the number of chunks for a specific source.
+  ///
+  /// Useful for pagination, progress tracking, and batch processing.
+  Future<int> getSourceChunkCount(int sourceId) =>
+      _ragService.getSourceChunkCount(sourceId: sourceId);
+
+  /// Get the original source document content by ID.
+  ///
+  /// Returns null if the source doesn't exist.
+  Future<String?> getSourceDocument(int sourceId) =>
+      _ragService.getSourceDocument(sourceId: sourceId);
 
   /// Format search results as an LLM prompt.
   String formatPrompt(String query, RagSearchResult result) =>

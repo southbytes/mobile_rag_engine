@@ -763,6 +763,28 @@ class SourceRagService {
     return result;
   }
 
+  /// Get all chunk texts for a specific source.
+  ///
+  /// Returns the raw text content of each chunk in order.
+  /// Useful for displaying full document content reconstructed from chunks.
+  Future<List<String>> getSourceChunks({required int sourceId}) async {
+    return await rust_rag.getSourceChunks(sourceId: sourceId);
+  }
+
+  /// Get the total number of chunks for a specific source.
+  ///
+  /// Useful for pagination, progress tracking, and batch processing.
+  Future<int> getSourceChunkCount({required int sourceId}) async {
+    return await rust_rag.getSourceChunkCount(sourceId: sourceId);
+  }
+
+  /// Get the original source document content by source ID.
+  ///
+  /// Returns null if the source doesn't exist.
+  Future<String?> getSourceDocument({required int sourceId}) async {
+    return await rust_rag.getSource(sourceId: sourceId);
+  }
+
   /// Get the original source document for a chunk.
   Future<String?> getSourceForChunk(ChunkSearchResult chunk) async {
     return await rust_rag.getSource(sourceId: chunk.sourceId);

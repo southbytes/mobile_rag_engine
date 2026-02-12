@@ -31,7 +31,7 @@ import 'package:mobile_rag_engine/services/context_builder.dart';
 import 'package:mobile_rag_engine/services/source_rag_service.dart';
 // Explicitly import SourceEntry so it can be used in types
 import 'package:mobile_rag_engine/src/rust/api/source_rag.dart'
-    show SourceEntry, SourceStats;
+    show ChunkSearchResult, SourceEntry, SourceStats;
 import 'package:mobile_rag_engine/src/rust/api/hybrid_search.dart' as hybrid;
 
 // Export types for consumers
@@ -198,6 +198,35 @@ class MobileRag {
   /// However, if you delete a large amount of data (e.g., >50%), calling
   /// [rebuildIndex] is recommended to reclaim memory and optimize the vector graph.
   Future<void> removeSource(int sourceId) => _engine!.removeSource(sourceId);
+
+  /// Get all chunk texts for a specific source document.
+  ///
+  /// Returns the raw text content of each chunk in order.
+  Future<List<String>> getSourceChunks(int sourceId) =>
+      _engine!.getSourceChunks(sourceId);
+
+  /// Get adjacent chunks around a given chunk range.
+  ///
+  /// Useful for "Read More" or context expansion features.
+  Future<List<ChunkSearchResult>> getAdjacentChunks({
+    required int sourceId,
+    required int minIndex,
+    required int maxIndex,
+  }) => _engine!.getAdjacentChunks(
+    sourceId: sourceId,
+    minIndex: minIndex,
+    maxIndex: maxIndex,
+  );
+
+  /// Get the number of chunks for a specific source.
+  Future<int> getSourceChunkCount(int sourceId) =>
+      _engine!.getSourceChunkCount(sourceId);
+
+  /// Get the original source document content.
+  ///
+  /// Returns null if the source doesn't exist.
+  Future<String?> getSourceDocument(int sourceId) =>
+      _engine!.getSourceDocument(sourceId);
 
   /// Search for relevant chunks and assemble context for LLM.
   Future<RagSearchResult> search(

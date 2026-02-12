@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.10.4
+* **New API**: Added data retrieval methods to `MobileRag` facade:
+  - `getSourceChunks()` — retrieve all chunk texts for a specific source document.
+  - `getSourceChunkCount()` — get the number of chunks for a source (useful for pagination and batch processing).
+  - `getSourceDocument()` — get original source document content by source ID.
+  - `getAdjacentChunks()` — context expansion without going through the service layer directly.
+* **Export**: Added `ChunkForReembedding` type to public exports for custom re-embedding scenarios.
+
 ## 0.10.3+1
 * **Code Quality**: Removed unnecessary imports to improve pub score.
 
