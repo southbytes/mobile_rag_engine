@@ -10,7 +10,6 @@ library;
 
 import 'dart:developer';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
