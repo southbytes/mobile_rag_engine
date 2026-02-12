@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.2
+* **Fix**: Corrected HNSW index loading path resolution in `load_hnsw_index`.
+* **Fix**: Filtered out verbose debug logs from `hnsw_rs` crate.
+* **Stabiity**: Handled uninitialized/empty index cases in `save_hnsw_index` to prevent crashes.
+
 ## 0.10.1
 * Maintenance release:
   * Fix hnsw uninitialized error.(caused by updating hnsw cargo version)

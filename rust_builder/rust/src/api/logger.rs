@@ -29,7 +29,8 @@ impl log::Log for CombinedLogger {
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            let msg = format!("[{}] {}", record.level(), record.args());
+            // Temporary debug: Print target to identify module source
+            let msg = format!("[{}][{}] {}", record.level(), record.target(), record.args());
             
             // Try to send to Dart stream first
             let sent_to_dart = try_send_log_to_dart(&msg);

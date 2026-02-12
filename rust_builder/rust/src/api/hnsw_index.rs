@@ -138,19 +138,20 @@ pub fn save_hnsw_index(base_path: &str) -> anyhow::Result<()> {
 /// Returns true if the index was successfully loaded into memory.
 pub fn load_hnsw_index(base_path: &str) -> anyhow::Result<bool> {
     // Check if the primary data file exists to avoid unnecessary log noise
-    // hnsw_rs adds .hnsw.data and .hnsw.graph to the base name
-    let data_path = format!("{}.hnsw.data", base_path);
-    if !Path::new(&data_path).exists() {
-        debug!("[hnsw] No index files found at {}", base_path);
-        return Ok(false);
-    }
-
-    info!("[hnsw] Loading index from {}", base_path);
-    
+    // hnsw_rs adds .hnsw.data and .hnsw.graph to the base name (which is the file stem)
     let path = Path::new(base_path);
     let parent = path.parent().ok_or_else(|| anyhow::anyhow!("Invalid base path"))?;
     let file_stem = path.file_stem().ok_or_else(|| anyhow::anyhow!("Invalid filename"))?;
     let filename = file_stem.to_str().ok_or_else(|| anyhow::anyhow!("Invalid UTF-8 filename"))?;
+
+    let data_path = parent.join(format!("{}.hnsw.data", filename));
+    
+    if !data_path.exists() {
+        debug!("[hnsw] No index files found at {:?}", data_path);
+        return Ok(false);
+    }
+
+    info!("[hnsw] Loading index from {}", base_path);
 
     // hnsw_rs 0.3 load_hnsw is a method of HnswIo
     let hnswio = HnswIo::new(parent, filename);
