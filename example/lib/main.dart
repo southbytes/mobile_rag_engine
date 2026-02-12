@@ -84,6 +84,9 @@ class _MyAppState extends State<MyApp> {
         text,
         name: "Manual Entry ${DateTime.now().toIso8601String()}",
         onProgress: (done, total) {
+          if (done % 10 == 0 || done == total) {
+            debugPrint('Embedding progress: $done/$total');
+          }
           setState(() => _status = "Embedding chunks: $done/$total");
         },
       );
@@ -222,6 +225,9 @@ class _MyAppState extends State<MyApp> {
         name: file.name,
         filePath: filePath, // <-- Auto-detect chunking strategy
         onProgress: (done, total) {
+          if (done % 10 == 0 || done == total) {
+            debugPrint('Embedding progress: $done/$total');
+          }
           setState(() => _status = "Embedding chunks: $done/$total");
         },
       );

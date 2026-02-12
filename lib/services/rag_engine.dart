@@ -234,6 +234,7 @@ class RagEngine {
     onProgress?.call('Initializing database...');
     final ragService = SourceRagService(
       dbPath: dbPath,
+      modelPath: modelPath,
       maxChunkChars: config.maxChunkChars,
       overlapChars: config.overlapChars,
     );

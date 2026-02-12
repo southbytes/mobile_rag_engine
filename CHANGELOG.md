@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.10.3
+* **Stability**: Fixed HNSW index persistence issue where index was not saved to disk on creation.
+* **Performance**: Offloaded PDF chunking and embedding to a background isolate to prevent UI freezes.
+* **UX**: Restored progress reporting for document addition using `Isolate` communication.
+* **Internal**: Optimized initialization flow to ensure index is persisted immediately after rebuild.
+
 ## 0.10.2
 * Maintenance release:
   * Fix hnsw uninitialized error.(caused by updating hnsw cargo version)

@@ -479,10 +479,10 @@ packages:
     dependency: "direct main"
     description:
       name: rag_engine_flutter
-      sha256: "6af08b7003e80717729f6685875c08b55b5f7f87f2edb6519ca51317273f3843"
+      sha256: bc35b7ce8f4d5eda82844165a2d2fff2cfd3a840cd1ad08986d99e3b6eb89ca5
       url: "https://pub.dev"
     source: hosted
-    version: "0.10.1"
+    version: "0.10.2"
   shelf:
     dependency: transitive
     description:
