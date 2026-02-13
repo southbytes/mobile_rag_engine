@@ -60,7 +60,7 @@ app.*.map.json
 
 # docs
 docs/roadmap
-docs/test
+# docs/test
 # fix/
 
 # test_app/
