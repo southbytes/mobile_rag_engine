@@ -335,8 +335,8 @@ class RagEngine {
   Future<List<hybrid.HybridSearchResult>> searchHybrid(
     String query, {
     int topK = 10,
-    double vectorWeight = 0.5,
-    double bm25Weight = 0.5,
+    double vectorWeight = 0.2,
+    double bm25Weight = 0.8,
     List<int>? sourceIds,
   }) async {
     await _flushIndex(); // Ensure index is up-to-date before searching
@@ -358,8 +358,8 @@ class RagEngine {
     int topK = 10,
     int tokenBudget = 2000,
     ContextStrategy strategy = ContextStrategy.relevanceFirst,
-    double vectorWeight = 0.5,
-    double bm25Weight = 0.5,
+    double vectorWeight = 0.2,
+    double bm25Weight = 0.8,
     List<int>? sourceIds,
     int adjacentChunks = 0,
     bool singleSourceMode = false,

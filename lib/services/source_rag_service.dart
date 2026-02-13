@@ -581,7 +581,7 @@ class SourceRagService {
                 chunkId: r.docId,
                 sourceId: r.sourceId,
                 content: r.content,
-                chunkIndex: 0, // Lost in hybrid search
+                chunkIndex: r.chunkIndex,
                 chunkType: 'general',
                 similarity: r.score,
                 metadata: r.metadata,
@@ -651,10 +651,7 @@ class SourceRagService {
 
       // Check if chunk contains significant part of query
       // Split query into meaningful segments and check for matches
-      final queryWords = query
-          .split(RegExp(r'[\s\(\)]+'))
-          .where((w) => w.length > 2)
-          .toList();
+      final queryWords = _extractSignificantQueryTerms(query);
       int matchCount = 0;
       for (final word in queryWords) {
         if (contentLower.contains(word.toLowerCase())) {
@@ -709,6 +706,24 @@ class SourceRagService {
 
     // Filter to only that source
     return results.where((c) => c.sourceId.toInt() == bestSourceId).toList();
+  }
+
+  static List<String> _extractSignificantQueryTerms(String query) {
+    final splitter = RegExp(r'[\s\(\)\[\]\{\},.!?:;/|_\-]+');
+    return query
+        .split(splitter)
+        .map((w) => w.trim())
+        .where((w) => w.isNotEmpty)
+        .where((w) => _containsCjkOrHangul(w) || w.length >= 2)
+        .map((w) => w.toLowerCase())
+        .toSet()
+        .toList();
+  }
+
+  static bool _containsCjkOrHangul(String text) {
+    return RegExp(
+      r'[\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uAC00-\uD7A3]',
+    ).hasMatch(text);
   }
 
   /// Expand search results with adjacent chunks from the same source.
@@ -837,13 +852,13 @@ class SourceRagService {
   /// Parameters:
   /// - [query]: The search query text
   /// - [topK]: Number of results to return (default: 10)
-  /// - [vectorWeight]: Weight for vector search (0.0-1.0, default: 0.5)
-  /// - [bm25Weight]: Weight for BM25 search (0.0-1.0, default: 0.5)
+  /// - [vectorWeight]: Weight for vector search (0.0-1.0, default: 0.2)
+  /// - [bm25Weight]: Weight for BM25 search (0.0-1.0, default: 0.8)
   Future<List<hybrid.HybridSearchResult>> searchHybrid(
     String query, {
     int topK = 10,
-    double vectorWeight = 0.5,
-    double bm25Weight = 0.5,
+    double vectorWeight = 0.2,
+    double bm25Weight = 0.8,
     List<int>? sourceIds,
   }) async {
     // 1. Generate query embedding
@@ -902,8 +917,8 @@ class SourceRagService {
     int topK = 10,
     int tokenBudget = 2000,
     ContextStrategy strategy = ContextStrategy.relevanceFirst,
-    double vectorWeight = 0.5,
-    double bm25Weight = 0.5,
+    double vectorWeight = 0.2,
+    double bm25Weight = 0.8,
     List<int>? sourceIds,
     int adjacentChunks = 0,
     bool singleSourceMode = false,

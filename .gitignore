@@ -59,7 +59,8 @@ app.*.map.json
 /macos/
 
 # docs
-# docs/
+docs/roadmap
+# docs/test
 # fix/
 
 # test_app/

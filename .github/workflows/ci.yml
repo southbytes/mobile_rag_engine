@@ -6,25 +6,127 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  FLUTTER_VERSION: "3.38.7"
+  FLUTTER_CHANNEL: "stable"
+
 jobs:
-  analyze:
+  analyze_and_unit:
+    name: Analyze + Unit (Ubuntu)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.38.7'
-          channel: 'stable'
-      
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+
       - name: Get dependencies
         run: flutter pub get
-      
+
       - name: Analyze code
         run: |
-          # Analyze main package only, exclude cargokit build_tool (separate Dart package)
+          # Analyze main package only (exclude cargokit build_tool package).
           flutter analyze lib/ test/ --no-fatal-infos
-      
-      - name: Run tests
-        run: flutter test
+
+      - name: Run unit tests
+        run: ./scripts/test_ci.sh unit
+
+  native_tests_macos:
+    name: Native Tests (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Run native-dependent tests
+        run: ./scripts/test_ci.sh native
+
+  integration_tests_macos:
+    name: Integration Tests (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Run integration tests (if present)
+        run: ./scripts/test_ci.sh integration
+
+  platform_build_smoke:
+    name: Build Smoke (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: android
+            os: ubuntu-latest
+            build_command: flutter build apk --debug --target-platform android-arm64
+          - platform: ios
+            os: macos-latest
+            build_command: flutter build ios --simulator --no-codesign
+          - platform: macos
+            os: macos-latest
+            build_command: flutter build macos --debug
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Rust target (Android)
+        if: matrix.platform == 'android'
+        run: rustup target add aarch64-linux-android
+
+      - name: Install Rust targets (iOS simulator)
+        if: matrix.platform == 'ios'
+        run: rustup target add aarch64-apple-ios-sim x86_64-apple-ios
+
+      - name: Setup Java (Android only)
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK (Android only)
+        if: matrix.platform == 'android'
+        uses: android-actions/setup-android@v3
+
+      - name: Get package dependencies
+        run: flutter pub get
+
+      - name: Get example dependencies
+        run: flutter pub get
+        working-directory: example
+
+      - name: Build example
+        run: ${{ matrix.build_command }}
+        working-directory: example

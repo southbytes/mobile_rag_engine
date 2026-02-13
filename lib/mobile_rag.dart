@@ -251,8 +251,8 @@ class MobileRag {
   Future<List<hybrid.HybridSearchResult>> searchHybrid(
     String query, {
     int topK = 10,
-    double vectorWeight = 0.5,
-    double bm25Weight = 0.5,
+    double vectorWeight = 0.2,
+    double bm25Weight = 0.8,
     List<int>? sourceIds,
   }) => _engine!.searchHybrid(
     query,
@@ -269,8 +269,8 @@ class MobileRag {
     int tokenBudget = 2000,
     ContextStrategy strategy = ContextStrategy.relevanceFirst,
     int adjacentChunks = 0,
-    double vectorWeight = 0.5,
-    double bm25Weight = 0.5,
+    double vectorWeight = 0.2,
+    double bm25Weight = 0.8,
     bool singleSourceMode = false,
     List<int>? sourceIds,
   }) => _engine!.searchHybridWithContext(
