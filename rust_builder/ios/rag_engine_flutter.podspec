@@ -31,7 +31,7 @@ A new Flutter FFI plugin project.
     :input_files => ['${BUILT_PRODUCTS_DIR}/cargokit_phony'],
     # Let XCode know that the static library referenced in -force_load below is
     # created by this build step.
-    :output_files => ["${BUILT_PRODUCTS_DIR}/librag_engine_flutter.a"],
+    :output_files => ["${PODS_CONFIGURATION_BUILD_DIR}/${PRODUCT_NAME}/librag_engine_flutter.a"],
   }
 
   # Pod target build settings (merged, no duplicates)
