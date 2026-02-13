@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.11.0
+* **Hybrid Search**:
+  - Improved source-filter exact-scan path to keep scoped BM25 ranking.
+  - Added regression test for source-filter + exact-keyword behavior.
+* **Tokenizer**:
+  - Added dynamic truncation policy by input length (256/384/512).
+* **Chunking**:
+  - Applied overlap prefix logic in `semantic_chunk_with_overlap`.
+* **BM25**:
+  - Improved tokenization to retain meaningful single-char CJK/code tokens.
+
 ## 0.10.2
 * **Fix**: Corrected HNSW index loading path resolution in `load_hnsw_index`.
 * **Fix**: Filtered out verbose debug logs from `hnsw_rs` crate.
