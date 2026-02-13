@@ -85,15 +85,20 @@ class ContextBuilder {
       ContextStrategy.chronological => _orderChronologically(filteredResults),
     };
 
-    // Select chunks within budget
+    // Select chunks within budget using rendered output estimation
+    // (includes XML tags/metadata overhead).
     final selected = <ChunkSearchResult>[];
     var usedTokens = 0;
-    final separatorTokens = (separator.length / 4).ceil();
+    final skipHeaders = singleSourceMode;
 
     for (final chunk in orderedResults) {
-      final chunkTokens = (chunk.content.length / 4).ceil();
-      final totalIfAdded =
-          usedTokens + chunkTokens + (selected.isEmpty ? 0 : separatorTokens);
+      final candidateSelection = List<ChunkSearchResult>.from(selected)
+        ..add(chunk);
+      final totalIfAdded = _estimateGroupedTokens(
+        candidateSelection,
+        separator,
+        skipHeaders: skipHeaders,
+      );
 
       if (totalIfAdded <= tokenBudget) {
         selected.add(chunk);
@@ -107,7 +112,7 @@ class ContextBuilder {
     final text = _buildGroupedText(
       selected,
       separator,
-      skipHeaders: singleSourceMode,
+      skipHeaders: skipHeaders,
     );
 
     return AssembledContext(
@@ -152,12 +157,32 @@ class ContextBuilder {
   }
 
   /// Build text grouped by source with clear document headers.
+  static int _estimateGroupedTokens(
+    List<ChunkSearchResult> chunks,
+    String separator, {
+    bool skipHeaders = false,
+  }) {
+    if (chunks.isEmpty) return 0;
+    final rendered = _buildGroupedText(
+      chunks,
+      separator,
+      skipHeaders: skipHeaders,
+    );
+    return (rendered.length / 4).ceil();
+  }
+
+  /// Build text grouped by source with clear document headers.
   static String _buildGroupedText(
     List<ChunkSearchResult> chunks,
     String separator, {
     bool skipHeaders = false,
   }) {
     if (chunks.isEmpty) return '';
+
+    if (skipHeaders) {
+      // Keep lean output for single-source mode and preserve selection order.
+      return chunks.map((c) => c.content).join(separator);
+    }
 
     // Group chunks by source
     final bySource = <int, List<ChunkSearchResult>>{};
@@ -171,7 +196,7 @@ class ContextBuilder {
       list.sort((a, b) => a.chunkIndex.compareTo(b.chunkIndex));
     }
 
-    // Build text with document headers (or without if skipHeaders)
+    // Build text with document headers.
     final buffer = StringBuffer();
     var isFirst = true;
 

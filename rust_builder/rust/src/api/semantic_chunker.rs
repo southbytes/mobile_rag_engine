@@ -200,10 +200,43 @@ pub fn semantic_chunk(text: String, max_chars: i32) -> Vec<SemanticChunk> {
 #[allow(dead_code)]
 fn is_article_title(_line: &str) -> bool { false }
 
+fn tail_chars(text: &str, count: usize) -> String {
+    if count == 0 || text.is_empty() {
+        return String::new();
+    }
+    let total_chars = text.chars().count();
+    if total_chars <= count {
+        return text.to_string();
+    }
+    text.chars().skip(total_chars - count).collect()
+}
+
 /// Split text with overlap (API compatibility wrapper).
 #[flutter_rust_bridge::frb(sync)]
-pub fn semantic_chunk_with_overlap(text: String, max_chars: i32, _overlap_chars: i32) -> Vec<SemanticChunk> {
-    semantic_chunk(text, max_chars)
+pub fn semantic_chunk_with_overlap(text: String, max_chars: i32, overlap_chars: i32) -> Vec<SemanticChunk> {
+    let base_chunks = semantic_chunk(text, max_chars);
+    let overlap = overlap_chars.max(0) as usize;
+
+    if overlap == 0 || base_chunks.len() <= 1 {
+        return base_chunks;
+    }
+
+    let mut overlapped = Vec::with_capacity(base_chunks.len());
+
+    for (i, base_chunk) in base_chunks.iter().enumerate() {
+        let mut chunk = base_chunk.clone();
+        if i > 0 {
+            let prefix = tail_chars(&base_chunks[i - 1].content, overlap);
+            if !prefix.is_empty() && !chunk.content.starts_with(&prefix) {
+                chunk.start_pos = (chunk.start_pos - prefix.len() as i32).max(0);
+                chunk.content = format!("{}\n{}", prefix, chunk.content);
+                chunk.end_pos = chunk.start_pos + chunk.content.len() as i32;
+            }
+        }
+        overlapped.push(chunk);
+    }
+
+    overlapped
 }
 
 #[cfg(test)]
@@ -239,6 +272,26 @@ mod tests {
         assert_eq!(ChunkType::Definition.as_str(), "definition");
         assert_eq!(ChunkType::from_str("definition"), ChunkType::Definition);
         assert_eq!(ChunkType::from_str("unknown"), ChunkType::General);
+    }
+
+    #[test]
+    fn test_semantic_chunk_with_overlap_applies_prefix() {
+        let text = "First chunk content here.\n\nSecond chunk starts here.";
+        let chunks = semantic_chunk_with_overlap(text.to_string(), 500, 5);
+        assert_eq!(chunks.len(), 2);
+        assert_eq!(chunks[0].content, "First chunk content here.");
+        assert!(chunks[1].content.starts_with("here."));
+        assert!(chunks[1].content.contains("Second chunk starts here."));
+    }
+
+    #[test]
+    fn test_semantic_chunk_with_overlap_zero_overlap_is_noop() {
+        let text = "First paragraph.\n\nSecond paragraph.";
+        let plain = semantic_chunk(text.to_string(), 500);
+        let overlapped = semantic_chunk_with_overlap(text.to_string(), 500, 0);
+        assert_eq!(plain.len(), overlapped.len());
+        assert_eq!(plain[0].content, overlapped[0].content);
+        assert_eq!(plain[1].content, overlapped[1].content);
     }
 }
 
@@ -833,4 +886,3 @@ mod markdown_tests {
         }
     }
 }
-
