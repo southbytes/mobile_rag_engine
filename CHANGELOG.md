@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.11.0
+* **Retrieval Quality**:
+  - Applied `overlapChars` in semantic chunk overlap path.
+  - Preserved `chunkIndex` in source-filtered hybrid search path.
+  - Improved source selection heuristic for short/CJK query terms.
+  - Updated hybrid default weights to `vector=0.2`, `bm25=0.8`.
+* **Search/Core**:
+  - Added dynamic tokenizer truncation policy (256/384/512 by input length).
+  - Improved BM25 tokenization for single-char CJK/code-like tokens.
+  - Kept scoped BM25 contribution in source-filter exact-scan hybrid path.
+* **Context Assembly**:
+  - Refined context token budget estimation using rendered output size.
+  - Reduced single-source output overhead by skipping header wrappers.
+* **Quality & CI**:
+  - Added offline evaluation runners and evalset fixtures in `example/`.
+  - Split test tiers (`unit` / `native`) and added dedicated CI gates.
+
 ## 0.10.4
 * **New API**: Added data retrieval methods to `MobileRag` facade:
   - `getSourceChunks()` — retrieve all chunk texts for a specific source document.
